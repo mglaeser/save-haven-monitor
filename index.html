@@ -5,7 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Crisis Winners — and the 2026 AI question</title>
   <meta name="description" content="An interactive atlas of assets that rose when markets collapsed — historical analysis, not investment advice.">
+  <meta property="og:title" content="Crisis Winners — and the 2026 AI question">
+  <meta property="og:description" content="An interactive atlas of assets that rose when markets collapsed — historical analysis, not investment advice.">
+  <meta property="og:type" content="website">
+  <meta name="twitter:card" content="summary">
   <meta name="theme-color" content="#0E1526">
+  <link rel="preconnect" href="https://unpkg.com" crossorigin>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='3' fill='%23E0B458'/%3E%3C/svg%3E">
   <style>
     html,body{margin:0;padding:0;background:#0E1526}
@@ -14,27 +19,38 @@
     .tabbar-scroll{scrollbar-width:none}
     .tabbar-scroll::-webkit-scrollbar{display:none}
   </style>
+  <noscript><style>#cw-loading{display:none !important}</style></noscript>
 </head>
 <body>
-  <div id="root">
-    <div id="cw-loading" style="min-height:100vh;display:flex;align-items:center;justify-content:center;color:#a8894d;font:13px/1.5 system-ui,-apple-system,'Segoe UI',sans-serif;letter-spacing:0.08em">loading dashboard&hellip;</div>
-  </div>
   <noscript>
     <div style="min-height:100vh;display:flex;align-items:center;justify-content:center;color:#EDE8DC;font:14px/1.6 system-ui,sans-serif;padding:20px;text-align:center">
       This dashboard requires JavaScript — please enable it and reload.
     </div>
   </noscript>
+  <div id="root">
+    <div id="cw-loading" style="min-height:100vh;display:flex;align-items:center;justify-content:center;color:#a8894d;font:13px/1.5 system-ui,-apple-system,'Segoe UI',sans-serif;letter-spacing:0.08em">loading dashboard&hellip;</div>
+  </div>
   <script>
-    window.addEventListener("error", function () {
-      var el = document.getElementById("cw-loading");
-      if (el) el.textContent = "The dashboard failed to load — please refresh, or check the browser console for details.";
-    });
+    (function () {
+      var MSG = "The dashboard failed to load — please refresh, or check the browser console for details.";
+      function cwFail() {
+        var el = document.getElementById("cw-loading");
+        var root = document.getElementById("root");
+        if (el) { el.textContent = MSG; }
+        else if (root && !root.firstChild) {
+          root.innerHTML = '<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;color:#a8894d;font:13px/1.5 system-ui,sans-serif;padding:20px;text-align:center"></div>';
+          root.firstChild.textContent = MSG;
+        }
+      }
+      window.addEventListener("error", cwFail, true);
+      window.addEventListener("unhandledrejection", cwFail);
+    })();
   </script>
-  <script src="https://unpkg.com/react@18.3.1/umd/react.production.min.js"></script>
-  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js"></script>
-  <script src="https://unpkg.com/prop-types@15.8.1/prop-types.min.js"></script>
-  <script src="https://unpkg.com/recharts@2.12.7/umd/Recharts.js"></script>
-  <script src="https://unpkg.com/@babel/standalone@7/babel.min.js"></script>
+  <script src="https://unpkg.com/react@18.3.1/umd/react.production.min.js" integrity="sha384-DGyLxAyjq0f9SPpVevD6IgztCFlnMF6oW/XQGmfe+IsZ8TqEiDrcHkMLKI6fiB/Z" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js" integrity="sha384-gTGxhz21lVGYNMcdJOyq01Edg0jhn/c22nsx0kyqP0TxaV5WVdsSH1fSDUf5YJj1" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/prop-types@15.8.1/prop-types.min.js" integrity="sha384-/AfDwVDXNopzPvhxMPQ11y1OCpR6mVkWx47qzSwIiquvxkcMkZddEzDNtIOtfCpk" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/recharts@2.12.7/umd/Recharts.js" integrity="sha384-d1XH4LhwLW8j0l6VXMP8yJabdGY9ZqtZk7k7PaPk5NoUCcZ/hDkL5aaKioKQbcZg" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.7/babel.min.js" integrity="sha384-ezQ6HS3FLspd9te19o2McUV6FAK091+GG7KO54f/R8DKgCDi7fULhapNrd5LY+vG" crossorigin="anonymous"></script>
   <script type="text/babel" data-presets="react" src="./dashboard.jsx"></script>
 </body>
 </html>

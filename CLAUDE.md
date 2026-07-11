@@ -17,9 +17,11 @@ no router, no analytics/trackers, no CSS frameworks.**
 
 ## Pinned CDN versions
 
-react/react-dom 18.3.1 UMD · prop-types 15.8.1 · recharts 2.12.7 UMD ·
-@babel/standalone 7 (latest 7.x). No React 19 / Recharts 3.x — verify UMD
-named exports before any version change.
+react/react-dom 18.3.1 UMD · prop-types 15.8.1 · recharts 2.12.7 UMD
+(`umd/Recharts.js` — 2.12.x ships no `.min.js`) · @babel/standalone 7.29.7
+(exact pin — required for SRI). Every script tag carries an `integrity`
+hash that must be recomputed on any version change (see README). No React
+19 / Recharts 3.x — verify UMD named exports before any version change.
 
 ## Notes
 
