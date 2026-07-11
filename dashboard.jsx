@@ -1059,9 +1059,9 @@ function Analytics() {
     return Object.values(byP).sort((a, b) => a.p - b.p);
   }, []);
   const fans = useMemo(() => ({
-    market: runFan([["dotcom", "mkt"], ["depression", "mkt"], ["japan", "mkt"]], 7),
-    gold: runFan([["stagflation", "au"], ["gfc", "au"], ["euro", "au"]], 11),
-    bonds: runFan([["dotcom", "ust"], ["depression", "gb"], ["japan", "jgb"]], 13),
+    market: runFan([["dotcom", "mkt"], ["depression", "mkt"], ["japan", "mkt"]], 7, 800),
+    gold: runFan([["stagflation", "au"], ["gfc", "au"], ["euro", "au"]], 11, 800),
+    bonds: runFan([["dotcom", "ust"], ["depression", "gb"], ["japan", "jgb"]], 13, 800),
   }), []);
   const clockCards = [
     { n: "≈ −12 mo", d: "weighted template clock — today's pattern sits ~12 months before the average analog peak (range 0 to −21 by template)" },
