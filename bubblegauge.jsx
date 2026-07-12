@@ -1,0 +1,883 @@
+/* ============================================================
+   bubblegauge × Crisis Winners — conditional integration
+   Loaded BEFORE dashboard.jsx. Exposes window.BubbleGauge.
+
+   Zero-build gating: this whole module no-ops (defines nothing,
+   mounts nothing, makes no network calls) unless the activation
+   query param `?status-api=<key>` is present (or was persisted
+   in this tab). When disabled, window.BubbleGauge = {enabled:false}
+   and dashboard.jsx renders exactly as it always has.
+
+   Data contract: bubblegauge REST API v2/v1, service_version 3.1.0
+   (see the integration spec). Live payloads MUST be re-verified
+   against /openapi.json — this file is built to the documented
+   contract + the golden fixture and validates at the boundary.
+   `?status-api=demo` renders the embedded fixture offline.
+   ============================================================ */
+
+(function () {
+  "use strict";
+
+  /* ---------- activation / base-URL derivation (spec §4.1) ---------- */
+
+  const PARAM = "status-api";
+  const KEY_RE = /^[a-z0-9-]{1,32}$/; // strict whitelist — no dots, no full URLs
+  const SS_KEY = "bubblegauge:enabled";
+  const DEMO_KEYS = { demo: true, fixture: true }; // offline preview keys
+
+  function resolveActivation(loc) {
+    loc = loc || window.location;
+    let url;
+    try { url = new URL(loc.href); } catch (e) { return null; }
+    // explicit disable
+    if (url.searchParams.get(PARAM + "-off") !== null) {
+      try { sessionStorage.removeItem(SS_KEY); } catch (e) {}
+      return null;
+    }
+    let key = url.searchParams.get(PARAM);
+    if (key && KEY_RE.test(key)) {
+      try { sessionStorage.setItem(SS_KEY, key); } catch (e) {}
+    } else if (!key) {
+      try { key = sessionStorage.getItem(SS_KEY); } catch (e) { key = null; }
+    }
+    if (!key || !KEY_RE.test(key)) return null;
+
+    if (DEMO_KEYS[key]) return { key: key, demo: true, base: null };
+
+    const host = loc.hostname;
+    // dev fallback: never subdomain-derive from localhost
+    if (host === "localhost" || host === "127.0.0.1" || host.endsWith(".local")) {
+      return { key: key, demo: false, base: "http://localhost:8000" };
+    }
+    const labels = host.split(".");
+    // NOTE: simple leftmost-strip. Correct for klee.me; a multi-label public
+    // suffix (e.g. co.uk) would need a public-suffix-list check. See INTEGRATION_NOTES.
+    const parent = labels.length > 2 ? labels.slice(1).join(".") : host;
+    return { key: key, demo: false, base: "https://" + key + "." + parent };
+  }
+
+  const activation = resolveActivation();
+
+  if (!activation) {
+    // Zero footprint: nothing defined, nothing mounted, no fetches.
+    window.BubbleGauge = { enabled: false };
+    return;
+  }
+
+  const API_BASE = activation.base;
+  const DEMO = activation.demo;
+
+  const { useState, useMemo, useEffect, useRef } = React;
+  const {
+    LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
+    ReferenceLine, ResponsiveContainer, Area, ComposedChart, ReferenceArea,
+  } = Recharts;
+
+  /* ---------- palette (inherit the dashboard's dark tokens) ---------- */
+
+  const C = {
+    bg: "#0E1526", panel: "#141D31", panel2: "#0B111F",
+    text: "#EDE8DC", dim: "#C7CBD6", muted: "#9AA3B5", faint: "#78829a",
+    gold: "#E0B458", line: "rgba(237,232,220,0.09)",
+  };
+  const BS = {
+    serif: { fontFamily: "Georgia, 'Times New Roman', serif" },
+    panel: { background: C.panel, border: "1px solid " + C.line, borderRadius: 10 },
+    eyebrow: { fontSize: 10.5, letterSpacing: "0.18em", textTransform: "uppercase", color: C.muted },
+  };
+
+  // Action-band semantics — reuse the dashboard's stress palette, never clickbait red.
+  const BAND = {
+    hold:   { label: "HOLD",   color: "#5B8DEF", zone: "rgba(91,141,239,0.14)" },
+    trim:   { label: "TRIM",   color: "#E0B458", zone: "rgba(224,180,88,0.16)" },
+    "de-risk": { label: "DE-RISK", color: "#E05252", zone: "rgba(224,82,82,0.16)" },
+    "suppressed (block degraded)": { label: "SUPPRESSED", color: "#9AA3B5", zone: "rgba(154,163,181,0.12)" },
+  };
+  const bandOf = (b) => BAND[b] || BAND.hold;
+
+  // Grounding chips (spec §10)
+  const GROUND = {
+    "literature-grounded":   { c: "#7fbf94", t: "Backed by peer-reviewed research." },
+    "literature-adjacent":   { c: "#5AA9A3", t: "Motivated by the research, with a reasoned (not directly fitted) mapping." },
+    "judgmental":            { c: "#d9b45c", t: "Reasoned expert choice, not a fitted model." },
+    "contested":             { c: "#E8853D", t: "Known to misfire — deliberately down-weighted." },
+    "lagging-confirmation":  { c: "#9AA3B5", t: "Confirms stress already underway; does not predict." },
+  };
+  const groundOf = (g) => GROUND[g] || { c: C.muted, t: "" };
+
+  /* ---------- copy deck (spec §10) ---------- */
+
+  const COPY = {
+    micro: "Regime heuristic — not a probability, not advice.",
+    epiChip: "Heuristic · not a probability · calibrated on n≈4 · see limits",
+    bandOneLiner: {
+      hold: "Hold — structural risk is present but not acute. No action indicated by the trend rule.",
+      trim: "Trim — fragility is elevated. Consider easing risk if the trend rule confirms.",
+      "de-risk": "De-risk — fragility is high or a hard override has fired. The trend rule is now the thing to watch.",
+      "suppressed (block degraded)": "Not scored right now — too many inputs for one block are unavailable, so the action band is withheld rather than guessed.",
+    },
+    ladder: {
+      ceiling: "The score sets your ceiling on risk — how much caution is warranted. It does not tell you to sell today.",
+      trigger: "The 10-month trend rule (Faber) is the trigger — historically it reduces drawdowns, and honestly, does not boost returns.",
+      speed: "The fast alarm (VIX / variance premium) reacts faster than a monthly trend, for when things break quickly.",
+      caveat: "Acting early is expensive: missing the 10 best days over 1900–2006 — just 0.03% of trading days — cost ~65% of terminal wealth (Estrada). And any de-risking rule can lose money net of costs (Cederburg et al.). That is exactly why the score is a ceiling, not a button.",
+    },
+    redFlagHeader: "What would have to happen — each flag has a specific threshold (encoded in its name). If at least 3 of 4 fire, the score is floored at 70 regardless of everything else (a deliberate non-compensatory override).",
+    falsifyHeader: "This gauge is falsifiable, on purpose. It is WRONG if:",
+    coverageTip: "Coverage = how much of each block's intended weight is actually live right now. When an input is unavailable, we drop it and re-weight the rest, rather than guessing.",
+    changelogTip: "v2 → v3: this step was an aggregation fix — a change in how the sub-scores are combined — NOT the market getting worse. We show it here so you never mistake a methodology change for a market event.",
+    fusionHeader: "Which past crisis does today most resemble? (This is an analogy, not a forecast.)",
+    notProbLong: "This is a 0–100 regime heuristic built from structured expert judgment. It is NOT a probability of a crash. There have been maybe four comparable US equity manias in a century — 1929, 2000, 2007, 2021 — far too few to calibrate a real probability. And today may not be a bubble at all: it could be rational repricing of a genuine general-purpose technology.",
+  };
+
+  const REDFLAG_COPY = {
+    gsadf_explosive_noncontested: "GSADF reads explosive (and not contested-suppressed)",
+    semi_runup_ge_150pp: "Semis' 2-yr net-of-market run-up ≥ 150 pp",
+    hy_oas_widen_gt_100bps: "HY OAS widened > 100 bps",
+    breadth_lt_50_near_ath: "< 50% of S&P 500 above the 200-DMA near an ATH",
+  };
+
+  // Indicator registry: order, block, plain gloss, fire-line, weight-rationale.
+  const REG = {
+    s1: { block: "S", name: "Valuation extremity",
+      plain: "How expensive are stocks versus their own history, once you account for interest rates?",
+      fire: "CAPE sits at a historic extreme and the Excess CAPE Yield (stocks' edge over bonds) is thin.",
+      why: "Weighted highest in the structural block because valuation is the most durable long-horizon fragility signal in the research." },
+    s2: { block: "S", name: "Concentration",
+      plain: "How much does the whole index depend on a handful of AI names?",
+      fire: "The top-10 share of the S&P 500 pushes further above its post-1990 range (~41% in 2025 vs ~27% at the 2000 peak).",
+      why: "Literature-adjacent: a single-point-of-failure risk grounded in the concentration literature, not a fitted timing signal." },
+    s3: { block: "S", name: "Semiconductor run-up",
+      plain: "History says that when one industry doubles relative to the market in two years, it crashes about half the time.",
+      fire: "Semiconductors' two-year gain over the market climbs the crash-frequency curve.",
+      why: "Literature-grounded: Greenwood-Shleifer-You found a 100% two-year net-of-market run-up carries a 53% crash probability, rising to ~80% at 150%." },
+    s4: { block: "S", name: "Explosiveness (GSADF)",
+      plain: "A statistical test for prices growing faster than exponentially — deliberately down-weighted because it can be fooled by a genuine technological revolution.",
+      fire: "The recursive unit-root test flags explosive price dynamics.",
+      why: "CONTESTED and low-weighted: a 2026 study shows it fires 93–100% of the time under real general-purpose-tech fundamentals." },
+    s5: { block: "S", name: "Credit-sentiment fragility",
+      plain: "When lenders are most relaxed, trouble tends to arrive about two years later. Today's spreads are near 25-year tights.",
+      fire: "High-yield spreads are historically tight (measured with a two-year lead).",
+      why: "Literature-grounded on López-Salido-Stein-Zakrajšek's finding that hot credit at t−2 precedes contraction at t." },
+    d1: { block: "D", name: "Breadth",
+      plain: "How many stocks are still participating, versus a shrinking few holding the index up?",
+      fire: "The share of S&P 500 members above their 200-day average drops sharply.",
+      why: "Heaviest weight in the trigger block — breadth deterioration is a classic turn signal (judgmental)." },
+    d2: { block: "D", name: "Margin-debt rollover",
+      plain: "Leverage is at a record, but the signal only counts once it starts unwinding.",
+      fire: "Margin debt turns down year-over-year and a rollover confirmation engages.",
+      why: "Down-weighted, confirmation-only: CXO Advisory found a 0.00 correlation between margin-debt change and next-month returns — the market leads margin debt, not the reverse." },
+    d3: { block: "D", name: "Hyperscaler FCF quality",
+      plain: "Spending a fortune on data centers is only alarming if the revenue stops showing up.",
+      fire: "Cloud revenue growth falls below 15% YoY while trailing free cash flow is negative; otherwise capped low.",
+      why: "Literature-grounded: railroads and fiber both had cash-flow troughs years before any peak — capex is only a bubble signal when it stops converting to revenue." },
+    d4: { block: "D", name: "LPPLS confidence",
+      plain: "A physics-derived model of bubbles as 'critical points' — good at spotting them, prone to crying wolf early.",
+      fire: "Prices show faster-than-exponential growth with accelerating oscillations.",
+      why: "Literature-grounded but caveated: high recall (~90%), low precision (~29%)." },
+  };
+  const regOf = (id) => REG[id] || { block: "?", name: id, plain: "", fire: "", why: "" };
+
+  /* ---------- epistemic + falsification (verbatim, spec §2.5) ---------- */
+
+  const EPISTEMIC = [
+    "NOT-A-PROBABILITY: 0-100 regime heuristic = structured expert judgment; uncalibrated.",
+    "n≈4 CALIBRATION IMPOSSIBILITY: reference class {1929,2000,2007,2021}.",
+    "REFERENCE-CLASS CAVEAT: may be rational GPT repricing (Chen-Chen-Huang 2026).",
+    "NOMINAL≠EFFECTIVE WEIGHTS: see annual PSS sensitivity script.",
+    "Service never returns 500 on upstream failure: fallback or drop+renormalize.",
+  ];
+  const FALSIFY = [
+    "Score < 30 through a > 30% S&P drawdown beginning within 3 months → construct falsified.",
+    "Score > 60 sustained through 24 months of > 10% annualized gains without a > 15% drawdown → falsified.",
+    "Override fires and no > 20% drawdown within 12 months → override falsified.",
+  ];
+  const CHANGELOG = [
+    { v: "v1", score: 33, note: "linear-additive, fully compensatory; stale concentration; HY-OAS sign inverted; LPPLS placeholder." },
+    { v: "v2", score: 28, note: "data fixes; still fully compensatory." },
+    { v: "v3", score: 40, note: "AGGREGATION FIX: two-block geometric mean + non-compensatory override + Monte Carlo median. NOT market deterioration." },
+    { v: "v3.0.1", score: null, note: "first-live-run bugfixes (Stooq, FINRA parser, GSADF floor 0.25, LPPLS robustness). Methodology unchanged." },
+    { v: "3.1.0", score: null, note: "price-layer restructure (provider chain + source hardening). Methodology unchanged." },
+  ];
+
+  /* ---------- offline fixture (Appendix B, expanded) ---------- */
+
+  function mkS(value, sub, weight, ground, extra) {
+    return Object.assign({ value: value, sub_score: sub, weight: weight, grounding: ground,
+      explanation: regOf(extra && extra.id || "").plain, references: [], data_source: (extra && extra.src) || "fixture",
+      fallback_used: false, dropped: false, as_of: "2026-07-10", age_days: (extra && extra.age) || 1,
+      stale: false, timestamp: "2026-07-11T06:00:03+00:00" }, extra || {});
+  }
+  const SCORE_FIXTURE = {
+    data: {
+      headline_median: 40, iqr: [34, 47], band_5_95: [28, 55], point_score: 40.35,
+      action_band: "hold", override_fired: false, red_flag_count: 0,
+      red_flag_detail: { gsadf_explosive_noncontested: false, semi_runup_ge_150pp: false, hy_oas_widen_gt_100bps: false, breadth_lt_50_near_ath: false },
+      block_S: { value: 0.711, indicators: {
+        s1: mkS(41.6, 0.92, 0.33, "literature-grounded", { id: "s1", src: "shiller" }),
+        s2: mkS(41.0, 0.78, 0.27, "literature-adjacent", { id: "s2", src: "slickcharts" }),
+        s3: mkS(118, 0.61, 0.20, "literature-grounded", { id: "s3", src: "stooq" }),
+        s4: mkS(0.9, 0.25, 0.07, "contested", { id: "s4", src: "exuber", note: "contested/stale floor" }),
+        s5: mkS(2.9, 0.74, 0.13, "literature-grounded", { id: "s5", src: "fred_BAMLH0A0HYM2" }),
+      } },
+      block_D: { value: 0.229, value_raw: 0.229, indicators: {
+        d1: mkS(56.0, 0.543, 0.35, "judgmental", { id: "d1", src: "stooq", note: "path=B_constituent_compute" }),
+        d2: mkS(-3.1, 0.20, 0.13, "judgmental", { id: "d2", src: "finra" }),
+        d3: mkS(0.22, 0.30, 0.32, "literature-grounded", { id: "d3", src: "sec_edgar" }),
+        d4: mkS(0.41, 0.35, 0.20, "literature-grounded", { id: "d4", src: "lppls" }),
+      } },
+      V: { state: "contango", multiplier: 1.0, label: "lagging confirmation" },
+      trend_states: { SPY: { faber_10mo: "IN", sma200: "IN" }, QQQ: { faber_10mo: "IN", sma200: "IN" } },
+      fast_alarm: { term_structure: "contango", vrp: 12.4, vrp_flag: false, skew: 128, skew_label: "coincident context only" },
+      judgment_call: { text: "Rich valuation (CAPE ~42) is the dominant driver; broad breadth near 56% above the 200-day is the biggest counter-signal.", stale: false, error_class: null },
+    },
+    meta: {
+      computed_at: "2026-07-11T06:00:03+00:00", service_version: "3.1.0",
+      coverage: { S: { coverage: 1.0, degraded: false }, D: { coverage: 1.0, degraded: false }, degraded: false },
+      disclaimer: "Research, not advice.", epistemic_caveats: EPISTEMIC.slice(),
+    },
+  };
+  // A stylized history path (fixture) — median climbs v1→v3 mostly via the aggregation fix.
+  const HISTORY_FIXTURE = { data: (function () {
+    const out = [], base = new Date("2024-01-01T06:00:00Z").getTime();
+    const path = [30, 31, 29, 33, 34, 36, 35, 38, 37, 39, 41, 40, 42, 40, 41, 43, 42, 40];
+    for (let i = 0; i < path.length; i++) {
+      const m = path[i];
+      out.push({ computed_at: new Date(base + i * 30 * 864e5).toISOString(), median: m,
+        iqr: [m - 6, m + 7], band_5_95: [m - 12, m + 15], action_band: m >= 60 ? "de-risk" : m >= 45 ? "trim" : "hold",
+        override_fired: false, red_flag_count: 0 });
+    }
+    return out;
+  })(), meta: { computed_at: "2026-07-11T06:00:03+00:00", service_version: "3.1.0", disclaimer: "Research, not advice.", epistemic_caveats: EPISTEMIC.slice() } };
+
+  const STATUS_FIXTURE = {
+    service: { name: "bubblegauge", version: "3.1.0" },
+    science_audit: {
+      counts: { error: 0, warn: 2, info: 3 },
+      flags: [
+        { severity: "warn", category: "grounding", title: "S4 GSADF is contested", detail: "Fires 93–100% under genuine GPT fundamentals (Chen-Chen-Huang 2026); permanently down-weighted and floored at 0.25 when input missing.", ref: "arXiv:2604.25826" },
+        { severity: "warn", category: "grounding", title: "D1/D2 are judgmental", detail: "Breadth and margin-debt rollover are reasoned expert mappings, not fitted models; D2 is confirmation-only (CXO: 0.00 next-month correlation).", ref: "CXO Advisory" },
+        { severity: "info", category: "grounding", title: "S2 concentration is literature-adjacent", detail: "Single-point-of-failure risk motivated by the concentration literature; the weight/threshold mapping is a reasoned adaptation.", ref: "RBC WM" },
+        { severity: "info", category: "coverage", title: "All blocks fully live", detail: "Coverage S=100%, D=100%; no dropped or stale indicators this run.", ref: null },
+        { severity: "info", category: "override", title: "Override not fired", detail: "0 of 4 red flags fired; score reflects the geometric composite, no 70-floor applied.", ref: null },
+      ],
+    },
+    falsification_criteria: FALSIFY.slice(),
+    changelog: CHANGELOG.slice(),
+    epistemic_caveats: EPISTEMIC.slice(),
+    disclaimer: "Research, not advice.",
+  };
+
+  /* ---------- fetch layer + boundary validation ---------- */
+
+  function isNum(x) { return typeof x === "number" && isFinite(x); }
+  function pair(x) { return Array.isArray(x) && x.length === 2 && isNum(x[0]) && isNum(x[1]); }
+
+  // Minimal structural guard — never trust the shape; the service degrades.
+  function validScore(j) {
+    if (!j || !j.data || !j.meta) return false;
+    const d = j.data;
+    if (!isNum(d.headline_median) || !pair(d.iqr) || !pair(d.band_5_95)) return false;
+    if (typeof d.action_band !== "string") return false;
+    if (!d.block_S || !d.block_S.indicators || !d.block_D || !d.block_D.indicators) return false;
+    if (!d.red_flag_detail || typeof d.red_flag_count !== "number") return false;
+    if (!d.trend_states || !d.fast_alarm || !d.V) return false;
+    return true;
+  }
+
+  const cache = {}; // path -> { t, json }
+  const TTL = 25 * 60 * 1000;
+
+  function bgFetch(path, opts) {
+    opts = opts || {};
+    const now = Date.now();
+    if (!opts.noCache && cache[path] && now - cache[path].t < (opts.ttl || TTL)) {
+      return Promise.resolve({ status: 200, json: cache[path].json, fromCache: true });
+    }
+    const ctrl = new AbortController();
+    const to = setTimeout(() => ctrl.abort(), opts.timeout || 6000);
+    return fetch(API_BASE + path, { signal: ctrl.signal, headers: { accept: "application/json" } })
+      .then((r) => {
+        clearTimeout(to);
+        if (r.status === 503) return { status: 503, json: null }; // warming up, not an error
+        if (!r.ok) return { status: r.status, json: null, error: "HTTP " + r.status };
+        return r.json().then((j) => { cache[path] = { t: now, json: j }; return { status: 200, json: j }; });
+      })
+      .catch((e) => { clearTimeout(to); return { status: 0, json: null, error: String(e && e.message || e) }; });
+  }
+
+  // Generic hook: {loading, notReady, error, json}
+  function useEndpoint(path, fixture, validate) {
+    const [st, setSt] = useState({ loading: true, notReady: false, error: null, json: DEMO ? fixture : null });
+    useEffect(function () {
+      let alive = true;
+      if (DEMO) { setSt({ loading: false, notReady: false, error: null, json: fixture }); return function () {}; }
+      setSt(function (s) { return Object.assign({}, s, { loading: true }); });
+      bgFetch(path).then(function (r) {
+        if (!alive) return;
+        if (r.status === 503) return setSt({ loading: false, notReady: true, error: null, json: null });
+        if (r.status !== 200 || !r.json || (validate && !validate(r.json))) {
+          return setSt({ loading: false, notReady: false, error: r.error || "bad payload", json: null });
+        }
+        setSt({ loading: false, notReady: false, error: null, json: r.json });
+      });
+      // light revalidation on focus
+      const onFocus = function () { if (alive && !DEMO) bgFetch(path, { noCache: true }).then(function (r) {
+        if (alive && r.status === 200 && r.json && (!validate || validate(r.json))) setSt({ loading: false, notReady: false, error: null, json: r.json });
+      }); };
+      window.addEventListener("focus", onFocus);
+      return function () { alive = false; window.removeEventListener("focus", onFocus); };
+    }, [path]);
+    return st;
+  }
+
+  const useScore = () => useEndpoint("/api/v1/score", SCORE_FIXTURE, validScore);
+  const useHistory = () => useEndpoint("/api/v1/score/history?granularity=daily&limit=1000", HISTORY_FIXTURE, function (j) { return j && Array.isArray(j.data); });
+  const useStatus = () => useEndpoint("/api/v1/status", STATUS_FIXTURE, function (j) { return j && j.science_audit; });
+
+  /* ---------- fusion: stylized structural fingerprints (spec §6) ---------- */
+  // Dimensions in [0,1]; hand-set from the literature. Explicitly an ANALOGY, not a fit.
+  const FP_DIMS = [
+    { k: "valuation", label: "Valuation" },
+    { k: "concentration", label: "Concentration" },
+    { k: "industryRunup", label: "Industry run-up" },
+    { k: "creditTightness", label: "Credit tightness" },
+    { k: "leverage", label: "System leverage" },
+  ];
+  const CRISES_FP = [
+    { label: "1929", explorer: "depression", dims: { valuation: 0.80, concentration: 0.50, industryRunup: 0.80, creditTightness: 0.50, leverage: 0.85 },
+      note: "Levered (margin) equity mania — deep macro damage." },
+    { label: "2000", explorer: "dotcom", dims: { valuation: 0.95, concentration: 0.75, industryRunup: 0.90, creditTightness: 0.40, leverage: 0.20 },
+      note: "Unlevered tech/equity bubble — sharp equity drawdown, comparatively benign macro (Jordà-Schularick-Taylor)." },
+    { label: "2007", explorer: "gfc", dims: { valuation: 0.50, concentration: 0.35, industryRunup: 0.30, creditTightness: 0.85, leverage: 0.95 },
+      note: "Credit/housing-leveraged — deepest recession & slowest recovery of the set." },
+    { label: "2021", explorer: "ai2026", dims: { valuation: 0.85, concentration: 0.70, industryRunup: 0.80, creditTightness: 0.70, leverage: 0.50 },
+      note: "Everything-rally; mixed leverage; the most recent reference-class member." },
+  ];
+
+  function todayFingerprint(d) {
+    const g = (id) => { const x = d.block_S.indicators[id] || d.block_D.indicators[id]; return x && isNum(x.sub_score) ? x.sub_score : null; };
+    return {
+      valuation: g("s1"), concentration: g("s2"), industryRunup: g("s3"), creditTightness: g("s5"),
+      // No direct block-S leverage indicator; today's episode reads as low-leverage AI equity. Approximate, labeled.
+      leverage: 0.30,
+    };
+  }
+  function analogues(today) {
+    const rows = CRISES_FP.map((cr) => {
+      let ss = 0, n = 0;
+      const per = FP_DIMS.map((dim) => {
+        const a = today[dim.k], b = cr.dims[dim.k];
+        const contrib = isNum(a) ? Math.abs(a - b) : null;
+        if (contrib != null) { ss += contrib * contrib; n++; }
+        return { k: dim.k, label: dim.label, today: a, crisis: b, gap: contrib };
+      });
+      const dist = n ? Math.sqrt(ss / n) : 1; // 0 = identical, 1 = opposite
+      return Object.assign({}, cr, { per: per, similarity: Math.max(0, 1 - dist) });
+    });
+    rows.sort((a, b) => b.similarity - a.similarity);
+    return rows;
+  }
+
+  /* ---------- UI atoms ---------- */
+
+  class Boundary extends React.Component {
+    constructor(p) { super(p); this.state = { err: null }; }
+    static getDerivedStateFromError(e) { return { err: e }; }
+    componentDidCatch() {}
+    render() { return this.state.err ? (this.props.fallback || null) : this.props.children; }
+  }
+
+  function Panel(props) {
+    return React.createElement("div", { style: Object.assign({}, BS.panel, { padding: "14px 16px" }, props.style) }, props.children);
+  }
+
+  function Pill({ color, children, title, outline }) {
+    return (
+      <span title={title} style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "2px 8px",
+        borderRadius: 999, fontSize: 10, fontWeight: 700, whiteSpace: "nowrap",
+        color: color, border: "1px solid " + color + (outline ? "" : "55"),
+        background: outline ? "transparent" : color + "1a" }}>
+        <span style={{ width: 6, height: 6, borderRadius: 99, background: color, flexShrink: 0 }} />{children}
+      </span>
+    );
+  }
+
+  function Freshness({ computedAt }) {
+    if (!computedAt) return null;
+    let rel = "";
+    const t = Date.parse(computedAt);
+    if (isFinite(t)) {
+      const h = (Date.now() - t) / 36e5;
+      rel = h < 1 ? "updated <1h ago" : h < 48 ? "updated " + Math.round(h) + "h ago" : "updated " + Math.round(h / 24) + "d ago";
+    }
+    return <span style={{ ...BS.eyebrow, color: C.faint }}>{rel}{DEMO ? " · demo" : ""}</span>;
+  }
+
+  function EpiChip() {
+    return <Pill color={C.muted} outline title={COPY.notProbLong}>Heuristic · not a probability · n≈4</Pill>;
+  }
+
+  // Accessible 0–100 gauge: 3 zones (<45,45–60,≥60), IQR band, median marker.
+  function GaugeBar({ value, iqr, band, height }) {
+    const b = bandOf(band);
+    const clamp = (x) => Math.max(0, Math.min(100, x));
+    const h = height || 12;
+    const label = "Bubble regime " + Math.round(value) + " of 100" +
+      (pair(iqr) ? ", IQR " + Math.round(iqr[0]) + " to " + Math.round(iqr[1]) : "") +
+      ", action band " + b.label.toLowerCase();
+    return (
+      <div role="img" aria-label={label} style={{ position: "relative", height: h, borderRadius: 99, overflow: "hidden",
+        background: "linear-gradient(90deg, rgba(91,141,239,0.16) 0 45%, rgba(224,180,88,0.18) 45% 60%, rgba(224,82,82,0.18) 60% 100%)",
+        border: "1px solid " + C.line }}>
+        {pair(iqr) && (
+          <div style={{ position: "absolute", top: 0, bottom: 0, left: clamp(iqr[0]) + "%", width: (clamp(iqr[1]) - clamp(iqr[0])) + "%",
+            background: b.color, opacity: 0.35 }} />
+        )}
+        <div style={{ position: "absolute", top: -2, bottom: -2, left: "calc(" + clamp(value) + "% - 1.5px)", width: 3,
+          background: b.color, borderRadius: 2, boxShadow: "0 0 0 1px rgba(11,17,31,0.6)" }} />
+      </div>
+    );
+  }
+
+  /* ---------- 5A · Start-page strip ---------- */
+
+  function StripShell({ children, onClick, dim }) {
+    const clickable = !!onClick;
+    return (
+      <aside
+        aria-label="AI bubble regime gauge"
+        onClick={onClick}
+        onKeyDown={clickable ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onClick(); } } : undefined}
+        role={clickable ? "button" : undefined}
+        tabIndex={clickable ? 0 : undefined}
+        style={{ ...BS.panel, padding: "10px 14px", margin: "0 0 14px",
+          cursor: clickable ? "pointer" : "default", opacity: dim ? 0.85 : 1,
+          display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
+        {children}
+      </aside>
+    );
+  }
+
+  function StripSkeleton() {
+    return <StripShell><span style={{ ...BS.eyebrow }}>AI regime gauge</span>
+      <span style={{ color: C.faint, fontSize: 12 }}>loading…</span></StripShell>;
+  }
+  function StripWarmingUp() {
+    return <StripShell dim><span style={{ ...BS.eyebrow }}>AI regime gauge</span>
+      <span style={{ color: C.faint, fontSize: 12 }}>warming up — no snapshot computed yet</span></StripShell>;
+  }
+  function StripUnavailable() {
+    return <StripShell dim><span style={{ ...BS.eyebrow }}>AI regime gauge</span>
+      <span style={{ color: C.faint, fontSize: 12 }}>gauge unavailable</span></StripShell>;
+  }
+
+  function JudgmentInline({ call, max }) {
+    if (!call || !call.text) return null;
+    const t = call.text.length > (max || 220) ? call.text.slice(0, max || 220) + "…" : call.text;
+    const stale = call.stale || call.error_class;
+    return (
+      <span style={{ fontSize: 11.5, color: C.dim, lineHeight: 1.4, flex: "1 1 220px", minWidth: 0 }}>
+        {t}{stale ? <span style={{ color: C.faint }}> · stale</span> : null}
+      </span>
+    );
+  }
+
+  function CoverageChip({ coverage }) {
+    if (!coverage) return null;
+    if (coverage.degraded) return <Pill color="#E8853D" title={COPY.coverageTip}>Degraded</Pill>;
+    const pct = Math.round(100 * Math.min(coverage.S ? coverage.S.coverage : 1, coverage.D ? coverage.D.coverage : 1));
+    return <Pill color="#7fbf94" title={COPY.coverageTip}>Coverage {pct}%</Pill>;
+  }
+
+  function Strip({ goToDetail }) {
+    const s = useScore();
+    if (s.loading) return <StripSkeleton />;
+    if (s.notReady) return <StripWarmingUp />;
+    if (s.error || !s.json) return <StripUnavailable />;
+    const d = s.json.data, meta = s.json.meta, b = bandOf(d.action_band);
+    const trend = d.trend_states;
+    return (
+      <StripShell onClick={goToDetail}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 4, flex: "1 1 240px", minWidth: 200 }}>
+          <div style={{ display: "flex", alignItems: "baseline", gap: 8, flexWrap: "wrap" }}>
+            <span style={{ ...BS.serif, fontSize: 22, fontWeight: 700, color: b.color, fontVariantNumeric: "tabular-nums" }}>{Math.round(d.headline_median)}</span>
+            {pair(d.iqr) && <span style={{ fontSize: 11, color: C.muted }}>IQR {Math.round(d.iqr[0])}–{Math.round(d.iqr[1])}</span>}
+            <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: "0.08em", color: b.color,
+              padding: "1px 7px", borderRadius: 5, background: b.zone }}>{b.label}</span>
+            <span style={{ fontSize: 9.5, color: C.faint }}>{COPY.micro}</span>
+          </div>
+          <GaugeBar value={d.headline_median} iqr={d.iqr} band={d.action_band} />
+        </div>
+        <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+          <Pill color={d.red_flag_count >= 3 ? "#E05252" : d.red_flag_count > 0 ? "#E0B458" : C.muted}
+            title={Object.keys(d.red_flag_detail).filter((k) => d.red_flag_detail[k]).map((k) => REDFLAG_COPY[k]).join(" · ") || "no override flags fired"}>
+            {d.red_flag_count}/4 flags
+          </Pill>
+          {trend && <Pill color={trend.SPY.faber_10mo === "OUT" ? "#E05252" : "#7fbf94"} outline
+            title="Faber 10-month trend rule (execution trigger)">
+            Trend SPY {trend.SPY.faber_10mo} · QQQ {trend.QQQ.faber_10mo}
+          </Pill>}
+          <CoverageChip coverage={meta.coverage} />
+          <Freshness computedAt={meta.computed_at} />
+        </div>
+        <JudgmentInline call={d.judgment_call} />
+        <span style={{ fontSize: 11, color: b.color, fontWeight: 700, whiteSpace: "nowrap" }}>Open ›</span>
+      </StripShell>
+    );
+  }
+
+  /* ---------- 5B · Detail tab ---------- */
+
+  function H({ children, sub }) {
+    return (
+      <div style={{ margin: "0 0 8px" }}>
+        <h3 style={{ ...BS.serif, fontSize: 16, margin: 0, fontWeight: 600, color: C.text }}>{children}</h3>
+        {sub && <div style={{ ...BS.eyebrow, marginTop: 3 }}>{sub}</div>}
+      </div>
+    );
+  }
+
+  // (1) Headline distribution
+  function HeadlinePanel({ d, meta }) {
+    const b = bandOf(d.action_band);
+    return (
+      <Panel>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", marginBottom: 8 }}>
+          <h2 style={{ ...BS.serif, fontSize: 22, margin: 0, fontWeight: 600, color: C.text }}>AI bubble regime — {Math.round(d.headline_median)}</h2>
+          <EpiChip />
+          <Freshness computedAt={meta.computed_at} />
+        </div>
+        <div style={{ display: "flex", alignItems: "baseline", gap: 12, flexWrap: "wrap", marginBottom: 8 }}>
+          <span style={{ ...BS.serif, fontSize: 40, fontWeight: 700, color: b.color, fontVariantNumeric: "tabular-nums" }}>{Math.round(d.headline_median)}</span>
+          <div style={{ fontSize: 12, color: C.muted, lineHeight: 1.7 }}>
+            <div>Monte Carlo median · point estimate {d.point_score}</div>
+            {pair(d.iqr) && <div>IQR (25–75%) <b style={{ color: C.dim }}>{Math.round(d.iqr[0])}–{Math.round(d.iqr[1])}</b> · 5–95% band {Math.round(d.band_5_95[0])}–{Math.round(d.band_5_95[1])}</div>}
+          </div>
+          <span style={{ marginLeft: "auto", fontSize: 12, fontWeight: 800, letterSpacing: "0.08em", color: b.color, padding: "3px 10px", borderRadius: 6, background: b.zone }}>{b.label}</span>
+        </div>
+        <GaugeBar value={d.headline_median} iqr={d.iqr} band={d.action_band} height={16} />
+        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 9.5, color: C.faint, marginTop: 4 }}>
+          <span>0</span><span>45 · trim</span><span>60 · de-risk</span><span>100</span>
+        </div>
+        <p style={{ fontSize: 12.5, color: C.dim, lineHeight: 1.6, margin: "10px 0 0" }}>{(COPY.bandOneLiner[d.action_band]) || ""}</p>
+        <p style={{ fontSize: 11.5, color: C.muted, lineHeight: 1.6, margin: "6px 0 0", fontStyle: "italic" }}>
+          The spread is the point — this is a distribution over assumptions, not a forecast.
+        </p>
+      </Panel>
+    );
+  }
+
+  // (2) Two-block anatomy
+  function IndicatorRow({ id, r }) {
+    const [open, setOpen] = useState(false);
+    const reg = regOf(id), g = groundOf(r.grounding);
+    const live = !r.dropped;
+    return (
+      <div style={{ borderTop: "1px solid rgba(237,232,220,0.06)", padding: "8px 0" }}>
+        <div onClick={() => setOpen(!open)} style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", flexWrap: "wrap" }}>
+          <span style={{ ...BS.eyebrow, minWidth: 26 }}>{id.toUpperCase()}</span>
+          <span style={{ color: C.text, fontWeight: 600, fontSize: 12.5, flex: "1 1 140px" }}>{reg.name}</span>
+          <Pill color={g.c} title={g.t}>{r.grounding}</Pill>
+          <span style={{ fontSize: 10.5, color: C.faint, whiteSpace: "nowrap" }}>w {Math.round(r.weight * 100)}%</span>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 5 }}>
+          <div style={{ flex: 1, height: 7, borderRadius: 99, background: "rgba(237,232,220,0.07)" }}>
+            <div style={{ width: (live && isNum(r.sub_score) ? Math.round(r.sub_score * 100) : 0) + "%", height: "100%", borderRadius: 99, background: g.c, opacity: 0.8 }} />
+          </div>
+          <span style={{ fontSize: 10.5, color: C.muted, fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap", minWidth: 96, textAlign: "right" }}>
+            {live ? (isNum(r.sub_score) ? r.sub_score.toFixed(2) : "—") : <span style={{ color: "#E8853D" }}>not live</span>}
+            {r.stale ? <span style={{ color: "#E8853D" }}> · stale</span> : null}
+            {r.fallback_used ? <span style={{ color: C.faint }}> · fallback</span> : null}
+          </span>
+        </div>
+        {open && (
+          <div style={{ marginTop: 7, padding: "9px 11px", background: "rgba(237,232,220,0.03)", borderRadius: 7, borderLeft: "2px solid " + g.c, fontSize: 11.5, color: C.dim, lineHeight: 1.6 }}>
+            <div>{reg.plain}</div>
+            <div style={{ marginTop: 5, color: C.muted }}><b style={{ color: C.dim }}>Fires when:</b> {reg.fire}</div>
+            <div style={{ marginTop: 3, color: C.muted }}><b style={{ color: C.dim }}>Weighted this way because:</b> {reg.why}</div>
+            <div style={{ marginTop: 5, fontSize: 10, color: C.faint }}>
+              value {isNum(r.value) ? r.value : "—"} · source {r.data_source || "?"}{r.as_of ? " · as of " + r.as_of : ""}{r.note ? " · " + r.note : ""}
+              {!DEMO && <> · <a href={API_BASE + "/api/v1/indicators/" + id} target="_blank" rel="noopener noreferrer" style={{ color: g.c }}>full methodology ↗</a></>}
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  function BlockColumn({ title, sub, block, order, footer }) {
+    return (
+      <Panel>
+        <H sub={sub}>{title}</H>
+        {order.filter((id) => block.indicators[id]).map((id) => <IndicatorRow key={id} id={id} r={block.indicators[id]} />)}
+        {footer}
+      </Panel>
+    );
+  }
+
+  function AnatomyPanel({ d }) {
+    return (
+      <div>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", margin: "0 0 4px" }}>
+          <h2 style={{ ...BS.serif, fontSize: 18, margin: 0, fontWeight: 600, color: C.text }}>Two-block anatomy</h2>
+          <span style={{ fontSize: 11, color: C.muted }}>combined by <b>multiplication</b> (geometric mean) — one calm reading can't fully cancel an alarming one</span>
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 12, marginTop: 8 }}>
+          <BlockColumn title={"Block S · structural fragility"} sub={"maps to DEPTH · value " + d.block_S.value.toFixed(3)}
+            block={d.block_S} order={["s1", "s2", "s3", "s4", "s5"]} />
+          <BlockColumn title={"Block D · dynamics / trigger"} sub={"maps to TIMING · raw " + (isNum(d.block_D.value_raw) ? d.block_D.value_raw.toFixed(3) : "—") + " → ×V " + d.V.multiplier + " → " + d.block_D.value.toFixed(3)}
+            block={d.block_D} order={["d1", "d2", "d3", "d4"]}
+            footer={<div style={{ marginTop: 8, paddingTop: 8, borderTop: "1px solid rgba(237,232,220,0.06)", fontSize: 11, color: C.muted }}>
+              <b style={{ color: C.dim }}>V · VIX term-structure multiplier</b> — {d.V.state} → ×{d.V.multiplier} ({d.V.label}). When near-term fear exceeds long-term fear, stress is already underway; this confirms, it doesn't predict.
+            </div>} />
+        </div>
+        <div style={{ ...BS.eyebrow, textAlign: "center", marginTop: 10 }}>
+          Score = 100 × S<sup>α</sup> × D<sup>β</sup> (α=β=0.5) → point {d.point_score} → Monte Carlo median {Math.round(d.headline_median)}
+        </div>
+      </div>
+    );
+  }
+
+  // (3) Red-flag panel
+  function RedFlagPanel({ d }) {
+    const keys = ["gsadf_explosive_noncontested", "semi_runup_ge_150pp", "hy_oas_widen_gt_100bps", "breadth_lt_50_near_ath"];
+    return (
+      <Panel>
+        <H sub={d.override_fired ? "OVERRIDE FIRED — score floored at 70" : d.red_flag_count + " of 4 fired · override not active"}>Non-compensatory override flags</H>
+        <p style={{ fontSize: 11.5, color: C.muted, lineHeight: 1.6, margin: "0 0 8px" }}>{COPY.redFlagHeader}</p>
+        {keys.map((k) => {
+          const on = !!d.red_flag_detail[k];
+          return (
+            <div key={k} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 0", borderTop: "1px solid rgba(237,232,220,0.06)" }}>
+              <span style={{ width: 16, height: 16, borderRadius: 4, display: "inline-flex", alignItems: "center", justifyContent: "center",
+                background: on ? "rgba(224,82,82,0.75)" : "transparent", border: "1px solid " + (on ? "#E05252" : "rgba(237,232,220,0.2)"),
+                color: "#0E1526", fontWeight: 800, fontSize: 11 }}>{on ? "!" : ""}</span>
+              <span style={{ fontSize: 12, color: on ? C.text : C.muted, fontWeight: on ? 600 : 400 }}>{REDFLAG_COPY[k]}</span>
+              <span style={{ marginLeft: "auto", fontSize: 10, color: on ? "#E05252" : C.faint, fontWeight: 700 }}>{on ? "FIRED" : "clear"}</span>
+            </div>
+          );
+        })}
+      </Panel>
+    );
+  }
+
+  // (4) Three-leg action ladder
+  function LadderCard({ n, title, state, color, caption }) {
+    return (
+      <div style={{ borderRadius: 10, background: "rgba(237,232,220,0.03)", border: "1px solid rgba(237,232,220,0.08)", borderTop: "3px solid " + color, padding: "11px 13px" }}>
+        <div style={{ ...BS.eyebrow, marginBottom: 4 }}>Rung {n}</div>
+        <div style={{ ...BS.serif, fontSize: 15, fontWeight: 700, color: C.text }}>{title}</div>
+        <div style={{ fontSize: 13, fontWeight: 700, color: color, margin: "3px 0 6px" }}>{state}</div>
+        <div style={{ fontSize: 11, color: C.muted, lineHeight: 1.55 }}>{caption}</div>
+      </div>
+    );
+  }
+  function LadderPanel({ d }) {
+    const b = bandOf(d.action_band), fa = d.fast_alarm, tr = d.trend_states;
+    return (
+      <div>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", margin: "0 0 8px" }}>
+          <h2 style={{ ...BS.serif, fontSize: 18, margin: 0, fontWeight: 600, color: C.text }}>The three-leg action ladder</h2>
+          <span style={{ fontSize: 11, color: C.muted }}>the score is a ceiling, not a sell button</span>
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 10 }}>
+          <LadderCard n="1" title="Strategic ceiling" color={b.color} state={"Score " + Math.round(d.headline_median) + " → " + b.label} caption={COPY.ladder.ceiling} />
+          <LadderCard n="2" title="Execution trigger" color={tr.SPY.faber_10mo === "OUT" ? "#E05252" : "#7fbf94"}
+            state={"Faber SPY " + tr.SPY.faber_10mo + " · QQQ " + tr.QQQ.faber_10mo} caption={COPY.ladder.trigger} />
+          <LadderCard n="3" title="Fast alarm (speed)" color={fa.vrp_flag ? "#E05252" : "#5B8DEF"}
+            state={fa.term_structure + " · VRP " + fa.vrp + (fa.vrp_flag ? " (stress)" : "")} caption={COPY.ladder.speed} />
+        </div>
+        <p style={{ fontSize: 11, color: C.faint, lineHeight: 1.6, margin: "8px 2px 0" }}>{COPY.ladder.caveat}</p>
+      </div>
+    );
+  }
+
+  // (5) History browser
+  const HistTip = ({ active, payload }) => {
+    if (!active || !payload || !payload.length) return null;
+    const r = payload[0] && payload[0].payload; if (!r) return null;
+    return (
+      <div style={{ background: C.panel2, border: "1px solid rgba(237,232,220,0.15)", borderRadius: 8, padding: "7px 10px", fontSize: 11 }}>
+        <div style={{ color: C.muted, marginBottom: 3 }}>{(r.computed_at || "").slice(0, 10)}</div>
+        <div style={{ color: C.text }}>median {Math.round(r.median)}</div>
+        {pair(r.iqr) && <div style={{ color: C.muted }}>IQR {Math.round(r.iqr[0])}–{Math.round(r.iqr[1])}</div>}
+      </div>
+    );
+  };
+  function HistoryPanel() {
+    const h = useHistory();
+    const rows = useMemo(() => {
+      const arr = (h.json && h.json.data) || [];
+      return arr.map((r) => ({ computed_at: r.computed_at, median: r.median,
+        iqr: r.iqr, lo: pair(r.iqr) ? r.iqr[0] : r.median, band: pair(r.iqr) ? [r.iqr[0], r.iqr[1]] : [r.median, r.median] }));
+    }, [h.json]);
+    return (
+      <Panel>
+        <H sub="headline median with IQR band · action-band thresholds marked">History</H>
+        {h.loading ? <div style={{ color: C.faint, fontSize: 12, padding: "20px 0" }}>loading…</div> :
+         rows.length === 0 ? <div style={{ color: C.faint, fontSize: 12, padding: "20px 0" }}>no history available</div> : (
+          <ResponsiveContainer width="100%" height={220}>
+            <ComposedChart data={rows} margin={{ top: 6, right: 12, bottom: 4, left: 0 }}>
+              <CartesianGrid stroke="rgba(237,232,220,0.06)" vertical={false} />
+              <XAxis dataKey="computed_at" tickFormatter={(x) => (x || "").slice(2, 7)} tick={{ fill: C.muted, fontSize: 9.5 }} stroke="rgba(237,232,220,0.18)" />
+              <YAxis domain={[0, 100]} ticks={[0, 45, 60, 100]} tick={{ fill: C.muted, fontSize: 9.5 }} stroke="rgba(237,232,220,0.18)" width={28} />
+              <Tooltip content={<HistTip />} />
+              <ReferenceLine y={45} stroke="#E0B458" strokeOpacity={0.4} strokeDasharray="3 3" />
+              <ReferenceLine y={60} stroke="#E05252" strokeOpacity={0.4} strokeDasharray="3 3" />
+              <Area dataKey="band" stroke="none" fill="#5B8DEF" fillOpacity={0.14} isAnimationActive={false} />
+              <Line dataKey="median" stroke="#E0B458" strokeWidth={2} dot={false} isAnimationActive={false} />
+            </ComposedChart>
+          </ResponsiveContainer>
+        )}
+        <div style={{ marginTop: 8, fontSize: 10.5, color: C.faint, lineHeight: 1.6 }}>
+          <b style={{ color: C.muted }}>Methodology changelog:</b> {CHANGELOG.map((c) => c.v + (c.score != null ? " (" + c.score + ")" : "")).join(" → ")}. {COPY.changelogTip}
+        </div>
+      </Panel>
+    );
+  }
+
+  // (6) Epistemic panel
+  function EpistemicPanel({ meta }) {
+    const st = useStatus();
+    const caveats = (meta && meta.epistemic_caveats && meta.epistemic_caveats.length) ? meta.epistemic_caveats : EPISTEMIC;
+    const cov = meta && meta.coverage;
+    const audit = st.json && st.json.science_audit;
+    const sevColor = { error: "#E05252", warn: "#E0B458", info: C.muted };
+    return (
+      <Panel style={{ borderLeft: "3px solid #5AA9A3" }}>
+        <H sub="the honesty is the feature, not the fine print">Epistemic status</H>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 10 }}>
+          {caveats.map((c, i) => <span key={i} style={{ fontSize: 10.5, color: C.dim, background: "rgba(237,232,220,0.04)", border: "1px solid rgba(237,232,220,0.1)", borderRadius: 6, padding: "4px 8px", lineHeight: 1.4 }}>{c}</span>)}
+        </div>
+        {cov && (
+          <div style={{ display: "flex", gap: 14, flexWrap: "wrap", marginBottom: 10 }}>
+            {["S", "D"].map((k) => cov[k] && (
+              <div key={k} style={{ flex: "1 1 160px" }}>
+                <div style={{ fontSize: 10.5, color: C.muted, marginBottom: 3 }}>Block {k} coverage {Math.round(cov[k].coverage * 100)}%{cov[k].degraded ? " · degraded" : ""}</div>
+                <div style={{ height: 6, borderRadius: 99, background: "rgba(237,232,220,0.07)" }}>
+                  <div style={{ width: Math.round(cov[k].coverage * 100) + "%", height: "100%", borderRadius: 99, background: cov[k].degraded ? "#E8853D" : "#7fbf94" }} />
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+        <div style={{ marginBottom: 10 }}>
+          <div style={{ ...BS.eyebrow, marginBottom: 5 }}>What would prove this wrong</div>
+          <ul style={{ margin: 0, paddingLeft: 16, fontSize: 11.5, color: C.dim, lineHeight: 1.6 }}>
+            {FALSIFY.map((f, i) => <li key={i} style={{ marginBottom: 3 }}>{f}</li>)}
+          </ul>
+        </div>
+        {audit && audit.flags && (
+          <div>
+            <div style={{ ...BS.eyebrow, marginBottom: 5 }}>Science audit ({audit.counts ? audit.counts.error + " err · " + audit.counts.warn + " warn · " + audit.counts.info + " info" : audit.flags.length})</div>
+            {audit.flags.map((f, i) => (
+              <div key={i} style={{ display: "flex", gap: 8, padding: "5px 0", borderTop: "1px solid rgba(237,232,220,0.05)" }}>
+                <Pill color={sevColor[f.severity] || C.muted} outline>{f.severity}</Pill>
+                <div style={{ fontSize: 11, color: C.dim, lineHeight: 1.5 }}><b style={{ color: C.text }}>{f.title}</b> — {f.detail}{f.ref ? <span style={{ color: C.faint }}> ({f.ref})</span> : null}</div>
+              </div>
+            ))}
+          </div>
+        )}
+        <p style={{ fontSize: 11, color: C.muted, lineHeight: 1.65, margin: "10px 0 0" }}>{COPY.notProbLong}</p>
+      </Panel>
+    );
+  }
+
+  // (7) Fusion / crisis-analogue
+  function FusionPanel({ d, goToCrisis }) {
+    const rows = useMemo(() => analogues(todayFingerprint(d)), [d]);
+    const top = rows[0];
+    return (
+      <Panel style={{ borderTop: "2px solid #E0B458" }}>
+        <H sub="from Block S composition · analogy, not forecast">{COPY.fusionHeader}</H>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 10 }}>
+          {rows.map((r) => (
+            <button key={r.label} onClick={() => goToCrisis && goToCrisis(r.explorer)} style={{
+              cursor: goToCrisis ? "pointer" : "default", borderRadius: 8, padding: "8px 11px", textAlign: "left",
+              border: "1px solid " + (r === top ? "#E0B458" : "rgba(237,232,220,0.14)"),
+              background: r === top ? "rgba(224,180,88,0.1)" : "transparent", color: C.text, flex: "1 1 150px" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+                <span style={{ ...BS.serif, fontSize: 16, fontWeight: 700 }}>{r.label}</span>
+                <span style={{ fontSize: 12, fontWeight: 700, color: r === top ? "#E0B458" : C.muted }}>{Math.round(r.similarity * 100)}%</span>
+              </div>
+              <div style={{ height: 5, borderRadius: 99, background: "rgba(237,232,220,0.07)", margin: "5px 0" }}>
+                <div style={{ width: Math.round(r.similarity * 100) + "%", height: "100%", borderRadius: 99, background: r === top ? "#E0B458" : C.muted, opacity: 0.8 }} />
+              </div>
+              <div style={{ fontSize: 10, color: C.faint, lineHeight: 1.4 }}>{r.note}</div>
+            </button>
+          ))}
+        </div>
+        {top && (
+          <div style={{ fontSize: 11.5, color: C.dim, lineHeight: 1.6 }}>
+            <b style={{ color: C.text }}>Nearest analogue: {top.label}.</b> Per-dimension gap (smaller = more alike):
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 6 }}>
+              {top.per.map((p) => (
+                <span key={p.k} style={{ fontSize: 10, color: C.muted, background: "rgba(237,232,220,0.04)", borderRadius: 5, padding: "3px 7px" }}>
+                  {p.label}: {p.gap == null ? "n/a" : "Δ" + p.gap.toFixed(2)}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+        <p style={{ fontSize: 11, color: C.faint, lineHeight: 1.6, margin: "10px 0 0" }}>
+          This is a weak, stylized similarity across five hand-set dimensions — an analogy, not a forecast. Today may match NO past
+          crisis (rational general-purpose-technology repricing; n≈4 reference class). The leverage dimension is approximate (no direct
+          block-S leverage indicator). Jordà-Schularick-Taylor: <i>unlevered</i> equity bubbles historically produce shallower macro
+          damage than credit-levered ones — use the nearest analogue to weight which havens in the atlas are most relevant, then judge for yourself.
+        </p>
+        {goToCrisis && top.explorer && (
+          <button onClick={() => goToCrisis(top.explorer)} style={{ marginTop: 10, cursor: "pointer", fontSize: 12, fontWeight: 700,
+            color: "#0E1526", background: "#E0B458", border: "none", borderRadius: 7, padding: "7px 12px" }}>
+            Open the atlas → {top.label} ›
+          </button>
+        )}
+      </Panel>
+    );
+  }
+
+  /* ---------- DetailTab composition ---------- */
+
+  function DetailInner({ goToCrisis }) {
+    const s = useScore();
+    if (s.loading) return <Panel><div style={{ color: C.faint, fontSize: 13 }}>loading the regime gauge…</div></Panel>;
+    if (s.notReady) return <Panel><div style={{ color: C.faint, fontSize: 13 }}>The gauge is warming up — no snapshot has been computed yet. Check back shortly.</div></Panel>;
+    if (s.error || !s.json) return <Panel><div style={{ color: C.faint, fontSize: 13 }}>The regime gauge is unavailable right now. The crisis atlas is unaffected.</div></Panel>;
+    const d = s.json.data, meta = s.json.meta;
+    return (
+      <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+        <HeadlinePanel d={d} meta={meta} />
+        <AnatomyPanel d={d} />
+        <RedFlagPanel d={d} />
+        <LadderPanel d={d} />
+        <HistoryPanel />
+        <FusionPanel d={d} goToCrisis={goToCrisis} />
+        <EpistemicPanel meta={meta} />
+        <div style={{ fontSize: 10, color: C.faint, textAlign: "center", lineHeight: 1.6 }}>
+          bubblegauge {meta.service_version || "3.1.0"} · {meta.disclaimer || "Research, not advice."}{DEMO ? " · DEMO fixture (offline) — re-verify against the live service" : ""}
+        </div>
+      </div>
+    );
+  }
+
+  function DetailTab(props) {
+    return <Boundary fallback={<Panel><div style={{ color: C.faint, fontSize: 13 }}>The regime gauge hit an error and was isolated. The crisis atlas is unaffected.</div></Panel>}>
+      <DetailInner goToCrisis={props.goToCrisis} />
+    </Boundary>;
+  }
+
+  function StripBoundary(props) {
+    return <Boundary fallback={null}><Strip goToDetail={props.goToDetail} /></Boundary>;
+  }
+
+  /* ---------- expose ---------- */
+
+  window.BubbleGauge = {
+    enabled: true,
+    demo: DEMO,
+    apiBase: API_BASE,
+    tab: { id: "bubblegauge", label: "AI Regime" },
+    Strip: StripBoundary,
+    DetailTab: DetailTab,
+  };
+})();
