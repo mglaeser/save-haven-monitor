@@ -6,7 +6,7 @@ An interactive five-tab atlas of assets that rose when markets collapsed — ten
 
 ## Preview locally
 
-`file://` will not work (Babel fetches `dashboard.jsx` via XHR, blocked by CORS). Use any static server:
+`file://` will not work (Babel fetches `dashboard.jsx` via XHR, blocked by CORS). Use any static server, run from the repo root:
 
 ```
 python3 -m http.server 8000
@@ -24,7 +24,22 @@ Push to `main` — that's it. GitHub Pages must be set once to **Settings → Pa
 |---|---|
 | react / react-dom (UMD, production) | 18.3.1 |
 | prop-types | 15.8.1 |
-| recharts (UMD) | 2.12.7 |
-| @babel/standalone | 7 (latest 7.x) |
+| recharts (UMD — loads `umd/Recharts.js`; 2.12.x publishes no `.min.js`) | 2.12.7 |
+| @babel/standalone | 7.29.7 (exact pin, required for SRI) |
 
-To bump: edit the version numbers in the `<script>` tags in `index.html` — for React or Recharts major bumps, first verify the new UMD bundle still exposes the same globals/named exports used in `dashboard.jsx` (React 19 dropped UMD builds; Recharts 3.x changes exports).
+Every script tag carries a Subresource Integrity hash, so the browser refuses to run a script whose bytes don't match the pin. To bump a version: edit the version number in the `<script>` tag in `index.html` **and** recompute its hash from the new file (`openssl dgst -sha384 -binary <file> | openssl base64 -A`, prefix with `sha384-`) — or drop the `integrity`/`crossorigin` attributes from that tag if you'd rather not maintain hashes. For React or Recharts major bumps, first verify the new UMD bundle still exposes the same globals/named exports used in `dashboard.jsx` (React 19 dropped UMD builds; Recharts 3.x changes exports).
+
+## Optional AI-regime gauge
+
+An optional, self-contained integration (`bubblegauge.jsx`) can surface a forward-looking
+"AI bubble regime" gauge — a start-page strip plus a detail tab — fed by an external
+`bubblegauge` REST API (see that service's own `/openapi.json` for the contract). It is
+**dormant by default**: with no query parameter the site is byte-for-byte the original atlas
+(no strip, no extra tab, no network calls). Activate it with `?status-api=<subdomain-key>`, or
+preview it offline against the embedded fixture with `?status-api=demo`. See
+[`INTEGRATION_NOTES.md`](./INTEGRATION_NOTES.md) for the contract, gating, and required CORS
+change on the API side.
+
+## License
+
+MIT — see [LICENSE](./LICENSE).
