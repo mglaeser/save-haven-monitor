@@ -29,6 +29,17 @@ Push to `main` — that's it. GitHub Pages must be set once to **Settings → Pa
 
 Every script tag carries a Subresource Integrity hash, so the browser refuses to run a script whose bytes don't match the pin. To bump a version: edit the version number in the `<script>` tag in `index.html` **and** recompute its hash from the new file (`openssl dgst -sha384 -binary <file> | openssl base64 -A`, prefix with `sha384-`) — or drop the `integrity`/`crossorigin` attributes from that tag if you'd rather not maintain hashes. For React or Recharts major bumps, first verify the new UMD bundle still exposes the same globals/named exports used in `dashboard.jsx` (React 19 dropped UMD builds; Recharts 3.x changes exports).
 
+## Optional AI-regime gauge
+
+An optional, self-contained integration (`bubblegauge.jsx`) can surface a forward-looking
+"AI bubble regime" gauge — a start-page strip plus a detail tab — fed by an external
+`bubblegauge` REST API (see that service's own `/openapi.json` for the contract). It is
+**dormant by default**: with no query parameter the site is byte-for-byte the original atlas
+(no strip, no extra tab, no network calls). Activate it with `?status-api=<subdomain-key>`, or
+preview it offline against the embedded fixture with `?status-api=demo`. See
+[`INTEGRATION_NOTES.md`](./INTEGRATION_NOTES.md) for the contract, gating, and required CORS
+change on the API side.
+
 ## License
 
 MIT — see [LICENSE](./LICENSE).

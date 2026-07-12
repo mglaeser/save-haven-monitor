@@ -7,11 +7,19 @@ no router, no analytics/trackers, no CSS frameworks.**
 ## Architecture (do not change)
 
 - `index.html` — the only page. Loads pinned UMD CDN scripts (unpkg), then
-  `dashboard.jsx` via `<script type="text/babel" data-presets="react">`.
-- `dashboard.jsx` — the single source of truth for all content, data, and
-  calculations. **Do not rewrite, reformat (no Prettier), or "improve" it.
-  Do not touch any data constant, string, number, or calculation.** If you
-  believe you've found a logic bug, report it — do not silently fix behavior.
+  `bubblegauge.jsx`, then `dashboard.jsx`, each via
+  `<script type="text/babel" data-presets="react">` (order matters — bubblegauge
+  defines the `window.BubbleGauge` global that dashboard reads).
+- `dashboard.jsx` — the source of truth for the crisis atlas's content, data, and
+  calculations. **Do not touch any crisis data constant, string, number, or
+  calculation, and do not reformat (no Prettier).** If you believe you've found a
+  logic bug, report it — do not silently fix behavior. (The only sanctioned edits
+  are the small, clearly-marked bubblegauge integration hooks near the top and in
+  the app shell; the frozen-content rule above still governs everything else.)
+- `bubblegauge.jsx` — OPTIONAL, self-contained AI-regime-gauge integration. It
+  no-ops entirely (defines/mounts/fetches nothing) unless `?status-api=<key>` is
+  present, so with no query param the site is byte-for-byte the original atlas.
+  See `INTEGRATION_NOTES.md` for the contract, gating, and offline `demo` mode.
 - `.nojekyll` — empty, disables Jekyll processing.
 - All URLs relative (`./dashboard.jsx`) — the site must work at any base path.
 
