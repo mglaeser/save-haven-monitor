@@ -2,6 +2,10 @@ const { useState, useMemo } = React;
 const { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
         ReferenceLine, ResponsiveContainer, Area, ComposedChart } = Recharts;
 
+// Optional bubblegauge integration (bubblegauge.jsx loads first and sets this).
+// When the ?status-api gate is absent it is { enabled: false } and nothing below changes.
+const BG = (typeof window !== "undefined" && window.BubbleGauge) || { enabled: false };
+
 /* ============================================================
    CRISIS WINNERS — Interactive Atlas
    All series are STYLIZED monthly reconstructions anchored to
@@ -1782,6 +1786,7 @@ const TABS = [
 
 function CrisisWinnersDashboard() {
   const [tab, setTab] = useState("explorer");
+  const tabs = BG.enabled ? TABS.concat([BG.tab]) : TABS;
   return (
     <div style={S.page}>
       <div style={{ maxWidth: 1060, margin: "0 auto", padding: "22px 14px 40px" }}>
@@ -1811,8 +1816,10 @@ function CrisisWinnersDashboard() {
           </Expl>
         </div>
 
+        {BG.enabled && <BG.Strip goToDetail={() => setTab("bubblegauge")} />}
+
         <div className="tabbar-scroll" style={{ display: "flex", gap: 6, margin: "18px 0 16px", borderBottom: "1px solid rgba(237,232,220,0.1)", overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
-          {TABS.map((t) => (
+          {tabs.map((t) => (
             <button key={t.id} onClick={() => setTab(t.id)} style={{
               padding: "9px 14px", background: "transparent", cursor: "pointer", fontSize: 13.5, whiteSpace: "nowrap",
               border: "none", borderBottom: tab === t.id ? "2px solid #E0B458" : "2px solid transparent",
@@ -1826,6 +1833,7 @@ function CrisisWinnersDashboard() {
         {tab === "aggregate" && <Aggregate />}
         {tab === "analytics" && <Analytics />}
         {tab === "playbook" && <Playbook />}
+        {tab === "bubblegauge" && BG.enabled && <BG.DetailTab goToCrisis={() => setTab("explorer")} />}
 
         <div style={{ marginTop: 26, paddingTop: 14, borderTop: "1px solid rgba(237,232,220,0.1)", fontSize: 10.5, color: "#616a7d", lineHeight: 1.7 }}>
           Key sources: Baur &amp; McDermott (2010) <i>J. Banking &amp; Finance</i> · Baele, Bekaert, Inghelbrecht &amp; Wei (2020) <i>RFS</i> ·

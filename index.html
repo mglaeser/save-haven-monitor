@@ -51,6 +51,8 @@
   <script src="https://unpkg.com/prop-types@15.8.1/prop-types.min.js" integrity="sha384-/AfDwVDXNopzPvhxMPQ11y1OCpR6mVkWx47qzSwIiquvxkcMkZddEzDNtIOtfCpk" crossorigin="anonymous"></script>
   <script src="https://unpkg.com/recharts@2.12.7/umd/Recharts.js" integrity="sha384-d1XH4LhwLW8j0l6VXMP8yJabdGY9ZqtZk7k7PaPk5NoUCcZ/hDkL5aaKioKQbcZg" crossorigin="anonymous"></script>
   <script src="https://unpkg.com/@babel/standalone@7.29.7/babel.min.js" integrity="sha384-ezQ6HS3FLspd9te19o2McUV6FAK091+GG7KO54f/R8DKgCDi7fULhapNrd5LY+vG" crossorigin="anonymous"></script>
+  <!-- Optional bubblegauge integration. No-ops (defines/mounts/fetches nothing) unless ?status-api=<key> is present. Must load before dashboard.jsx. -->
+  <script type="text/babel" data-presets="react" src="./bubblegauge.jsx"></script>
   <script type="text/babel" data-presets="react" src="./dashboard.jsx"></script>
 </body>
 </html>
