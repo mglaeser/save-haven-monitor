@@ -30,4 +30,18 @@ module.exports = function register(t) {
     const s = JSON.parse(read("audit/engagement-status.json"));
     if (s.production_eligible === true) ok(s.security_scope_audited === true, "production_eligible requires security scope audited");
   });
+
+  t("constitution + hash-bound digest are present and the digest binding matches the constitution", () => {
+    const crypto = require("crypto");
+    ok(exists("governance/constitution.md"), "constitution present");
+    ok(exists("governance/constitution-digest.md"), "one-page digest present");
+    const actual = crypto.createHash("sha256").update(read("governance/constitution.md")).digest("hex");
+    const digest = read("governance/constitution-digest.md");
+    const m = digest.match(/sha256 `([0-9a-f]{64})`/);
+    ok(m, "digest declares a bound sha256");
+    ok(m[1] === actual, `digest binding drifted from the constitution: digest says ${m && m[1]}, constitution is ${actual}. Re-generate the digest.`);
+    // engagement-status must carry the same attested hash
+    const s = JSON.parse(read("audit/engagement-status.json"));
+    ok(s.constitution_hash === actual, `engagement-status.constitution_hash (${s.constitution_hash}) != constitution sha256 (${actual})`);
+  });
 };

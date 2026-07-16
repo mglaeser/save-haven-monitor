@@ -6,7 +6,9 @@
   "type": "commonjs",
   "scripts": {
     "test": "node run.js",
-    "gate": "node gate.js"
+    "gate": "node gate.js",
+    "mutation": "node mutation.js",
+    "all": "node run.js && node mutation.js && node gate.js"
   },
   "devDependencies": {
     "playwright-core": "^1.40.0"

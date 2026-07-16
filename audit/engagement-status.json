@@ -4,30 +4,33 @@
  "active_check_count": 79,
  "present_check_count": 79,
  "evidenced_check_count": 77,
- "part1_status": "IN_PROGRESS",
+ "part1_status": "AUDIT_COMPLETE_PENDING_OWNER_ACTIONS",
  "part2_status": "NOT_STARTED",
- "phase": "3",
+ "phase": "7",
  "highest_open_band": "STOP-SHIP",
  "open_stop_ship_count": 1,
- "open_blocker_1_count": 10,
+ "open_blocker_1_count": 9,
  "open_blocker_2_count": 16,
  "security_scope_audited": false,
- "constitution_state": "TEMPLATE",
+ "constitution_state": "RATIFIED",
  "production_eligible": false,
- "production_eligible_reason": "computed: Part 2 (Track C incl. STOP-SHIP C-01/C-04) not audited; open blockers in v1.0 remediation pending",
+ "production_eligible_reason": "computed: part2_status NOT_STARTED (Track C incl. STOP-SHIP C-01/C-04 unaudited); open v1.0 blockers residualized to owner (R-GATE/R-VENDOR/R-SEP)",
  "pending_check_ids": [
   "B-03",
   "B-24"
  ],
- "mandate_manifest_hash": null,
- "constitution_hash": null,
+ "mandate_manifest_hash": "7d5d5b95d6a9b89176d3b0040a7d30f988a7a87b3d4b45c055bf39023cf6d563",
+ "constitution_hash": "4c13b3acd7ba05e28fed6fa7e7d3f70022f4d2d464a4d7556f4968f1de5f2434",
  "computed_at": "2026-07-16",
  "computed_by": "phase-3 merge (gate.js verifies these computed fields)",
  "verdict_distribution": {
-  "PASS": 0,
+  "PASS": 2,
   "FAIL": 26,
-  "PARTIAL": 38,
+  "PARTIAL": 36,
   "NOT-APPLICABLE": 13,
   "NO-EVIDENCE": 2
- }
+ },
+ "combined_mandate_hash": "215bb2314113089da80df0674a3aa28b0e54ef9637163047bf4fec56640f16ec",
+ "part1_status_note": "All 79 checks evidenced; regime standing; constitution ratified. NOT 'COMPLETE' per mandate DoD #3: 1 STOP-SHIP + 9 BLOCKER-1 + 16 BLOCKER-2 remain OPEN because their closing actions are owner command-authority (R-GATE branch protection, R-VENDOR second vendor, R-SEP write-separation) \u2014 residualized, not faked closed.",
+ "open_blockers_owner_gated": true
 }

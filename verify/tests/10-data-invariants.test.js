@@ -63,6 +63,16 @@ module.exports = function register(t) {
     eq(a, b, "runFan determinism");
   });
 
+  t("runFan golden outputs match (characterization — kills RNG/bootstrap mutations)", () => {
+    const market = d.runFan([["dotcom", "mkt"], ["depression", "mkt"], ["japan", "mkt"]], 7, 1500);
+    const gold = d.runFan([["stagflation", "au"], ["gfc", "au"], ["euro", "au"]], 11, 1500);
+    const bonds = d.runFan([["dotcom", "ust"], ["depression", "gb"], ["japan", "jgb"]], 13, 1500);
+    eq(Math.round(market.stats.med36), 62, "market med36");
+    eq(Math.round(gold.stats.med36), 132, "gold med36");
+    eq(Math.round(bonds.stats.med36), 123, "bonds med36");
+    near(market.stats.mdd, -0.6307, 0.02, "market median max-decline-below-entry");
+  });
+
   t("buildAggregate returns 121 rows spanning m=-60..60 and excludes the potential crisis from history", () => {
     const rows = d.buildAggregate();
     eq(rows.length, 121, "aggregate rows");
