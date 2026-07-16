@@ -1026,6 +1026,25 @@
   }
   function AiLivePanel() { return <Boundary fallback={null}><AiLiveInner /></Boundary>; }
 
+  // Small live/static badge for the tabs that consume the re-anchored series
+  // (Aggregate 2026 overlays, Analytics crisis clock). keys = AI-2026 line keys used there.
+  function LiveBadgeInner({ keys, label }) {
+    const f = useFeed();
+    const live = useMemo(function () { return f.json ? buildAiLive(f.json) : null; }, [f.json]);
+    if (f.loading) return null;
+    const ks = keys && keys.length ? keys : Object.keys(AI_MAP);
+    const pre = label ? label + ": " : "";
+    if (!live) {
+      return <Pill color={C.muted} outline title="The bubblegauge feed is unavailable — these 2026 lines use the static Jul 2026 anchors.">{pre}static · Jul 2026 snapshot</Pill>;
+    }
+    const staticKs = ks.filter(function (k) { return !live.live[k]; });
+    if (!staticKs.length) {
+      return <Pill color="#7fbf94" title={"2026 lines re-anchored from the bubblegauge feed" + (live.anchorPartial ? " — " + live.anchorMonth + " is month-to-date" : "")}>{pre}LIVE · {live.anchorMonth}{live.anchorPartial ? " (mtd)" : ""}</Pill>;
+    }
+    return <Pill color="#d9b45c" title={"Feed partially available — static Jul 2026 snapshot for: " + staticKs.join(", ")}>{pre}PARTLY LIVE · {live.anchorMonth}</Pill>;
+  }
+  function LiveBadge(props) { return <Boundary fallback={null}><LiveBadgeInner keys={props.keys} label={props.label} /></Boundary>; }
+
   /* ---------- expose ---------- */
 
   window.BubbleGauge = {
@@ -1037,5 +1056,6 @@
     DetailTab: DetailTab,
     useAiLive: useAiLive,
     AiLivePanel: AiLivePanel,
+    LiveBadge: LiveBadge,
   };
 })();
