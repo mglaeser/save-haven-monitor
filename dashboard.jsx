@@ -878,6 +878,8 @@ function Aggregate() {
       <div style={{ ...S.panel, padding: "16px 18px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 4 }}>
           <h2 style={{ ...S.serif, fontSize: 22, margin: 0, fontWeight: 600 }}>The aggregate anatomy of a crisis</h2>
+          {/* bubblegauge integration seam: overlay live/static indicator */}
+          {BG.enabled && BG.LiveBadge && <BG.LiveBadge keys={["mkt", "au", "cash", "ust"]} label="2026 overlays" />}
           <Expl>
             <b>This tab in one breath.</b> We averaged all ten historical crises into one "typical crisis" per asset
             family, then laid today's 2026 situation (dashed) on top. Both are forced to equal 100 at the peak, so the
@@ -1117,6 +1119,8 @@ function Analytics() {
       <div style={{ ...S.panel, padding: "14px 8px 6px 0", marginTop: 12 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", padding: "0 14px 8px 18px" }}>
           <div style={{ ...S.serif, fontSize: 16, fontWeight: 600 }}>Crisis clock — where does today correlate most?</div>
+          {/* bubblegauge integration seam: "today" window live/static indicator */}
+          {BG.enabled && BG.LiveBadge && <BG.LiveBadge keys={["mkt"]} label="today window" />}
           <Expl>
             <b>How to read this.</b> We took today's last 24 months of NASDAQ-100 and slid it along each historical
             bubble's path, asking at every position: how similar are the shapes? The horizontal axis is the position —
