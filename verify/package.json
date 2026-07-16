@@ -1,0 +1,14 @@
+{
+  "name": "crisis-winners-verify",
+  "version": "1.0.0",
+  "private": true,
+  "description": "CI-only verification harness (the deterministic gate). NOT part of the served zero-build site.",
+  "type": "commonjs",
+  "scripts": {
+    "test": "node run.js",
+    "gate": "node gate.js"
+  },
+  "devDependencies": {
+    "playwright-core": "^1.40.0"
+  }
+}

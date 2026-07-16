@@ -1,8 +1,30 @@
 # Constraints for this repo (zero-build GitHub Pages site)
 
-Deployment = `git push` to `main`, nothing else. **No bundler, no package.json, no
-node_modules, no GitHub Actions, no build step, no service workers, no TypeScript,
-no router, no analytics/trackers, no CSS frameworks.**
+**The served site is zero-build.** Deployment = `git push` to `main`, nothing else. The
+browser transpiles the JSX; there is no bundler and no build/transform step between the
+repository and what Pages serves. For the served site: **no bundler, no build step, no
+service workers, no TypeScript, no router, no analytics/trackers, no CSS frameworks, and
+no npm dependency of the shipped files.**
+
+**Exception — the verification harness (`verify/`) is CI-only tooling, not part of the
+served site.** It has its own `package.json`/`node_modules` (gitignored) and a GitHub
+Actions workflow (`.github/workflows/verify.yml`) that runs the deterministic gate on every
+push/PR. This does not violate zero-build: it verifies the site, it does not build or deploy
+it. See `audit/decisions/DR-001` and `DR-002`. Do not add a build/transform step to the
+*served* files, and do not add npm deps to the *shipped* code.
+
+## Governance (no human reviews changes — by design)
+
+This repository is maintained without human code review. Before changing anything, run the
+gate: `cd verify && npm install && node run.js && node gate.js`. It must be green.
+`node run.js` runs the suite (data invariants, golden content hash, static security, SRI,
+supply-chain pins, gate self-test); `node gate.js` enforces findings-file integrity and the
+fail-closed production-eligibility rule. The audit apparatus lives in `audit/` (findings,
+catalogue, engagement status) and the standing regime is being instantiated per the
+due-diligence mandate. **Changing frozen crisis data changes the golden hash
+(`verify/golden/data-hash.json`) — that is intentional friction: it requires a decision
+record.** Once `governance/constitution.md` is ratified, every agent session must load it
+and declare its hash.
 
 ## Architecture (do not change)
 

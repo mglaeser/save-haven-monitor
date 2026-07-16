@@ -1,0 +1,28 @@
+# Deterministic verification gate (mandate S1 / Article I). Runs on every push and PR.
+# It VERIFIES the served site; it does not build or deploy it — Pages still serves the
+# static files directly from main. See audit/decisions/DR-002-ci-gate.md.
+name: verify
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: ["**"]
+permissions:
+  contents: read
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: verify
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Install harness deps (CI-only; not shipped)
+        run: npm install --no-audit --no-fund
+      - name: Run verification suite
+        run: node run.js
+      - name: Run policy gate (fail-closed)
+        run: node gate.js
