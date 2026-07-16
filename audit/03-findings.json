@@ -1,0 +1,1777 @@
+{
+ "catalogue_version": "1.0",
+ "frozen_commit": "d19556d62e80ec3ca1f5285fd610b0dcc379dd12",
+ "records": [
+  {
+   "check_id": "A-01",
+   "track": "A",
+   "priority": 9,
+   "founding_band": "BLOCKER-1",
+   "verdict": "NO-EVIDENCE",
+   "na_justification": null,
+   "probe": null,
+   "evidence": null,
+   "standing_control": null,
+   "structural_fix": null,
+   "residual_risk": null,
+   "substitution": null,
+   "wave": null,
+   "history": [
+    {
+     "date": "2026-07-16",
+     "event": "initialised NO-EVIDENCE at Phase 0"
+    }
+   ]
+  },
+  {
+   "check_id": "A-02",
+   "track": "A",
+   "priority": 9,
+   "founding_band": "BLOCKER-1",
+   "verdict": "NO-EVIDENCE",
+   "na_justification": null,
+   "probe": null,
+   "evidence": null,
+   "standing_control": null,
+   "structural_fix": {
+    "available": true,
+    "taken": null,
+    "rationale": null
+   },
+   "residual_risk": null,
+   "substitution": null,
+   "wave": null,
+   "history": [
+    {
+     "date": "2026-07-16",
+     "event": "initialised NO-EVIDENCE at Phase 0"
+    }
+   ]
+  },
+  {
+   "check_id": "A-03",
+   "track": "A",
+   "priority": 6,
+   "founding_band": "SHOULD-FIX",
+   "verdict": "NO-EVIDENCE",
+   "na_justification": null,
+   "probe": null,
+   "evidence": null,
+   "standing_control": null,
+   "structural_fix": null,
+   "residual_risk": null,
+   "substitution": null,
+   "wave": null,
+   "history": [
+    {
+     "date": "2026-07-16",
+     "event": "initialised NO-EVIDENCE at Phase 0"
+    }
+   ]
+  },
+  {
+   "check_id": "A-04",
+   "track": "A",
+   "priority": 8,
+   "founding_band": "BLOCKER-2",
+   "verdict": "NO-EVIDENCE",
+   "na_justification": null,
+   "probe": null,
+   "evidence": null,
+   "standing_control": null,
+   "structural_fix": null,
+   "residual_risk": null,
+   "substitution": null,
+   "wave": null,
+   "history": [
+    {
+     "date": "2026-07-16",
+     "event": "initialised NO-EVIDENCE at Phase 0"
+    }
+   ]
+  },
+  {
+   "check_id": "A-05",
+   "track": "A",
+   "priority": 7,
+   "founding_band": "MUST-FIX",
+   "verdict": "NO-EVIDENCE",
+   "na_justification": null,
+   "probe": null,
+   "evidence": null,
+   "standing_control": null,
+   "structural_fix": {
+    "available": true,
+    "taken": null,
+    "rationale": null
+   },
+   "residual_risk": null,
+   "substitution": null,
+   "wave": null,
+   "history": [
+    {
+     "date": "2026-07-16",
+     "event": "initialised NO-EVIDENCE at Phase 0"
+    }
+   ]
+  },
+  {
+   "check_id": "A-06",
+   "track": "A",
+   "priority": 9,
+   "founding_band": "BLOCKER-1",
+   "verdict": "NO-EVIDENCE",
+   "na_justification": null,
+   "probe": null,
+   "evidence": null,
+   "standing_control": null,
+   "structural_fix": {
+    "available": true,
+    "taken": null,
+    "rationale": null
+   },
+   "residual_risk": null,
+   "substitution": null,
+   "wave": null,
+   "history": [
+    {
+     "date": "2026-07-16",
+     "event": "initialised NO-EVIDENCE at Phase 0"
+    }
+   ]
+  },
+  {
+   "check_id": "A-07",
+   "track": "A",
+   "priority": 7,
+   "founding_band": "MUST-FIX",
+   "verdict": "NO-EVIDENCE",
+   "na_justification": null,
+   "probe": null,
+   "evidence": null,
+   "standing_control": null,
+   "structural_fix": {
+    "available": true,
+    "taken": null,
+    "rationale": null
+   },
+   "residual_risk": null,
+   "substitution": null,
+   "wave": null,
+   "history": [
+    {
+     "date": "2026-07-16",
+     "event": "initialised NO-EVIDENCE at Phase 0"
+    }
+   ]
+  },
+  {
+   "check_id": "A-08",
+   "track": "A",
+   "priority": 9,
+   "founding_band": "BLOCKER-1",
+   "verdict": "NO-EVIDENCE",
+   "na_justification": null,
+   "probe": null,
+   "evidence": null,
+   "standing_control": null,
+   "structural_fix": null,
+   "residual_risk": null,
+   "substitution": null,
+   "wave": null,
+   "history": [
+    {
+     "date": "2026-07-16",
+     "event": "initialised NO-EVIDENCE at Phase 0"
+    }
+   ]
+  },
+  {
+   "check_id": "A-09",
+   "track": "A",
+   "priority": 8,
+   "founding_band": "BLOCKER-2",
+   "verdict": "NO-EVIDENCE",
+   "na_justification": null,
+   "probe": null,
+   "evidence": null,
+   "standing_control": null,
+   "structural_fix": {
+    "available": true,
+    "taken": null,
+    "rationale": null
+   },
+   "residual_risk": null,
+   "substitution": null,
+   "wave": null,
+   "history": [
+    {
+     "date": "2026-07-16",
+     "event": "initialised NO-EVIDENCE at Phase 0"
+    }
+   ]
+  },
+  {
+   "check_id": "A-10",
+   "track": "A",
+   "priority": 8,
+   "founding_band": "BLOCKER-2",
+   "verdict": "NO-EVIDENCE",
+   "na_justification": null,
+   "probe": null,
+   "evidence": null,
+   "standing_control": null,
+   "structural_fix": null,
+   "residual_risk": null,
+   "substitution": null,
+   "wave": null,
+   "history": [
+    {
+     "date": "2026-07-16",
+     "event": "initialised NO-EVIDENCE at Phase 0"
+    }
+   ]
+  },
+  {
+   "check_id": "A-11",
+   "track": "A",
+   "priority": 7,
+   "founding_band": "MUST-FIX",
+   "verdict": "NO-EVIDENCE",
+   "na_justification": null,
+   "probe": null,
+   "evidence": null,
+   "standing_control": null,
+   "structural_fix": {
+    "available": true,
+    "taken": null,
+    "rationale": null
+   },
+   "residual_risk": null,
+   "substitution": null,
+   "wave": null,
+   "history": [
+    {
+     "date": "2026-07-16",
+     "event": "initialised NO-EVIDENCE at Phase 0"
+    }
+   ]
+  },
+  {
+   "check_id": "A-12",
+   "track": "A",
+   "priority": 7,
+   "founding_band": "MUST-FIX",
+   "verdict": "NO-EVIDENCE",
+   "na_justification": null,
+   "probe": null,
+   "evidence": null,
+   "standing_control": null,
+   "structural_fix": {
+    "available": true,
+    "taken": null,
+    "rationale": null
+   },
+   "residual_risk": null,
+   "substitution": null,
+   "wave": null,
+   "history": [
+    {
+     "date": "2026-07-16",
+     "event": "initialised NO-EVIDENCE at Phase 0"
+    }
+   ]
+  },
+  {
+   "check_id": "A-13",
+   "track": "A",
+   "priority": 7,
+   "founding_band": "MUST-FIX",
+   "verdict": "NO-EVIDENCE",
+   "na_justification": null,
+   "probe": null,
+   "evidence": null,
+   "standing_control": null,
+   "structural_fix": null,
+   "residual_risk": null,
+   "substitution": null,
+   "wave": null,
+   "history": [
+    {
+     "date": "2026-07-16",
+     "event": "initialised NO-EVIDENCE at Phase 0"
+    }
+   ]
+  },
+  {
+   "check_id": "A-14",
+   "track": "A",
+   "priority": 6,
+   "founding_band": "SHOULD-FIX",
+   "verdict": "NO-EVIDENCE",
+   "na_justification": null,
+   "probe": null,
+   "evidence": null,
+   "standing_control": null,
+   "structural_fix": null,
+   "residual_risk": null,
+   "substitution": null,
+   "wave": null,
+   "history": [
+    {
+     "date": "2026-07-16",
+     "event": "initialised NO-EVIDENCE at Phase 0"
+    }
+   ]
+  },
+  {
+   "check_id": "A-15",
+   "track": "A",
+   "priority": 5,
+   "founding_band": "PLAN",
+   "verdict": "NO-EVIDENCE",
+   "na_justification": null,
+   "probe": null,
+   "evidence": null,
+   "standing_control": null,
+   "structural_fix": null,
+   "residual_risk": null,
+   "substitution": null,
+   "wave": null,
+   "history": [
+    {
+     "date": "2026-07-16",
+     "event": "initialised NO-EVIDENCE at Phase 0"
+    }
+   ]
+  },
+  {
+   "check_id": "A-16",
+   "track": "A",
+   "priority": 6,
+   "founding_band": "SHOULD-FIX",
+   "verdict": "NO-EVIDENCE",
+   "na_justification": null,
+   "probe": null,
+   "evidence": null,
+   "standing_control": null,
+   "structural_fix": null,
+   "residual_risk": null,
+   "substitution": null,
+   "wave": null,
+   "history": [
+    {
+     "date": "2026-07-16",
+     "event": "initialised NO-EVIDENCE at Phase 0"
+    }
+   ]
+  },
+  {
+   "check_id": "A-17",
+   "track": "A",
+   "priority": 8,
+   "founding_band": "BLOCKER-2",
+   "verdict": "NO-EVIDENCE",
+   "na_justification": null,
+   "probe": null,
+   "evidence": null,
+   "standing_control": null,
+   "structural_fix": null,
+   "residual_risk": null,
+   "substitution": null,
+   "wave": null,
+   "history": [
+    {
+     "date": "2026-07-16",
+     "event": "initialised NO-EVIDENCE at Phase 0"
+    }
+   ]
+  },
+  {
+   "check_id": "A-18",
+   "track": "A",
+   "priority": 7,
+   "founding_band": "MUST-FIX",
+   "verdict": "NO-EVIDENCE",
+   "na_justification": null,
+   "probe": null,
+   "evidence": null,
+   "standing_control": null,
+   "structural_fix": null,
+   "residual_risk": null,
+   "substitution": null,
+   "wave": null,
+   "history": [
+    {
+     "date": "2026-07-16",
+     "event": "initialised NO-EVIDENCE at Phase 0"
+    }
+   ]
+  },
+  {
+   "check_id": "A-19",
+   "track": "A",
+   "priority": 7,
+   "founding_band": "MUST-FIX",
+   "verdict": "NO-EVIDENCE",
+   "na_justification": null,
+   "probe": null,
+   "evidence": null,
+   "standing_control": null,
+   "structural_fix": {
+    "available": true,
+    "taken": null,
+    "rationale": null
+   },
+   "residual_risk": null,
+   "substitution": null,
+   "wave": null,
+   "history": [
+    {
+     "date": "2026-07-16",
+     "event": "initialised NO-EVIDENCE at Phase 0"
+    }
+   ]
+  },
+  {
+   "check_id": "A-20",
+   "track": "A",
+   "priority": 6,
+   "founding_band": "SHOULD-FIX",
+   "verdict": "NO-EVIDENCE",
+   "na_justification": null,
+   "probe": null,
+   "evidence": null,
+   "standing_control": null,
+   "structural_fix": {
+    "available": true,
+    "taken": null,
+    "rationale": null
+   },
+   "residual_risk": null,
+   "substitution": null,
+   "wave": null,
+   "history": [
+    {
+     "date": "2026-07-16",
+     "event": "initialised NO-EVIDENCE at Phase 0"
+    }
+   ]
+  },
+  {
+   "check_id": "A-21",
+   "track": "A",
+   "priority": 7,
+   "founding_band": "MUST-FIX",
+   "verdict": "NO-EVIDENCE",
+   "na_justification": null,
+   "probe": null,
+   "evidence": null,
+   "standing_control": null,
+   "structural_fix": null,
+   "residual_risk": null,
+   "substitution": null,
+   "wave": null,
+   "history": [
+    {
+     "date": "2026-07-16",
+     "event": "initialised NO-EVIDENCE at Phase 0"
+    }
+   ]
+  },
+  {
+   "check_id": "A-22",
+   "track": "A",
+   "priority": 8,
+   "founding_band": "BLOCKER-2",
+   "verdict": "NO-EVIDENCE",
+   "na_justification": null,
+   "probe": null,
+   "evidence": null,
+   "standing_control": null,
+   "structural_fix": null,
+   "residual_risk": null,
+   "substitution": null,
+   "wave": null,
+   "history": [
+    {
+     "date": "2026-07-16",
+     "event": "initialised NO-EVIDENCE at Phase 0"
+    }
+   ]
+  },
+  {
+   "check_id": "A-23",
+   "track": "A",
+   "priority": 7,
+   "founding_band": "MUST-FIX",
+   "verdict": "NO-EVIDENCE",
+   "na_justification": null,
+   "probe": null,
+   "evidence": null,
+   "standing_control": null,
+   "structural_fix": null,
+   "residual_risk": null,
+   "substitution": null,
+   "wave": null,
+   "history": [
+    {
+     "date": "2026-07-16",
+     "event": "initialised NO-EVIDENCE at Phase 0"
+    }
+   ]
+  },
+  {
+   "check_id": "A-24",
+   "track": "A",
+   "priority": 9,
+   "founding_band": "BLOCKER-1",
+   "verdict": "NO-EVIDENCE",
+   "na_justification": null,
+   "probe": null,
+   "evidence": null,
+   "standing_control": null,
+   "structural_fix": null,
+   "residual_risk": null,
+   "substitution": null,
+   "wave": null,
+   "history": [
+    {
+     "date": "2026-07-16",
+     "event": "initialised NO-EVIDENCE at Phase 0"
+    }
+   ]
+  },
+  {
+   "check_id": "A-25",
+   "track": "A",
+   "priority": 8,
+   "founding_band": "BLOCKER-2",
+   "verdict": "NO-EVIDENCE",
+   "na_justification": null,
+   "probe": null,
+   "evidence": null,
+   "standing_control": null,
+   "structural_fix": null,
+   "residual_risk": null,
+   "substitution": null,
+   "wave": null,
+   "history": [
+    {
+     "date": "2026-07-16",
+     "event": "initialised NO-EVIDENCE at Phase 0"
+    }
+   ]
+  },
+  {
+   "check_id": "A-26",
+   "track": "A",
+   "priority": 7,
+   "founding_band": "MUST-FIX",
+   "verdict": "NO-EVIDENCE",
+   "na_justification": null,
+   "probe": null,
+   "evidence": null,
+   "standing_control": null,
+   "structural_fix": null,
+   "residual_risk": null,
+   "substitution": null,
+   "wave": null,
+   "history": [
+    {
+     "date": "2026-07-16",
+     "event": "initialised NO-EVIDENCE at Phase 0"
+    }
+   ]
+  },
+  {
+   "check_id": "A-27",
+   "track": "A",
+   "priority": 7,
+   "founding_band": "MUST-FIX",
+   "verdict": "NO-EVIDENCE",
+   "na_justification": null,
+   "probe": null,
+   "evidence": null,
+   "standing_control": null,
+   "structural_fix": null,
+   "residual_risk": null,
+   "substitution": null,
+   "wave": null,
+   "history": [
+    {
+     "date": "2026-07-16",
+     "event": "initialised NO-EVIDENCE at Phase 0"
+    }
+   ]
+  },
+  {
+   "check_id": "A-28",
+   "track": "A",
+   "priority": 7,
+   "founding_band": "MUST-FIX",
+   "verdict": "NO-EVIDENCE",
+   "na_justification": null,
+   "probe": null,
+   "evidence": null,
+   "standing_control": null,
+   "structural_fix": {
+    "available": true,
+    "taken": null,
+    "rationale": null
+   },
+   "residual_risk": null,
+   "substitution": null,
+   "wave": null,
+   "history": [
+    {
+     "date": "2026-07-16",
+     "event": "initialised NO-EVIDENCE at Phase 0"
+    }
+   ]
+  },
+  {
+   "check_id": "A-29",
+   "track": "A",
+   "priority": 6,
+   "founding_band": "SHOULD-FIX",
+   "verdict": "NO-EVIDENCE",
+   "na_justification": null,
+   "probe": null,
+   "evidence": null,
+   "standing_control": null,
+   "structural_fix": {
+    "available": true,
+    "taken": null,
+    "rationale": null
+   },
+   "residual_risk": null,
+   "substitution": null,
+   "wave": null,
+   "history": [
+    {
+     "date": "2026-07-16",
+     "event": "initialised NO-EVIDENCE at Phase 0"
+    }
+   ]
+  },
+  {
+   "check_id": "A-30",
+   "track": "A",
+   "priority": 6,
+   "founding_band": "SHOULD-FIX",
+   "verdict": "NO-EVIDENCE",
+   "na_justification": null,
+   "probe": null,
+   "evidence": null,
+   "standing_control": null,
+   "structural_fix": null,
+   "residual_risk": null,
+   "substitution": null,
+   "wave": null,
+   "history": [
+    {
+     "date": "2026-07-16",
+     "event": "initialised NO-EVIDENCE at Phase 0"
+    }
+   ]
+  },
+  {
+   "check_id": "A-31",
+   "track": "A",
+   "priority": 6,
+   "founding_band": "SHOULD-FIX",
+   "verdict": "NO-EVIDENCE",
+   "na_justification": null,
+   "probe": null,
+   "evidence": null,
+   "standing_control": null,
+   "structural_fix": {
+    "available": true,
+    "taken": null,
+    "rationale": null
+   },
+   "residual_risk": null,
+   "substitution": null,
+   "wave": null,
+   "history": [
+    {
+     "date": "2026-07-16",
+     "event": "initialised NO-EVIDENCE at Phase 0"
+    }
+   ]
+  },
+  {
+   "check_id": "A-32",
+   "track": "A",
+   "priority": 7,
+   "founding_band": "MUST-FIX",
+   "verdict": "NO-EVIDENCE",
+   "na_justification": null,
+   "probe": null,
+   "evidence": null,
+   "standing_control": null,
+   "structural_fix": null,
+   "residual_risk": null,
+   "substitution": null,
+   "wave": null,
+   "history": [
+    {
+     "date": "2026-07-16",
+     "event": "initialised NO-EVIDENCE at Phase 0"
+    }
+   ]
+  },
+  {
+   "check_id": "A-33",
+   "track": "A",
+   "priority": 8,
+   "founding_band": "BLOCKER-2",
+   "verdict": "NO-EVIDENCE",
+   "na_justification": null,
+   "probe": null,
+   "evidence": null,
+   "standing_control": null,
+   "structural_fix": null,
+   "residual_risk": null,
+   "substitution": null,
+   "wave": null,
+   "history": [
+    {
+     "date": "2026-07-16",
+     "event": "initialised NO-EVIDENCE at Phase 0"
+    }
+   ]
+  },
+  {
+   "check_id": "A-34",
+   "track": "A",
+   "priority": 8,
+   "founding_band": "BLOCKER-2",
+   "verdict": "NO-EVIDENCE",
+   "na_justification": null,
+   "probe": null,
+   "evidence": null,
+   "standing_control": null,
+   "structural_fix": {
+    "available": true,
+    "taken": null,
+    "rationale": null
+   },
+   "residual_risk": null,
+   "substitution": null,
+   "wave": null,
+   "history": [
+    {
+     "date": "2026-07-16",
+     "event": "initialised NO-EVIDENCE at Phase 0"
+    }
+   ]
+  },
+  {
+   "check_id": "A-35",
+   "track": "A",
+   "priority": 6,
+   "founding_band": "SHOULD-FIX",
+   "verdict": "NO-EVIDENCE",
+   "na_justification": null,
+   "probe": null,
+   "evidence": null,
+   "standing_control": null,
+   "structural_fix": null,
+   "residual_risk": null,
+   "substitution": null,
+   "wave": null,
+   "history": [
+    {
+     "date": "2026-07-16",
+     "event": "initialised NO-EVIDENCE at Phase 0"
+    }
+   ]
+  },
+  {
+   "check_id": "A-36",
+   "track": "A",
+   "priority": 6,
+   "founding_band": "SHOULD-FIX",
+   "verdict": "NO-EVIDENCE",
+   "na_justification": null,
+   "probe": null,
+   "evidence": null,
+   "standing_control": null,
+   "structural_fix": null,
+   "residual_risk": null,
+   "substitution": null,
+   "wave": null,
+   "history": [
+    {
+     "date": "2026-07-16",
+     "event": "initialised NO-EVIDENCE at Phase 0"
+    }
+   ]
+  },
+  {
+   "check_id": "A-37",
+   "track": "A",
+   "priority": 5,
+   "founding_band": "PLAN",
+   "verdict": "NO-EVIDENCE",
+   "na_justification": null,
+   "probe": null,
+   "evidence": null,
+   "standing_control": null,
+   "structural_fix": null,
+   "residual_risk": null,
+   "substitution": null,
+   "wave": null,
+   "history": [
+    {
+     "date": "2026-07-16",
+     "event": "initialised NO-EVIDENCE at Phase 0"
+    }
+   ]
+  },
+  {
+   "check_id": "A-38",
+   "track": "A",
+   "priority": 7,
+   "founding_band": "MUST-FIX",
+   "verdict": "NO-EVIDENCE",
+   "na_justification": null,
+   "probe": null,
+   "evidence": null,
+   "standing_control": null,
+   "structural_fix": null,
+   "residual_risk": null,
+   "substitution": null,
+   "wave": null,
+   "history": [
+    {
+     "date": "2026-07-16",
+     "event": "initialised NO-EVIDENCE at Phase 0"
+    }
+   ]
+  },
+  {
+   "check_id": "A-39",
+   "track": "A",
+   "priority": 5,
+   "founding_band": "PLAN",
+   "verdict": "NO-EVIDENCE",
+   "na_justification": null,
+   "probe": null,
+   "evidence": null,
+   "standing_control": null,
+   "structural_fix": null,
+   "residual_risk": null,
+   "substitution": null,
+   "wave": null,
+   "history": [
+    {
+     "date": "2026-07-16",
+     "event": "initialised NO-EVIDENCE at Phase 0"
+    }
+   ]
+  },
+  {
+   "check_id": "A-40",
+   "track": "A",
+   "priority": 4,
+   "founding_band": "ASSESS",
+   "verdict": "NO-EVIDENCE",
+   "na_justification": null,
+   "probe": null,
+   "evidence": null,
+   "standing_control": null,
+   "structural_fix": null,
+   "residual_risk": null,
+   "substitution": null,
+   "wave": null,
+   "history": [
+    {
+     "date": "2026-07-16",
+     "event": "initialised NO-EVIDENCE at Phase 0"
+    }
+   ]
+  },
+  {
+   "check_id": "B-01",
+   "track": "B",
+   "priority": 9,
+   "founding_band": "BLOCKER-1",
+   "verdict": "NO-EVIDENCE",
+   "na_justification": null,
+   "probe": null,
+   "evidence": null,
+   "standing_control": null,
+   "structural_fix": null,
+   "residual_risk": null,
+   "substitution": null,
+   "wave": null,
+   "history": [
+    {
+     "date": "2026-07-16",
+     "event": "initialised NO-EVIDENCE at Phase 0"
+    }
+   ]
+  },
+  {
+   "check_id": "B-02",
+   "track": "B",
+   "priority": 8,
+   "founding_band": "BLOCKER-2",
+   "verdict": "NO-EVIDENCE",
+   "na_justification": null,
+   "probe": null,
+   "evidence": null,
+   "standing_control": null,
+   "structural_fix": null,
+   "residual_risk": null,
+   "substitution": null,
+   "wave": null,
+   "history": [
+    {
+     "date": "2026-07-16",
+     "event": "initialised NO-EVIDENCE at Phase 0"
+    }
+   ]
+  },
+  {
+   "check_id": "B-03",
+   "track": "B",
+   "priority": 9,
+   "founding_band": "BLOCKER-1",
+   "verdict": "NO-EVIDENCE",
+   "na_justification": null,
+   "probe": null,
+   "evidence": null,
+   "standing_control": null,
+   "structural_fix": null,
+   "residual_risk": null,
+   "substitution": null,
+   "wave": null,
+   "history": [
+    {
+     "date": "2026-07-16",
+     "event": "initialised NO-EVIDENCE at Phase 0"
+    }
+   ]
+  },
+  {
+   "check_id": "B-04",
+   "track": "B",
+   "priority": 9,
+   "founding_band": "BLOCKER-1",
+   "verdict": "NO-EVIDENCE",
+   "na_justification": null,
+   "probe": null,
+   "evidence": null,
+   "standing_control": null,
+   "structural_fix": null,
+   "residual_risk": null,
+   "substitution": null,
+   "wave": null,
+   "history": [
+    {
+     "date": "2026-07-16",
+     "event": "initialised NO-EVIDENCE at Phase 0"
+    }
+   ]
+  },
+  {
+   "check_id": "B-05",
+   "track": "B",
+   "priority": 8,
+   "founding_band": "BLOCKER-2",
+   "verdict": "NO-EVIDENCE",
+   "na_justification": null,
+   "probe": null,
+   "evidence": null,
+   "standing_control": null,
+   "structural_fix": {
+    "available": true,
+    "taken": null,
+    "rationale": null
+   },
+   "residual_risk": null,
+   "substitution": null,
+   "wave": null,
+   "history": [
+    {
+     "date": "2026-07-16",
+     "event": "initialised NO-EVIDENCE at Phase 0"
+    }
+   ]
+  },
+  {
+   "check_id": "B-06",
+   "track": "B",
+   "priority": 10,
+   "founding_band": "STOP-SHIP",
+   "verdict": "NO-EVIDENCE",
+   "na_justification": null,
+   "probe": null,
+   "evidence": null,
+   "standing_control": null,
+   "structural_fix": null,
+   "residual_risk": null,
+   "substitution": null,
+   "wave": null,
+   "history": [
+    {
+     "date": "2026-07-16",
+     "event": "initialised NO-EVIDENCE at Phase 0"
+    }
+   ]
+  },
+  {
+   "check_id": "B-07",
+   "track": "B",
+   "priority": 8,
+   "founding_band": "BLOCKER-2",
+   "verdict": "NO-EVIDENCE",
+   "na_justification": null,
+   "probe": null,
+   "evidence": null,
+   "standing_control": null,
+   "structural_fix": {
+    "available": true,
+    "taken": null,
+    "rationale": null
+   },
+   "residual_risk": null,
+   "substitution": null,
+   "wave": null,
+   "history": [
+    {
+     "date": "2026-07-16",
+     "event": "initialised NO-EVIDENCE at Phase 0"
+    }
+   ]
+  },
+  {
+   "check_id": "B-08",
+   "track": "B",
+   "priority": 7,
+   "founding_band": "MUST-FIX",
+   "verdict": "NO-EVIDENCE",
+   "na_justification": null,
+   "probe": null,
+   "evidence": null,
+   "standing_control": null,
+   "structural_fix": {
+    "available": true,
+    "taken": null,
+    "rationale": null
+   },
+   "residual_risk": null,
+   "substitution": null,
+   "wave": null,
+   "history": [
+    {
+     "date": "2026-07-16",
+     "event": "initialised NO-EVIDENCE at Phase 0"
+    }
+   ]
+  },
+  {
+   "check_id": "B-09",
+   "track": "B",
+   "priority": 7,
+   "founding_band": "MUST-FIX",
+   "verdict": "NO-EVIDENCE",
+   "na_justification": null,
+   "probe": null,
+   "evidence": null,
+   "standing_control": null,
+   "structural_fix": null,
+   "residual_risk": null,
+   "substitution": null,
+   "wave": null,
+   "history": [
+    {
+     "date": "2026-07-16",
+     "event": "initialised NO-EVIDENCE at Phase 0"
+    }
+   ]
+  },
+  {
+   "check_id": "B-10",
+   "track": "B",
+   "priority": 8,
+   "founding_band": "BLOCKER-2",
+   "verdict": "NO-EVIDENCE",
+   "na_justification": null,
+   "probe": null,
+   "evidence": null,
+   "standing_control": null,
+   "structural_fix": {
+    "available": true,
+    "taken": null,
+    "rationale": null
+   },
+   "residual_risk": null,
+   "substitution": null,
+   "wave": null,
+   "history": [
+    {
+     "date": "2026-07-16",
+     "event": "initialised NO-EVIDENCE at Phase 0"
+    }
+   ]
+  },
+  {
+   "check_id": "B-11",
+   "track": "B",
+   "priority": 9,
+   "founding_band": "BLOCKER-1",
+   "verdict": "NO-EVIDENCE",
+   "na_justification": null,
+   "probe": null,
+   "evidence": null,
+   "standing_control": null,
+   "structural_fix": null,
+   "residual_risk": null,
+   "substitution": null,
+   "wave": null,
+   "history": [
+    {
+     "date": "2026-07-16",
+     "event": "initialised NO-EVIDENCE at Phase 0"
+    }
+   ]
+  },
+  {
+   "check_id": "B-12",
+   "track": "B",
+   "priority": 8,
+   "founding_band": "BLOCKER-2",
+   "verdict": "NO-EVIDENCE",
+   "na_justification": null,
+   "probe": null,
+   "evidence": null,
+   "standing_control": null,
+   "structural_fix": null,
+   "residual_risk": null,
+   "substitution": null,
+   "wave": null,
+   "history": [
+    {
+     "date": "2026-07-16",
+     "event": "initialised NO-EVIDENCE at Phase 0"
+    }
+   ]
+  },
+  {
+   "check_id": "B-13",
+   "track": "B",
+   "priority": 8,
+   "founding_band": "BLOCKER-2",
+   "verdict": "NO-EVIDENCE",
+   "na_justification": null,
+   "probe": null,
+   "evidence": null,
+   "standing_control": null,
+   "structural_fix": {
+    "available": true,
+    "taken": null,
+    "rationale": null
+   },
+   "residual_risk": null,
+   "substitution": null,
+   "wave": null,
+   "history": [
+    {
+     "date": "2026-07-16",
+     "event": "initialised NO-EVIDENCE at Phase 0"
+    }
+   ]
+  },
+  {
+   "check_id": "B-14",
+   "track": "B",
+   "priority": 6,
+   "founding_band": "SHOULD-FIX",
+   "verdict": "NO-EVIDENCE",
+   "na_justification": null,
+   "probe": null,
+   "evidence": null,
+   "standing_control": null,
+   "structural_fix": {
+    "available": true,
+    "taken": null,
+    "rationale": null
+   },
+   "residual_risk": null,
+   "substitution": null,
+   "wave": null,
+   "history": [
+    {
+     "date": "2026-07-16",
+     "event": "initialised NO-EVIDENCE at Phase 0"
+    }
+   ]
+  },
+  {
+   "check_id": "B-15",
+   "track": "B",
+   "priority": 8,
+   "founding_band": "BLOCKER-2",
+   "verdict": "NO-EVIDENCE",
+   "na_justification": null,
+   "probe": null,
+   "evidence": null,
+   "standing_control": null,
+   "structural_fix": null,
+   "residual_risk": null,
+   "substitution": null,
+   "wave": null,
+   "history": [
+    {
+     "date": "2026-07-16",
+     "event": "initialised NO-EVIDENCE at Phase 0"
+    }
+   ]
+  },
+  {
+   "check_id": "B-16",
+   "track": "B",
+   "priority": 6,
+   "founding_band": "SHOULD-FIX",
+   "verdict": "NO-EVIDENCE",
+   "na_justification": null,
+   "probe": null,
+   "evidence": null,
+   "standing_control": null,
+   "structural_fix": {
+    "available": true,
+    "taken": null,
+    "rationale": null
+   },
+   "residual_risk": null,
+   "substitution": null,
+   "wave": null,
+   "history": [
+    {
+     "date": "2026-07-16",
+     "event": "initialised NO-EVIDENCE at Phase 0"
+    }
+   ]
+  },
+  {
+   "check_id": "B-17",
+   "track": "B",
+   "priority": 7,
+   "founding_band": "MUST-FIX",
+   "verdict": "NO-EVIDENCE",
+   "na_justification": null,
+   "probe": null,
+   "evidence": null,
+   "standing_control": null,
+   "structural_fix": null,
+   "residual_risk": null,
+   "substitution": null,
+   "wave": null,
+   "history": [
+    {
+     "date": "2026-07-16",
+     "event": "initialised NO-EVIDENCE at Phase 0"
+    }
+   ]
+  },
+  {
+   "check_id": "B-18",
+   "track": "B",
+   "priority": 6,
+   "founding_band": "SHOULD-FIX",
+   "verdict": "NO-EVIDENCE",
+   "na_justification": null,
+   "probe": null,
+   "evidence": null,
+   "standing_control": null,
+   "structural_fix": null,
+   "residual_risk": null,
+   "substitution": null,
+   "wave": null,
+   "history": [
+    {
+     "date": "2026-07-16",
+     "event": "initialised NO-EVIDENCE at Phase 0"
+    }
+   ]
+  },
+  {
+   "check_id": "B-19",
+   "track": "B",
+   "priority": 7,
+   "founding_band": "MUST-FIX",
+   "verdict": "NO-EVIDENCE",
+   "na_justification": null,
+   "probe": null,
+   "evidence": null,
+   "standing_control": null,
+   "structural_fix": null,
+   "residual_risk": null,
+   "substitution": null,
+   "wave": null,
+   "history": [
+    {
+     "date": "2026-07-16",
+     "event": "initialised NO-EVIDENCE at Phase 0"
+    }
+   ]
+  },
+  {
+   "check_id": "B-20",
+   "track": "B",
+   "priority": 9,
+   "founding_band": "BLOCKER-1",
+   "verdict": "NO-EVIDENCE",
+   "na_justification": null,
+   "probe": null,
+   "evidence": null,
+   "standing_control": null,
+   "structural_fix": {
+    "available": true,
+    "taken": null,
+    "rationale": null
+   },
+   "residual_risk": null,
+   "substitution": null,
+   "wave": null,
+   "history": [
+    {
+     "date": "2026-07-16",
+     "event": "initialised NO-EVIDENCE at Phase 0"
+    }
+   ]
+  },
+  {
+   "check_id": "B-21",
+   "track": "B",
+   "priority": 6,
+   "founding_band": "SHOULD-FIX",
+   "verdict": "NO-EVIDENCE",
+   "na_justification": null,
+   "probe": null,
+   "evidence": null,
+   "standing_control": null,
+   "structural_fix": null,
+   "residual_risk": null,
+   "substitution": null,
+   "wave": null,
+   "history": [
+    {
+     "date": "2026-07-16",
+     "event": "initialised NO-EVIDENCE at Phase 0"
+    }
+   ]
+  },
+  {
+   "check_id": "B-22",
+   "track": "B",
+   "priority": 9,
+   "founding_band": "BLOCKER-1",
+   "verdict": "NO-EVIDENCE",
+   "na_justification": null,
+   "probe": null,
+   "evidence": null,
+   "standing_control": null,
+   "structural_fix": {
+    "available": true,
+    "taken": null,
+    "rationale": null
+   },
+   "residual_risk": null,
+   "substitution": null,
+   "wave": null,
+   "history": [
+    {
+     "date": "2026-07-16",
+     "event": "initialised NO-EVIDENCE at Phase 0"
+    }
+   ]
+  },
+  {
+   "check_id": "B-23",
+   "track": "B",
+   "priority": 7,
+   "founding_band": "MUST-FIX",
+   "verdict": "NO-EVIDENCE",
+   "na_justification": null,
+   "probe": null,
+   "evidence": null,
+   "standing_control": null,
+   "structural_fix": null,
+   "residual_risk": null,
+   "substitution": null,
+   "wave": null,
+   "history": [
+    {
+     "date": "2026-07-16",
+     "event": "initialised NO-EVIDENCE at Phase 0"
+    }
+   ]
+  },
+  {
+   "check_id": "B-24",
+   "track": "B",
+   "priority": 7,
+   "founding_band": "MUST-FIX",
+   "verdict": "NO-EVIDENCE",
+   "na_justification": null,
+   "probe": null,
+   "evidence": null,
+   "standing_control": null,
+   "structural_fix": null,
+   "residual_risk": null,
+   "substitution": null,
+   "wave": null,
+   "history": [
+    {
+     "date": "2026-07-16",
+     "event": "initialised NO-EVIDENCE at Phase 0"
+    }
+   ]
+  },
+  {
+   "check_id": "B-25",
+   "track": "B",
+   "priority": 7,
+   "founding_band": "MUST-FIX",
+   "verdict": "NO-EVIDENCE",
+   "na_justification": null,
+   "probe": null,
+   "evidence": null,
+   "standing_control": null,
+   "structural_fix": {
+    "available": true,
+    "taken": null,
+    "rationale": null
+   },
+   "residual_risk": null,
+   "substitution": null,
+   "wave": null,
+   "history": [
+    {
+     "date": "2026-07-16",
+     "event": "initialised NO-EVIDENCE at Phase 0"
+    }
+   ]
+  },
+  {
+   "check_id": "B-26",
+   "track": "B",
+   "priority": 6,
+   "founding_band": "SHOULD-FIX",
+   "verdict": "NO-EVIDENCE",
+   "na_justification": null,
+   "probe": null,
+   "evidence": null,
+   "standing_control": null,
+   "structural_fix": null,
+   "residual_risk": null,
+   "substitution": null,
+   "wave": null,
+   "history": [
+    {
+     "date": "2026-07-16",
+     "event": "initialised NO-EVIDENCE at Phase 0"
+    }
+   ]
+  },
+  {
+   "check_id": "B-27",
+   "track": "B",
+   "priority": 7,
+   "founding_band": "MUST-FIX",
+   "verdict": "NO-EVIDENCE",
+   "na_justification": null,
+   "probe": null,
+   "evidence": null,
+   "standing_control": null,
+   "structural_fix": null,
+   "residual_risk": null,
+   "substitution": null,
+   "wave": null,
+   "history": [
+    {
+     "date": "2026-07-16",
+     "event": "initialised NO-EVIDENCE at Phase 0"
+    }
+   ]
+  },
+  {
+   "check_id": "B-28",
+   "track": "B",
+   "priority": 8,
+   "founding_band": "BLOCKER-2",
+   "verdict": "NO-EVIDENCE",
+   "na_justification": null,
+   "probe": null,
+   "evidence": null,
+   "standing_control": null,
+   "structural_fix": null,
+   "residual_risk": null,
+   "substitution": null,
+   "wave": null,
+   "history": [
+    {
+     "date": "2026-07-16",
+     "event": "initialised NO-EVIDENCE at Phase 0"
+    }
+   ]
+  },
+  {
+   "check_id": "B-29",
+   "track": "B",
+   "priority": 7,
+   "founding_band": "MUST-FIX",
+   "verdict": "NO-EVIDENCE",
+   "na_justification": null,
+   "probe": null,
+   "evidence": null,
+   "standing_control": null,
+   "structural_fix": null,
+   "residual_risk": null,
+   "substitution": null,
+   "wave": null,
+   "history": [
+    {
+     "date": "2026-07-16",
+     "event": "initialised NO-EVIDENCE at Phase 0"
+    }
+   ]
+  },
+  {
+   "check_id": "B-30",
+   "track": "B",
+   "priority": 6,
+   "founding_band": "SHOULD-FIX",
+   "verdict": "NO-EVIDENCE",
+   "na_justification": null,
+   "probe": null,
+   "evidence": null,
+   "standing_control": null,
+   "structural_fix": null,
+   "residual_risk": null,
+   "substitution": null,
+   "wave": null,
+   "history": [
+    {
+     "date": "2026-07-16",
+     "event": "initialised NO-EVIDENCE at Phase 0"
+    }
+   ]
+  },
+  {
+   "check_id": "B-31",
+   "track": "B",
+   "priority": 8,
+   "founding_band": "BLOCKER-2",
+   "verdict": "NO-EVIDENCE",
+   "na_justification": null,
+   "probe": null,
+   "evidence": null,
+   "standing_control": null,
+   "structural_fix": null,
+   "residual_risk": null,
+   "substitution": null,
+   "wave": null,
+   "history": [
+    {
+     "date": "2026-07-16",
+     "event": "initialised NO-EVIDENCE at Phase 0"
+    }
+   ]
+  },
+  {
+   "check_id": "B-32",
+   "track": "B",
+   "priority": 5,
+   "founding_band": "PLAN",
+   "verdict": "NO-EVIDENCE",
+   "na_justification": null,
+   "probe": null,
+   "evidence": null,
+   "standing_control": null,
+   "structural_fix": null,
+   "residual_risk": null,
+   "substitution": null,
+   "wave": null,
+   "history": [
+    {
+     "date": "2026-07-16",
+     "event": "initialised NO-EVIDENCE at Phase 0"
+    }
+   ]
+  },
+  {
+   "check_id": "B-33",
+   "track": "B",
+   "priority": 7,
+   "founding_band": "MUST-FIX",
+   "verdict": "NO-EVIDENCE",
+   "na_justification": null,
+   "probe": null,
+   "evidence": null,
+   "standing_control": null,
+   "structural_fix": null,
+   "residual_risk": null,
+   "substitution": null,
+   "wave": null,
+   "history": [
+    {
+     "date": "2026-07-16",
+     "event": "initialised NO-EVIDENCE at Phase 0"
+    }
+   ]
+  },
+  {
+   "check_id": "B-34",
+   "track": "B",
+   "priority": 5,
+   "founding_band": "PLAN",
+   "verdict": "NO-EVIDENCE",
+   "na_justification": null,
+   "probe": null,
+   "evidence": null,
+   "standing_control": null,
+   "structural_fix": {
+    "available": true,
+    "taken": null,
+    "rationale": null
+   },
+   "residual_risk": null,
+   "substitution": null,
+   "wave": null,
+   "history": [
+    {
+     "date": "2026-07-16",
+     "event": "initialised NO-EVIDENCE at Phase 0"
+    }
+   ]
+  },
+  {
+   "check_id": "B-35",
+   "track": "B",
+   "priority": 6,
+   "founding_band": "SHOULD-FIX",
+   "verdict": "NO-EVIDENCE",
+   "na_justification": null,
+   "probe": null,
+   "evidence": null,
+   "standing_control": null,
+   "structural_fix": {
+    "available": true,
+    "taken": null,
+    "rationale": null
+   },
+   "residual_risk": null,
+   "substitution": null,
+   "wave": null,
+   "history": [
+    {
+     "date": "2026-07-16",
+     "event": "initialised NO-EVIDENCE at Phase 0"
+    }
+   ]
+  },
+  {
+   "check_id": "B-36",
+   "track": "B",
+   "priority": 6,
+   "founding_band": "SHOULD-FIX",
+   "verdict": "NO-EVIDENCE",
+   "na_justification": null,
+   "probe": null,
+   "evidence": null,
+   "standing_control": null,
+   "structural_fix": {
+    "available": true,
+    "taken": null,
+    "rationale": null
+   },
+   "residual_risk": null,
+   "substitution": null,
+   "wave": null,
+   "history": [
+    {
+     "date": "2026-07-16",
+     "event": "initialised NO-EVIDENCE at Phase 0"
+    }
+   ]
+  },
+  {
+   "check_id": "B-37",
+   "track": "B",
+   "priority": 5,
+   "founding_band": "PLAN",
+   "verdict": "NO-EVIDENCE",
+   "na_justification": null,
+   "probe": null,
+   "evidence": null,
+   "standing_control": null,
+   "structural_fix": {
+    "available": true,
+    "taken": null,
+    "rationale": null
+   },
+   "residual_risk": null,
+   "substitution": null,
+   "wave": null,
+   "history": [
+    {
+     "date": "2026-07-16",
+     "event": "initialised NO-EVIDENCE at Phase 0"
+    }
+   ]
+  },
+  {
+   "check_id": "B-38",
+   "track": "B",
+   "priority": 4,
+   "founding_band": "ASSESS",
+   "verdict": "NO-EVIDENCE",
+   "na_justification": null,
+   "probe": null,
+   "evidence": null,
+   "standing_control": null,
+   "structural_fix": {
+    "available": true,
+    "taken": null,
+    "rationale": null
+   },
+   "residual_risk": null,
+   "substitution": null,
+   "wave": null,
+   "history": [
+    {
+     "date": "2026-07-16",
+     "event": "initialised NO-EVIDENCE at Phase 0"
+    }
+   ]
+  },
+  {
+   "check_id": "B-39",
+   "track": "B",
+   "priority": 5,
+   "founding_band": "PLAN",
+   "verdict": "NO-EVIDENCE",
+   "na_justification": null,
+   "probe": null,
+   "evidence": null,
+   "standing_control": null,
+   "structural_fix": null,
+   "residual_risk": null,
+   "substitution": null,
+   "wave": null,
+   "history": [
+    {
+     "date": "2026-07-16",
+     "event": "initialised NO-EVIDENCE at Phase 0"
+    }
+   ]
+  }
+ ]
+}

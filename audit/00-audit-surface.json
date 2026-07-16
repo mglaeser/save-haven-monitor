@@ -1,0 +1,53 @@
+{
+  "frozen_commit": "d19556d62e80ec3ca1f5285fd610b0dcc379dd12",
+  "generated": "2026-07-16",
+  "note": "The denominator of the engagement (mandate Phase 0). Every item below must be touched by >=1 executed check; coverage is proven in audit/03b-coverage-ledger.md.",
+  "files": [
+    { "path": "index.html", "kind": "entry-page", "loc": 58, "notes": "only page; CDN loads, SRI, error fallback, noscript, meta" },
+    { "path": "dashboard.jsx", "kind": "app-source", "loc": 1876, "notes": "crisis atlas: frozen research content + 5 marked bubblegauge integration seams" },
+    { "path": "bubblegauge.jsx", "kind": "app-source", "loc": 1061, "notes": "optional gated integration: activation, fetch layer, strip, detail tab, feed re-anchoring" },
+    { "path": "CLAUDE.md", "kind": "agent-instructions", "loc": 41, "notes": "repo constraints binding future agents" },
+    { "path": "README.md", "kind": "documentation", "loc": 45 },
+    { "path": "INTEGRATION_NOTES.md", "kind": "documentation", "loc": 94 },
+    { "path": "LICENSE", "kind": "legal", "notes": "MIT" },
+    { "path": ".nojekyll", "kind": "platform-config", "notes": "disables Jekyll on Pages" },
+    { "path": "CNAME", "kind": "platform-config", "notes": "<prod-host>" },
+    { "path": ".claude/settings.local.json", "kind": "agent-config", "notes": "session-local permissions; not served" }
+  ],
+  "routes": [
+    { "route": "/", "kind": "page", "notes": "SPA; 5 tabs client-side + conditional 6th (AI Regime)" },
+    { "route": "?status-api=<key>", "kind": "feature-gate", "notes": "activates bubblegauge integration; key doubles as API subdomain; demo|fixture = offline" },
+    { "route": "?status-api-off", "kind": "feature-gate", "notes": "clears persisted activation" }
+  ],
+  "scheduled_jobs": [],
+  "queues": [],
+  "data_stores": [
+    { "store": "sessionStorage['bubblegauge:enabled']", "location": "visitor browser", "contents": "activation key string" },
+    { "store": "bubblegauge.jsx in-memory cache", "location": "visitor browser", "contents": "API JSON, 25-min TTL" },
+    { "store": "git history", "location": "GitHub", "contents": "sole persistence + de-facto backup" }
+  ],
+  "identities": [
+    { "identity": "mglaeser (repo owner)", "access": "admin: push main, settings, Pages, merges" },
+    { "identity": "Claude Code sessions (code-writing agent)", "access": "push to any branch incl. main; PR create/merge via API", "flag": "writes production directly; no gate between agent output and deploy at baseline" }
+  ],
+  "dependencies": [
+    { "dep": "react@18.3.1 UMD", "via": "unpkg.com", "integrity": "sha384 pinned" },
+    { "dep": "react-dom@18.3.1 UMD", "via": "unpkg.com", "integrity": "sha384 pinned" },
+    { "dep": "prop-types@15.8.1", "via": "unpkg.com", "integrity": "sha384 pinned" },
+    { "dep": "recharts@2.12.7 UMD (umd/Recharts.js)", "via": "unpkg.com", "integrity": "sha384 pinned" },
+    { "dep": "@babel/standalone@7.29.7", "via": "unpkg.com", "integrity": "sha384 pinned" },
+    { "dep": "bubblegauge REST API (service 3.4.0)", "via": "https://the bubblegauge API host", "notes": "GET-only, gated, validated at boundary, per-item degradation" }
+  ],
+  "prompts": [],
+  "configuration": [
+    { "item": "GitHub Pages: deploy from branch main / root", "location": "repo settings (out-of-repo)" },
+    { "item": "custom domain <prod-host>", "location": "CNAME + DNS (out-of-repo)" },
+    { "item": "branch protection on main", "location": "repo settings", "state_at_freeze": "NONE" }
+  ],
+  "pipelines": [],
+  "egress_destinations": [
+    { "dest": "unpkg.com", "when": "every page view" },
+    { "dest": "the bubblegauge API host", "when": "only when gate active and not demo" },
+    { "dest": "www.etoro.com", "when": "user-clicked navigation only" }
+  ]
+}
