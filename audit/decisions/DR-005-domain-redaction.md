@@ -26,3 +26,22 @@ evidence strings, in a code comment, in the verify-harness location stub, and in
 Git history retains pre-redaction file versions. A full scrub would require history rewriting and
 force-pushes across branches/PRs — destructive, and pointless while the CNAME/DNS remain public.
 Not done; recorded instead.
+
+## Addendum — history rewrite executed (owner instruction)
+
+The owner subsequently instructed the full scrub. `git filter-branch` rewrote all refs, applying
+the same replacement scheme to every historical blob (CNAME excluded — it necessarily carries the
+domain at every point, see above); backup refs purged, reflog expired, gc'd. Verified: the domain
+appears in no blob of any commit except `CNAME`. All commit SHAs changed; attested baseline
+references were remapped in the current audit files:
+
+| Old (attested at the time) | New (post-rewrite) |
+|---|---|
+| `d19556d` (Part 1 Phase-0 frozen baseline / old `main` tip) | `04772bf` |
+| `9a02414` (Part 2 Phase-0′ baseline) | `d0521b0` |
+| `82565b6` (Phase 0-1 commit) | `2aa7838` |
+
+Honest limits that remain: GitHub retains unreachable objects until its own GC (old SHAs may stay
+fetchable for a while), and the closed PRs #1–#5 keep their server-side `refs/pull/*` snapshots and
+rendered diffs, which predate the redaction — removing those requires GitHub Support (or deleting
+the repository). The force-push removes the domain from everything a clone of the branches sees.

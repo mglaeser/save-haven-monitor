@@ -2,7 +2,7 @@
  "catalogue_version": "2.0",
  "registered_check_count": 119,
  "active_check_count": 119,
- "frozen_commit": "d19556d62e80ec3ca1f5285fd610b0dcc379dd12",
+ "frozen_commit": "04772bf6d83bae185bcf0a6d65b17eed248e1349",
  "note": "Navigation and validation manifest only \u2014 never a normative restatement of any check. Normative text: governance/mandate/part1.md. | v2.0: Track C (C-01..C-40) activated by DR-004.",
  "checks": [
   {
@@ -1434,5 +1434,5 @@
    "conditional_escalations": null
   }
  ],
- "phase0prime_baseline_commit": "9a02414 (Part 2 Phase 0' re-freeze; linked to Part 1 Phase 0 baseline d19556d)"
+ "phase0prime_baseline_commit": "d0521b0 (Part 2 Phase 0' re-freeze; linked to Part 1 Phase 0 baseline 04772bf)"
 }

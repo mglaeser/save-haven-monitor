@@ -1,7 +1,7 @@
 # 01 — Claims ledger (Phase 1)
 
 Every claim the system makes about itself, tested against the frozen baseline
-(`d19556d`). Verdicts: **TRUE** (evidence produced this engagement), **FALSE** (a finding),
+(`04772bf`). Verdicts: **TRUE** (evidence produced this engagement), **FALSE** (a finding),
 **STALE** (was true, reality moved), **UNTESTED-HERE** (queued to a named Phase-3 check).
 Names are claims (identifier-level entries at the end). **Claims describing a human review
 step: none exist in this repository — checked explicitly; nothing to flag.**

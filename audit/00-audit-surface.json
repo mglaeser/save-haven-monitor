@@ -1,5 +1,5 @@
 {
-  "frozen_commit": "d19556d62e80ec3ca1f5285fd610b0dcc379dd12",
+  "frozen_commit": "04772bf6d83bae185bcf0a6d65b17eed248e1349",
   "generated": "2026-07-16",
   "note": "The denominator of the engagement (mandate Phase 0). Every item below must be touched by >=1 executed check; coverage is proven in audit/03b-coverage-ledger.md.",
   "files": [

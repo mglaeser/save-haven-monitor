@@ -33,7 +33,7 @@ architecture** (a zero-build, single-repo, single-vendor static GitHub Pages sit
 - **R-GATE** (branch protection) — owner command. **The owner has now enabled a protection ruleset
   on `main`** (reported by the owner; the REST `protected:false` field is the known *ruleset
   false-negative* — it reflects only classic branch protection, not Rulesets). **BUT `main` is still
-  at `d19556d` and does not carry `verify/`** — a ruleset requiring the `verify` check has nothing to
+  at `04772bf` and does not carry `verify/`** — a ruleset requiring the `verify` check has nothing to
   require until the gate is merged to the production branch. R-GATE is therefore *partially* actioned,
   not closed. Recorded, not waved.
 - **R-SEP** (write-separation) — structurally impossible with one repo and one push identity.
@@ -52,7 +52,7 @@ stays `false` while any blocker remains.
 
 ### Interval gate-bypass check (Part 2 §"verify the interval") — NEGATIVE
 `production_eligible` has been computed `false` since Phase 0 and the admission rule (gate.js §3)
-fails closed on the status file. `main` (which Pages serves) has been unchanged at `d19556d` — the
+fails closed on the status file. `main` (which Pages serves) has been unchanged at `04772bf` — the
 frozen pre-audit baseline — for the whole interval; no audit-branch change has reached production.
 No evidence the system was treated as production-ready between the parts. **No gate-bypass finding is
 filed.** (Had `main` advanced to a state asserting eligibility, that would have been a finding
@@ -63,8 +63,8 @@ predating all of Track C.)
    `active`; set catalogue_version `2.0`; active_check_count 79 → 119.
 2. Initialise 40 records in `audit/03-findings.json` as `NO-EVIDENCE` (blocking at their bands), then
    drive them to evidence-backed verdicts in Phase 3′ (assessment + independent adversarial verify).
-3. Re-freeze the Phase-0′ baseline at work-branch commit `9a02414` (Part 1's close), linked to
-   Part 1's Phase-0 baseline `d19556d` in this record — the two attested baselines of the two volumes.
+3. Re-freeze the Phase-0′ baseline at work-branch commit `d0521b0` (Part 1's close), linked to
+   Part 1's Phase-0 baseline `04772bf` in this record — the two attested baselines of the two volumes.
 4. `part2_status: NOT_STARTED → IN_PROGRESS` at Phase 0′; flips to `COMPLETE` only at Phase 7′ and
    only if computed clean.
 

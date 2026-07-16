@@ -1,7 +1,7 @@
 # 00 — System map (Phase 0 freeze)
 
 **Engagement:** Due-Diligence and Remediation Mandate, Part 1 (catalogue v1.0, 79 active checks).
-**Frozen baseline commit:** `d19556d62e80ec3ca1f5285fd610b0dcc379dd12` (branch `main` at freeze; work branch `claude/crisis-winners-github-pages-q279tk`).
+**Frozen baseline commit:** `04772bf6d83bae185bcf0a6d65b17eed248e1349` (branch `main` at freeze; work branch `claude/crisis-winners-github-pages-q279tk`).
 **Freeze date:** 2026-07-16.
 
 ## What this system is

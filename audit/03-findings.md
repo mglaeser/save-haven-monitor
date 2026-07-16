@@ -1,6 +1,6 @@
 # 03 — Findings (Phase 3 + Phase 3' complete — catalogue v2.0, 119 checks)
 
-79 checks, evidenced against frozen baseline d19556d. Verdicts: FAIL 26, PARTIAL 38, NOT-APPLICABLE 13, NO-EVIDENCE 2, PASS 0.
+79 checks, evidenced against frozen baseline 04772bf. Verdicts: FAIL 26, PARTIAL 38, NOT-APPLICABLE 13, NO-EVIDENCE 2, PASS 0.
 Adversarial verification overturned 14 of 27 risky (PASS/N-A) verdicts — all recorded in the JSON history.
 **0 PASS is correct at Phase 3: a PASS requires a *held* standing control, installed in Phase 5.**
 
@@ -90,7 +90,7 @@ Adversarial verification overturned 14 of 27 risky (PASS/N-A) verdicts — all r
 
 ## Track C — Security, Privacy & Assurance (Part 2, catalogue v2.0)
 
-40 checks, assessed against the Phase-0' baseline (work-branch `9a02414`, linked to Part 1's `d19556d`) under **independent adversarial verification** (a separate model instance per band, falsifying objective) — **0 disagreements**. A second, independent 36-agent run corroborated the blocking posture (it rendered C-01 N/A where this run rendered PASS; both agree C-01 is not an open STOP-SHIP).
+40 checks, assessed against the Phase-0' baseline (work-branch `d0521b0`, linked to Part 1's `04772bf`) under **independent adversarial verification** (a separate model instance per band, falsifying objective) — **0 disagreements**. A second, independent 36-agent run corroborated the blocking posture (it rendered C-01 N/A where this run rendered PASS; both agree C-01 is not an open STOP-SHIP).
 
 Verdicts: **PASS 4, PARTIAL 23, NOT-APPLICABLE 13, FAIL 0** (C-37's baseline BLOCKER-1 FAIL was closed by a door built in Phase 5' + a fresh Phase-6' re-run → de-escalated PLAN/PARTIAL; baseline preserved in the record history).
 
