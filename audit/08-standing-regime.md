@@ -39,3 +39,13 @@ incident. A class the pipeline stops catching is a failed gate and freezes relea
 CI fails while any required test fails, mutation is below floor, the golden/pin/claims controls drift,
 the digest unbinds from the constitution, or the findings file loses integrity. `production_eligible`
 is computed and fail-closed; it cannot be asserted true while Track C is unaudited.
+
+---
+
+## Track C baselines join the standing regime (v2.0)
+
+- Calibration catch-rate **9/9** (seeds D7 exfiltration-path, D8 unattested-shipped-change, D9 PII/telemetry-sink) — heartbeat SLI; a drop freezes releases.
+- Ratchet additions: provenance_drift=0 (`61`), undeclared_egress_hosts=0 (`62`), trifecta_three_leg_sessions=0 (`62`), trackC_no_evidence=0 (gate).
+- Required-tests set now includes `30-static-security`, `61-provenance`, `62-security-surface` (must PASS, never offline).
+- Cadence unchanged: every-change (gate), on-push (CI). Buildable upgrades: a scheduled spot-reconstruction (C-37) and nightly registry-age recheck (C-03) are named, not yet wired.
+- Gate strengthened: refuses `part2_status: COMPLETE` while blockers open; refuses `security_scope_audited: true` while any Track C check is NO-EVIDENCE.

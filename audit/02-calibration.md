@@ -55,3 +55,14 @@ releases (§9.3, Article VI).
    That is appropriate for a static site but means the corpus must be widened whenever a new sink,
    egress, or gated code path is added (§9.5 re-run triggers) — a static check only catches the
    shapes it was taught.
+
+---
+
+## Phase 2' — calibration inherited then extended (catalogue v2.0)
+
+Inherited baseline 6/6 (not re-seeded from scratch). Added three Track C seeds → **9/9**:
+- **D7** exfiltration-path — a fetch/link to a non-allowlisted host → caught by `62-security-surface` (egress allowlist).
+- **D8** unattested-shipped-change — a shipped component edited without re-attesting `provenance-manifest.json` → caught by `61-provenance` (hash drift).
+- **D9** personal-data/telemetry sink — `sendBeacon`/`gtag`/`type=password`/`localStorage` in served source → caught by `62-security-surface`.
+
+Each seed was injected into a throwaway `BG_REPO` copy and **watched to block** (audit/05-verification.md). Catch rate 9/9 is the inherited baseline the regime may not degrade.

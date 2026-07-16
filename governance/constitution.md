@@ -9,9 +9,21 @@
 > tracked in `audit/06-residual-risk-register.md`.
 
 **constitution_state:** `RATIFIED`
-**catalogue_version:** `1.0` (Track C register slots `pending-baseline: part2`)
+**catalogue_version:** `2.0` (Track C baselines landed — no register slot left `pending-baseline`)
 **entered provisional force:** 2026-07-16 at commit (recorded in `audit/engagement-status.json.constitution_hash`)
-**ratified:** 2026-07-16 (catalogue v1.0; Track C register slots pending-baseline: part2)
+**ratified:** 2026-07-16 (catalogue v1.0) · **re-ratified:** 2026-07-16 (catalogue v2.0, strengthening amendment — Article XIII — landing Track C's measured baselines; see the amendment record below)
+
+> **Amendment v1.0 → v2.0 (strengthening, Article XIII).** Part 2 activated Track C (`C-01`..`C-40`)
+> by DR-004 and drove all 40 to evidence-backed verdicts under independent adversarial verification
+> (0 disagreements). The register slots that stood `pending-baseline: part2` are now filled with
+> measured baselines: calibration catch-rate **9/9** (three Track C seeds added — exfiltration path,
+> unattested shipped-component change, personal-data/telemetry sink); two new standing controls
+> committed and **watched to block** — `verify/tests/61-provenance` (the C-37 attested-chain
+> reconstruction: an unattested change to any shipped component fails the build) and
+> `verify/tests/62-security-surface` (the C-08 two-of-three trifecta property + the egress allowlist +
+> the N/A tripwires for C-04/C-05/C-06/C-07/C-21..C-32). This amendment only strengthens: no threshold
+> loosened, no control removed. It does **not** clear production — `production_eligible` stays `false`,
+> computed, because open blockers remain (see Article XV).
 
 ## Preamble
 
@@ -21,7 +33,8 @@ out-of-band halt (and the one repo-setting that makes the gate deploy-blocking �
 residual). They are never **in the loop**: no diff waits for a person, and no control counts a
 person as its mechanism. This constitution replaces the reviewer. Three states: `TEMPLATE`,
 `IN_FORCE_PROVISIONAL` (binds every change now), `RATIFIED` (from Phase 7; never sufficient for a
-production clearance while Track C is unaudited).
+production clearance while any STOP-SHIP/BLOCKER-1/BLOCKER-2 finding remains open — Track C is now
+audited, but blockers remain, so the clearance stays withheld).
 
 ## Article I — The gate decides
 
@@ -73,14 +86,17 @@ verifier distinct from the generator. *Derives from:* `A-39` `A-03` `C-14`.
 
 Every measured property in `verify/golden/ratchet.json` has a baseline and moves one way: better.
 Loosening a threshold requires a decision record **and is automatically a finding.** Founding
-register: pipeline catch rate 6/6, mutation score 1.00 (floor 0.75), required-tests all-green,
-open STOP-SHIP target 0, production credentials 0. *Derives from:* `C-10` `A-27` `A-08` `A-13`;
-mandate §9.1.
+register (v2.0): pipeline catch rate **9/9** (v1.0 was 6/6; three Track C seeds added), mutation
+score 1.00 (floor 0.75), required-tests all-green (now including `30-static-security`,
+`61-provenance`, `62-security-surface`), Track C attested-provenance drift 0, undeclared-egress
+hosts 0, open STOP-SHIP target 0, production credentials 0. *Derives from:* `C-10` `A-27` `A-08`
+`A-13`; mandate §9.1.
 
 ## Article VI — The heartbeat
 
-Seeded defects (`verify/calibration/corpus.json`) are re-injected on schedule; the pipeline's catch
-rate is a live SLI. A fall below baseline freezes releases. *Derives from:* `A-36` `A-24` `B-01`.
+Seeded defects (`verify/calibration/corpus.json`, **9 classes** at v2.0) are re-injected on schedule;
+the pipeline's catch rate is a live SLI. A fall below baseline freezes releases. *Derives from:*
+`A-36` `A-24` `B-01` `C-07` `C-08` `C-37`.
 
 > **Residual R-CRON (owner):** continuous scheduled injection needs a scheduler (GitHub Actions
 > `schedule:` or equivalent). Compensating control: the corpus runs every CI invocation via the
@@ -170,8 +186,13 @@ format (the ONLY place emojis appear in this repository):
 This repository is **Production** (serves public traffic at <prod-host>). It holds no secrets, no
 credentials, and no personal data — verified by `verify/tests/30`. Graduation is a gate, not a
 decision: deploy admission reads `audit/engagement-status.json` and fails closed on
-`production_eligible` — which is `false` and computed, and stays false until Part 2 (Track C) closes.
-*Derives from:* `B-25` `B-09` `B-05` `C-26`; mandate §10.7.
+`production_eligible` — which is `false` and computed. Track C is now **audited**
+(`security_scope_audited: true`, 0 open Track-C STOP-SHIP), but the flag stays `false` because open
+blockers remain: three Track-C BLOCKER-1 (C-03, C-05, C-09) and three Track-C BLOCKER-2 (C-02, C-06,
+C-26) are honest `PARTIAL`s needing runtime/deploy-admission/second-vendor infrastructure absent by
+architecture, alongside the Part-1 structural/owner residuals (R-GATE, R-SEP, R-VENDOR, R-OBSV). The
+gate refuses `production_eligible: true` — and refuses `part1_status`/`part2_status: COMPLETE` — while
+any such blocker is open. *Derives from:* `B-25` `B-09` `B-05` `C-26` `C-37`; mandate §10.7.
 
 ## The two questions
 

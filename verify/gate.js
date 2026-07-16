@@ -27,8 +27,10 @@ if (!fs.existsSync(resultsPath)) fail("no test results.json — run `node run.js
 else {
   const r = readJson(resultsPath);
   if (r.fail > 0) fail(`${r.fail} test(s) failed`);
-  // golden data hash + core invariants must be PASS (not merely non-fail)
-  const mustPass = r.results.filter((x) => /golden|data-invariants/.test(x.file));
+  // golden hash + core invariants + the deterministic security controls must be PASS (not merely
+  // non-fail). These are never "offline", so requiring PASS here is strict but always satisfiable.
+  // (In the gate self-test's minimal results.json these files are simply absent → not checked.)
+  const mustPass = r.results.filter((x) => /golden|data-invariants|static-security|provenance|security-surface/.test(x.file));
   for (const x of mustPass) if (x.status !== "PASS") fail(`required check not PASS: ${x.file} :: ${x.name} (${x.status})`);
 }
 
@@ -58,6 +60,14 @@ if (status.production_eligible === true && !eligibleAllowed)
   fail("production_eligible=true is not supported by the computed state (Track C unaudited and/or open blockers) — fail closed");
 if (status.part1_status === "COMPLETE" && (ss > 0 || b1 > 0 || b2 > 0))
   fail(`part1_status=COMPLETE is false while blockers are open (SS ${ss}, B1 ${b1}, B2 ${b2}) — mandate DoD #3`);
+if (status.part2_status === "COMPLETE" && (ss > 0 || b1 > 0 || b2 > 0))
+  fail(`part2_status=COMPLETE is false while blockers are open (SS ${ss}, B1 ${b1}, B2 ${b2}) — mandate DoD #3`);
+// security_scope_audited asserts Track C carries no NO-EVIDENCE record (the audit actually ran).
+{
+  const cOpen = findings.records.filter((f) => f.track === "C" && f.verdict === "NO-EVIDENCE").length;
+  if (status.security_scope_audited === true && cOpen > 0)
+    fail(`security_scope_audited=true but ${cOpen} Track C check(s) are still NO-EVIDENCE`);
+}
 
 if (blocked.length === 0) console.log("GATE PASS: findings integrity + status computation + required tests all hold.");
 else console.error(`\nGATE BLOCKED on ${blocked.length} condition(s).`);

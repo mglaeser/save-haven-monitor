@@ -22,3 +22,29 @@ All 79 active checks produced evidence (77 evidenced verdicts + 2 NO-EVIDENCE, t
 **Note:** every check ran against the whole repo tree; the table shows *explicit* references in produced evidence. Cross-cutting governance checks (A-01 gate, B-06 secrets, B-35 separation) examine the entire surface, so items without a direct mention are still covered.
 
 Items without an explicit evidence mention (covered transitively): `.claude/settings.local.json`.
+
+---
+
+## Phase 6' closing sample (catalogue v2.0)
+
+**15 checks = 12.6% of 119** (mandate floor 10%), ≥1 per severity band, ≥1 per track (A:3, B:3, C:9). Deterministic re-verification: PASS ⇒ a held standing control exists now; N/A ⇒ architecture-grounded justification present; every referenced `verify/tests/NN` exists. **Result: 0 disagreements → no widening to 30% required.**
+
+| Check | Track | Band | Verdict | Re-verified |
+|---|---|---|---|---|
+| B-06 | B | STOP-SHIP | PARTIAL | test 30 exists=True |
+| C-01 | C | STOP-SHIP | PASS | PASS<-held control exists_now=True; test 30 exists=True |
+| A-01 | A | BLOCKER-1 | FAIL | evidence stands |
+| B-01 | B | BLOCKER-1 | FAIL | evidence stands |
+| C-37 | C | PLAN | PARTIAL | test 61 exists=True |
+| A-04 | A | BLOCKER-2 | PARTIAL | evidence stands |
+| B-07 | B | BLOCKER-2 | FAIL | evidence stands |
+| C-08 | C | BLOCKER-2 | PASS | PASS<-held control exists_now=True; test 62 exists=True |
+| A-16 | A | SHOULD-FIX | PASS | PASS<-held control exists_now=True; test 70 exists=True |
+| C-16 | C | MUST-FIX | PARTIAL | evidence stands |
+| C-24 | C | MUST-FIX | PARTIAL | evidence stands |
+| C-14 | C | SHOULD-FIX | PARTIAL | test 10 exists=True |
+| C-33 | C | SHOULD-FIX | PARTIAL | evidence stands |
+| C-31 | C | PLAN | PARTIAL | evidence stands |
+| C-40 | C | ASSESS | PARTIAL | evidence stands |
+
+Coverage: every Track C check maps to at least one audit-surface item or an architecture-grounded N/A; the two new controls (`61-provenance`, `62-security-surface`) extend coverage to the shipped-component provenance chain and the egress/trifecta/PII surface.

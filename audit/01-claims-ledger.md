@@ -54,3 +54,13 @@ step: none exist in this repository — checked explicitly; nothing to flag.**
 5. **D11's caveat** — every "verified" claim in the docs rests on out-of-repo, agent-invoked,
    unrepeatable verification. **The system currently has zero standing verification.** This is
    not a claims problem; it is the Phase-2 problem.
+
+---
+
+## Phase 1' — claims delta (security/privacy/assurance)
+
+Reconciled out of cycle every claim touching security, privacy or assurance against the Track C evidence:
+- "no secrets / no personal data" — holds; now guarded by `62-security-surface` (no PII/telemetry sink) + `30-static-security` (no secret idioms), not merely asserted.
+- "attested provenance" — the constitution's Article XI/C-37 language is now backed by `governance/provenance-manifest.json` + `61-provenance` (was git-history-only). Residual R-LEDGER stated honestly (no signed per-commit model/prompt field).
+- "SBOM/AI-BOM" — `governance/sbom.json` added; AI-BOM asserted empty by test. No overclaim: verified at load (SRI) + build (gate), not at deploy (Pages has no admission hook).
+- No new misdescriptive claim convicted this volume; the `70-claims` guard remains green.

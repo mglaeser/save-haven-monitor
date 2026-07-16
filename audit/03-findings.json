@@ -1,5 +1,5 @@
 {
- "catalogue_version": "1.0",
+ "catalogue_version": "2.0",
  "frozen_commit": "d19556d62e80ec3ca1f5285fd610b0dcc379dd12",
  "records": [
   {
@@ -2675,8 +2675,1672 @@
     }
    ],
    "remediation": "Name the framework(s) explicitly in a design record and apply the AI-specific lenses to the actual architecture (for a static zero-build site: the generative/responsible-AI lens over the sole AI-adjacent surface bubblegauge.jsx, plus the relevant well-architected pillars \u2014 security, reliability of the CDN/egress paths). Then make the review a held control: a scheduled/on-architecture-change re-run that regenerates the gap list, with each open gap carrying an owning role, so 'framework adherence' is a recurring assertion rather than this one engagement's snapshot."
+  },
+  {
+   "check_id": "C-01",
+   "track": "C",
+   "priority": 10,
+   "founding_band": "STOP-SHIP",
+   "verdict": "PASS",
+   "na_justification": "The IDOR/BOLA/server-side-authz/tenancy sub-scope is architecturally absent: there is no server, no backend, no database, no session, no user account, no object identifier, and no authorization decision made anywhere (client or browser). A 'change the id to read another object' attack has no surface \u2014 grep of dashboard.jsx/index.html/bubblegauge.jsx finds no auth, login, cookie, session, or object-id primitive. That entire sub-scope is N/A; but per the 'any applicable sub-surface' rule the client-side URL-construction / injection / SSRF / secrets slice IS present and is assessed below (PASS).",
+   "probe": "Tried to falsify the safe-URL claim: (1) can an attacker-controlled ?status-api value reach fetch()/URL construction unvalidated (SSRF to arbitrary host)? (2) can external/API data reach an HTML-injection sink? (3) is any authorization decision taken in the browser that could be bypassed? (4) are secrets/auth headers present? Read bubblegauge.jsx resolveActivation (lines 25-58) and the fetch layer (272-308), and 30-static-security.test.js assertions.",
+   "evidence": "SSRF: bubblegauge.jsx L24 KEY_RE=/^[a-z0-9-]{1,32}$/ rejects dots and slashes, so ?status-api=evil.com or a full URL fails. L44 `if (!key || !KEY_RE.test(key)) return null;` gates BEFORE any base derivation; L57 base is built only as `\"https://\" + key + \".\" + parent` (subdomain-of-own-parent, host from page's own loc.hostname which is fixed by CNAME <prod-host>, not attacker-controlled). fetch (L300) targets API_BASE+path only. 30-static-security.test.js asserts KEY_RE is defined as the strict whitelist, that KEY_RE.test appears at >=2 sites, that the unvalidated-key early-return exists verbatim, and that base is subdomain-of-parent only. Injection: same test asserts NO dangerouslySetInnerHTML in bg+dash and that any .innerHTML assignment is non-interpolated; API response is boundary-validated (validScore/isNum/pair L275-288) and rendered as React data (auto-escaped). Secrets: test forbids sk-/ghp_/AKIA/Bearer/Authorization/X-API-Key idioms across all served files (public GET, no auth header). Authz-in-browser: none exists to bypass. ABSENT (honest): no DAST authz sweep, no nightly dynamic scan, no route-authz-test gate \u2014 but those target surfaces (routes, authz) that do not exist here.",
+   "standing_control": {
+    "exists_now": true,
+    "mechanism": "verify/tests/30-static-security.test.js \u2014 deterministic regex/parse over the three served files: KEY_RE-whitelist-at-every-use, unvalidated-key-returns-null-before-base, subdomain-of-parent-only base, no-injection-sink, no-secret-idiom; run by verify/run.js and gated by gate.js via .github/workflows/verify.yml",
+    "blocks": "a merge/push that removes the KEY_RE guard, accepts a full-URL key, adds a dangerouslySetInnerHTML or interpolated innerHTML sink, or leaks a credential/auth-header idiom",
+    "cadence": "on push and PR to every branch (verify.yml on: push/pull_request branches ['**'])",
+    "ratchet": "static assertions are boolean-monotone (a new injection sink or a weakened KEY_RE flips the suite RED); mutation.js floor 0.75 keeps the suite able to fail"
+   },
+   "structural_fix": {
+    "available": true,
+    "taken": true,
+    "rationale": "The door (S13) is the boundary-validation + whitelist-before-construction design plus its executable proof in 30-static-security; it exists at baseline and is committed. The residual door not yet taken is putting verify/ on main (R-GATE) so the gate also guards direct pushes to the deployed branch."
+   },
+   "residual_risk": {
+    "compensating_control": "KEY_RE whitelist + subdomain-of-parent-only construction bound worst case to 'fetch a subdomain of the site's own parent domain'; React auto-escaping bounds injection to rendered text/link in the optional panel; no consequential action, no data to exfiltrate, no server to pivot to",
+    "owner": "ai-security / repo owner mglaeser",
+    "tripwire": "30-static-security goes RED on any weakening \u2014 BUT R-GATE: verify/ is not yet on main, so a direct push to main bypasses the gate on the production branch; the honest gap is that CI enforcement covers PRs/branches, not the deployed main tip until verify/ lands there"
+   },
+   "substitution": "S3",
+   "wave": null,
+   "history": [
+    {
+     "date": "2026-07-16",
+     "event": "initialised NO-EVIDENCE at Phase 0'"
+    },
+    {
+     "date": "2026-07-16",
+     "event": "assessed PASS"
+    }
+   ],
+   "remediation": "Land verify/ + .github/workflows/verify.yml on main (close R-GATE) so 30-static-security gates the deployed branch, not only feature branches. No new control is needed for the injection/SSRF/secrets slice itself \u2014 the standing test already blocks it; the smallest real step is making that same test authoritative over main.",
+   "adversarial_verification": "agreed: Falsification attempts failed. bubblegauge.jsx L25/L44/L57: KEY_RE rejects dots/slashes and is re-tested before any URL construction (SSRF bounded to subdomain-of-own-parent, host from fixed loc.hostname). 30-static-security.test.js is a real, committed, deterministic gate blocking KEY_RE weakening (L45-54), HTML-injection sinks (L56-63), and secret/auth-header idioms (L24-43); it runs on push/PR (verify.yml branches ['**']). The IDOR/server-authz sub-scope is genuinely absent (no server/ids/users, confirmed by grep). The R-GATE gap (verify/ and workflow absent from origin/main, which I confirmed via git ls-tree) leaves the deployed branch ungated, but that is a baseline-wide disclosed residual carried in the tripwire, not specific to this check, and the literal PASS criterion (a committed test that runs and blocks) is met on the assessed injection/SSRF/secrets slice. Evidence is strong, not thin."
+  },
+  {
+   "check_id": "C-02",
+   "track": "C",
+   "priority": 8,
+   "founding_band": "BLOCKER-2",
+   "verdict": "PARTIAL",
+   "na_justification": null,
+   "probe": "Tried to falsify 'threat model kept current MECHANICALLY': searched verify/tests/, run.js, mutation.js for any boundary-count / egress-allowlist / new-integration detector that would turn CI red when a NEW trust boundary, egress destination, or fetch host appears. Also checked whether the enumerated-boundary docs (audit/00-system-map.md, audit/00-audit-surface.json) are asserted by any test so they cannot silently go stale.",
+   "evidence": "A DFD-equivalent + trust-boundary enumeration EXISTS as version-controlled docs: audit/00-system-map.md 'Egress paths (complete)' table (unpkg, the bubblegauge API host, www.etoro.com) and audit/00-audit-surface.json egress_destinations/dependencies/identities. But these are prose/JSON inventories with NO STRIDE-per-boundary table and NO test binding them. The only mechanical currency that exists: verify/tests/35-supply-chain 'index.html CDN script URLs match the recorded pin manifest exactly' (eq urls.length == pinned-deps.json.urls length) catches a NEW or changed CDN <script> egress, and verify/tests/30-static-security 'all app URLs are relative or https; no http:// leaks' plus the KEY_RE subdomain-only assertion bound the <prod-domain> boundary. CRITICAL GAP: a new fetch()/XHR to an arbitrary https host added to bubblegauge.jsx or dashboard.jsx would pass 30 (https is allowed) and pass 35 (not a <script src>); nothing counts or allow-lists egress destinations, and no test fails when a new boundary/integration/data-class is introduced. Docs are not hash-bound, so the boundary inventory can drift from reality silently.",
+   "standing_control": {
+    "exists_now": true,
+    "mechanism": "verify/tests/35-supply-chain (exact pinned-CDN URL set) + verify/tests/30-static-security (relative/https-only, no http leak, KEY_RE subdomain-only)",
+    "blocks": "a new/changed CDN <script> egress and any http:// or full-URL construction on the status-API boundary; does NOT block a new https fetch host, a new integration seam, or a new data class",
+    "cadence": "on push/PR via .github/workflows/verify.yml \u2014 but that workflow and verify/ are NOT on main (git ls-tree main is empty for verify/ and workflows/), so the production branch runs no detector",
+    "ratchet": "pinned-deps.json URL set (exact-match, one-way via decision record); no boundary-count ratchet"
+   },
+   "structural_fix": {
+    "available": true,
+    "taken": false,
+    "rationale": "S13 door: add a verify/ test asserting the complete egress-destination allowlist (grep all served source for fetch/XHR/new script hosts, compare to a golden egress manifest) plus a STRIDE-per-boundary doc hash-bound like the constitution digest. Buildable now; not built at baseline."
+   },
+   "residual_risk": {
+    "compensating_control": "code is small (2 served JSX files) and machine-authored; a new egress would appear in git diff, but no automated signal fires",
+    "owner": "platform-security / repo owner mglaeser",
+    "tripwire": "the honest gap: a new fetch to a novel https host is added and no test goes red \u2014 undetected until manual review, which is not a control"
+   },
+   "substitution": "S3",
+   "wave": null,
+   "history": [
+    {
+     "date": "2026-07-16",
+     "event": "initialised NO-EVIDENCE at Phase 0'"
+    },
+    {
+     "date": "2026-07-16",
+     "event": "assessed PARTIAL"
+    }
+   ],
+   "remediation": "Build a golden egress-manifest test in verify/tests/ that enumerates every allowed destination (unpkg pins, key.<parent> derivation, etoro nav) and fails CI when source introduces any fetch/script/XHR host not on the list; commit verify/ + verify.yml to main so the detector runs on the production branch. That test is the standing control C-02 requires.",
+   "adversarial_verification": "agreed: Confirmed. Real mechanical detectors exist but are incomplete: verify/tests/35-supply-chain pins the exact CDN <script> URL set (eq on manifest) and 30-static-security enforces https-only + KEY_RE subdomain-only, so a new/changed CDN egress or a dotted key is caught. But I verified there is NO egress-destination allowlist: 30 only distinguishes http vs https, so a new fetch()/XHR to an arbitrary https host in bubblegauge.jsx/dashboard.jsx passes both 30 (https allowed) and 35 (not a <script src>). The boundary docs (audit/00-system-map.md, 00-audit-surface.json) are prose/JSON with no test binding or hash-lock, so they can drift silently. No boundary-count/new-integration detector exists. Partial control, honestly scoped. Not a full PASS (no allowlist), not a FAIL (35+30 do give partial currency). The 'not on main' caveat is also confirmed (origin/main has no verify/)."
+  },
+  {
+   "check_id": "C-03",
+   "track": "C",
+   "priority": 9,
+   "founding_band": "BLOCKER-1",
+   "verdict": "PARTIAL",
+   "na_justification": null,
+   "probe": "Tried to falsify 'deps are pinned + existence-gated' on BOTH surfaces: (1) shipped runtime deps and (2) CI-only harness deps. Grepped index.html script tags against the pin manifest and SRI, then inspected verify/package.json + the CI workflow for a lockfile, npm ci, allowlist, age/reputation check, and any 'verify assistant output before install' step. Attempted to find a hallucinated-package or floating-range vector that would install unchecked.",
+   "evidence": "SHIPPED slice is strongly gated: index.html carries ZERO npm runtime deps; the 4 (+babel = 5) CDN libs are pinned by exact URL in verify/golden/pinned-deps.json and asserted by verify/tests/35-supply-chain (offline exact-URL match, catches a silent version bump) AND by verify/tests/40-sri-recompute (re-derives sha384 from fetched bytes vs the index.html integrity attribute). verify/tests/30-static-security additionally asserts all 5 <script> tags carry sha384 integrity + crossorigin=anonymous. Both run on every push/PR (.github/workflows/verify.yml). CI-ONLY slice is UNGATED: verify/package.json declares devDependency \"playwright-core\": \"^1.40.0\" (a floating caret range, NOT pinned); there is NO verify/package-lock.json committed (git ls-files shows none) and the workflow runs `npm install --no-audit --no-fund` (NOT `npm ci`), so the harness resolves transitive deps live at CI time with no lockfile, no allowlist, no newly-registered/low-reputation/age screen, and no 'verify before install' step. The gate that decides deploy-eligibility runs in that same unpinned environment. Hallucinated-package / typosquat / floating-range drift on the CI tooling is unblocked.",
+   "standing_control": {
+    "exists_now": true,
+    "mechanism": "verify/tests/35-supply-chain (exact pin-manifest match) + verify/tests/40-sri-recompute (sha384 recompute) + 30-static-security (integrity+crossorigin present)",
+    "blocks": "any silent version bump, path change, or byte drift of the 5 shipped CDN deps; a stray parallel test suite. Does NOT block CI-only dep drift.",
+    "cadence": "on push and PR (verify.yml)",
+    "ratchet": "pinned-deps.json URL set + recorded sha384 hashes (monotone: a change is a decision-record event)"
+   },
+   "structural_fix": {
+    "available": true,
+    "taken": true,
+    "rationale": "Shipped-dep door (S3 executable pin+SRI proof) is built and held. The CI-dep door \u2014 commit a package-lock.json, switch CI to `npm ci`, add a dep-allowlist/age-check test \u2014 is available but NOT taken at baseline."
+   },
+   "residual_risk": {
+    "compensating_control": "CI-only deps are gitignored, never shipped to visitors, and the harness is offline-deterministic for the load-bearing regex tests (only 40-sri does egress); a compromised playwright-core could still poison the gate's own run, though.",
+    "owner": "platform-security / repo owner mglaeser",
+    "tripwire": "a diff to verify/package.json version ranges, or a CI `npm install` pulling a version not previously seen \u2014 currently NO executable signal watches this (honest gap)."
+   },
+   "substitution": "S3",
+   "wave": null,
+   "history": [
+    {
+     "date": "2026-07-16",
+     "event": "initialised NO-EVIDENCE at Phase 0'"
+    },
+    {
+     "date": "2026-07-16",
+     "event": "assessed PARTIAL"
+    }
+   ],
+   "remediation": "Commit verify/package-lock.json, change the workflow step to `npm ci`, and add a verify/tests test asserting the lockfile is present and every dep resolves to a pinned integrity (the standing control that must exist). That converts the CI-dep slice from ungated to blocked and moves this to PASS.",
+   "adversarial_verification": "agreed: Verified on both surfaces. Shipped slice strongly gated: index.html has zero npm runtime deps; the 5 CDN libs match verify/golden/pinned-deps.json exactly (35-supply-chain) with SRI integrity+crossorigin asserted (30-static-security) and sha384 recompute (40-sri). CI slice genuinely ungated: verify/package.json declares floating 'playwright-core':'^1.40.0', `git ls-files` shows NO lockfile, and .github/workflows/verify.yml runs `npm install --no-audit --no-fund` (not `npm ci`). The gate runs in that unpinned env. PARTIAL is correct \u2014 under-claims nothing, over-claims nothing."
+  },
+  {
+   "check_id": "C-04",
+   "track": "C",
+   "priority": 10,
+   "founding_band": "STOP-SHIP",
+   "verdict": "NOT-APPLICABLE",
+   "na_justification": "No personal data is processed anywhere in the served product, so the entry\u2192store\u2192copy\u2192retention\u2192deletion lifecycle this check governs does not occur. There is no server, no backend, no database, no form capturing PII, no analytics, no tracker, no cookie, and no logging/tracing/embedding sink. The only browser storage is sessionStorage['bubblegauge:enabled'] holding the ?status-api KEY STRING (matched ^[a-z0-9-]{1,32}$ \u2014 an activation flag, not personal data). Escalation clause fires: NOT EU personal data (none at all), so the check re-bands from priority-10 STOP-SHIP to effectively N/A against applicable law \u2014 there is no data subject, no controller processing, no lawful basis to establish, and no deletion path to test because there is nothing to delete.",
+   "probe": "Tried to find ANY personal-data sink that would defeat the no-PII claim: grepped dashboard.jsx/index.html/bubblegauge.jsx for cookie, localStorage, analytics, gtag, track, email, phone, address, geolocation, navigator.*, login, form POST of user input. Inspected the one browser-storage write (sessionStorage) and the one egress (optional gated GET to *.<prod-domain>) for whether either carries user/device identifiers.",
+   "evidence": "grep returns only crisis-content matches (chart .name props, 'analytics' tab label, research citations) \u2014 zero PII collection, zero trackers, zero cookies. bubblegauge.jsx sessionStorage.setItem(SS_KEY, key) (L40) stores only the KEY_RE-validated activation string. The optional feed is a read-only GET with headers {accept:'application/json'} and no auth/identifier header (30-static-security forbids Authorization/X-API-Key idioms). 35-supply-chain / SRI assert exactly 5 CDN <script src> tags, which would trip if an external analytics script were added. ABSENT (honest): there is NO dedicated PII/analytics-sink scanner in verify/tests/30-static-security (grep for PII|email|phone|analytics|navigator in that test = none), and the golden hash (20-golden-content) covers only the frozen data constants CRISES/MATRIX/CLASSIFICATION \u2014 NOT the whole dashboard.jsx source \u2014 so an inline PII form or a same-origin fetch-beacon added elsewhere in the source would NOT be caught by an executable test today.",
+   "standing_control": {
+    "exists_now": true,
+    "mechanism": "Compound and partial: (a) architecture \u2014 static read-only site, no server to store/log PII; (b) verify/tests/35-supply-chain + 40-sri pin the external script surface to exactly 5 known CDN tags, blocking an added external tracker/analytics <script src>; (c) 30-static-security forbids Authorization/X-API-Key egress idioms. NO dedicated PII/analytics-sink scanner exists.",
+    "blocks": "an added external analytics/tracker script tag and an auth-header-carrying egress; does NOT block an inline PII-collection form or a hand-rolled fetch/sendBeacon tracker inside the app source",
+    "cadence": "on push and PR to every branch (verify.yml); subject to R-GATE on main",
+    "ratchet": "CDN-script-tag count fixed at 5 (SRI/supply-chain); golden data hash frozen \u2014 but neither ratchet covers a new inline PII sink"
+   },
+   "structural_fix": {
+    "available": true,
+    "taken": false,
+    "rationale": "The door (S13) that would make N/A durably self-enforcing is a small deterministic PII/analytics-sink scanner in 30-static-security (regex ban on form input capture, navigator.geolocation/sendBeacon, gtag/analytics idioms, and non-allowlisted fetch hosts). It is buildable at baseline but not yet built; today N/A rests mostly on architecture + the script-count pin, which is a partial guard."
+   },
+   "residual_risk": {
+    "compensating_control": "No-server architecture means there is structurally nowhere to accumulate PII; the exactly-5-CDN-scripts pin and no-auth-header rule catch the most likely regressions (added external tracker / identifier egress)",
+    "owner": "privacy / repo owner mglaeser",
+    "tripwire": "HONEST GAP: no executable signal fires the day an inline form, analytics beacon, or same-origin PII fetch is added inside dashboard.jsx/bubblegauge.jsx \u2014 the golden hash only guards the data constants and there is no PII-sink scanner; R-GATE additionally means enforcement is not yet on main",
+    "compensating_control_note": "N/A stays true by architecture, not by a dedicated test"
+   },
+   "substitution": "S3 S11",
+   "wave": null,
+   "history": [
+    {
+     "date": "2026-07-16",
+     "event": "initialised NO-EVIDENCE at Phase 0'"
+    },
+    {
+     "date": "2026-07-16",
+     "event": "assessed NOT-APPLICABLE"
+    }
+   ],
+   "remediation": "To keep N/A self-enforcing (and to define the tripwire that re-opens the check): add a PII/analytics-sink scanner to verify/tests/30-static-security banning form-input capture, navigator.geolocation/sendBeacon, gtag/analytics idioms, and any fetch host outside the {self, *.<prod-domain> gated} allowlist. If that scanner ever fires \u2014 or a form/analytics/PII sink is added \u2014 C-04 re-opens as a live privacy check requiring lawful basis, minimisation, retention, and an end-to-end deletion test.",
+   "adversarial_verification": "agreed: No personal-data surface exists across the whole served product, so the entry-store-retention-deletion lifecycle this check governs does not occur. Grep of all three served files found no localStorage, cookie, form, sendBeacon, geolocation, or analytics/tracker sink (the 'analytics' hits are a tab label and in-browser recomputation, not telemetry). The only browser write is sessionStorage of the KEY_RE-validated activation string, which is not personal data, and the optional GET sends only an accept header with no identifier. This satisfies the explicit valid N/A ground 'no personal data exists anywhere' for the entire surface, and the escalation clause does not fire (no EU personal data). The generator's own disclosed no-PII-scanner gap is a durability concern (tripwire to re-open if a form/beacon/PII sink is later added), not a reason the current verdict should be PARTIAL/FAIL."
+  },
+  {
+   "check_id": "C-05",
+   "track": "C",
+   "priority": 9,
+   "founding_band": "BLOCKER-1",
+   "verdict": "PARTIAL",
+   "na_justification": null,
+   "probe": "Built the 10-category OWASP-LLM matrix and tried to find a live runtime surface for each, then checked whether a STANDING artifact/test maps each category to a control (the check's real demand: matrix + control + test, not just architectural absence). Looked for any test enumerating the taxonomy.",
+   "evidence": "No runtime LLM/model/agent exists in the product (confirmed: dashboard.jsx renders frozen arrays + Recharts; bubblegauge.jsx only fetches JSON via fetch() and renders it through React). Category-by-category: (1) Prompt injection \u2014 N/A, no model consumes input; (2) Sensitive-info disclosure \u2014 N/A, no PII/secrets (30-static-security no-secrets patterns hold); (3) Supply chain \u2014 covered by 35/40 (see C-03); (4) Data/model poisoning \u2014 N/A, no training/model; (5) Improper output handling \u2014 LIVE thin surface: status-API strings (data_source, as_of, note, judgment_call.text, science_audit flag title/detail/ref, caveats) render as React text children (bubblegauge.jsx IndicatorRow ~L601, EpistemicPanel L742-784, FusionPanel), auto-escaped; controlled by verify/tests/30-static-security asserting NO dangerouslySetInnerHTML anywhere and any innerHTML is non-interpolated; (6) Excessive agency \u2014 N/A, no tool-calling; (7) System-prompt leakage \u2014 N/A, no prompt; (8) Vector/embedding \u2014 N/A, none; (9) Misinformation \u2014 the heuristic is heavily labelled (see C-09) but no test pins it; (10) Unbounded consumption \u2014 N/A, no model; fetch has AbortController 6s timeout + 25min cache TTL. ABSENT: any standing taxonomy-matrix artifact/test that enumerates all 10 and asserts completeness \u2014 the mapping exists only in this assessment, not as committed code.",
+   "standing_control": {
+    "exists_now": true,
+    "mechanism": "verify/tests/30-static-security (no dangerouslySetInnerHTML; non-interpolated innerHTML) covers the one live category (improper output handling)",
+    "blocks": "introduction of an HTML-injection sink fed by the external status API",
+    "cadence": "on push/PR",
+    "ratchet": "none for the taxonomy as a whole; the injection-sink assertion is boolean-held"
+   },
+   "structural_fix": {
+    "available": true,
+    "taken": false,
+    "rationale": "Door (S3): a committed taxonomy-matrix test enumerating all 10 categories -> {control | test | architecture-grounded N/A}, red if a new category becomes live. 9/10 are genuinely N/A by architecture; the value of the door is preventing silent scope-creep (e.g. someone adds a model). Not built at baseline."
+   },
+   "residual_risk": {
+    "compensating_control": "The architecture (no model, no tools, no PII, React-escaped output) makes 9/10 categories vacuously safe today; the risk is future drift, not present exposure.",
+    "owner": "ai-security",
+    "tripwire": "any future import of an LLM SDK / addition of dangerouslySetInnerHTML / new external egress \u2014 30-static-security catches the sink case, nothing watches the 'a model was added' case."
+   },
+   "substitution": "S3",
+   "wave": null,
+   "history": [
+    {
+     "date": "2026-07-16",
+     "event": "initialised NO-EVIDENCE at Phase 0'"
+    },
+    {
+     "date": "2026-07-16",
+     "event": "assessed PARTIAL"
+    }
+   ],
+   "remediation": "Add verify/tests/*-llm-taxonomy asserting each of the 10 categories is either controlled-by-named-test or N/A-by-architecture (e.g. grep asserts no LLM SDK import, no dangerouslySetInnerHTML), failing red if a live model/tool/embedding surface appears. That standing control turns the matrix from an assessment artifact into an enforced one -> PASS.",
+   "adversarial_verification": "agreed: No runtime LLM/model exists (dashboard renders frozen arrays+Recharts; bubblegauge only fetch()es JSON and renders via React). 9/10 OWASP-LLM categories are architecturally vacuous; the one live category (improper output handling of status-API strings) IS covered by a committed standing test (30-static-security no-dangerouslySetInnerHTML, confirmed grep-empty in bg+dash; non-interpolated innerHTML). But no committed taxonomy-matrix test enumerates all 10 and asserts completeness/scope-creep \u2014 the mapping lives only in the assessment. Satisfied-by-architecture without an enumerating standing control => PARTIAL, not PASS. Correct."
+  },
+  {
+   "check_id": "C-06",
+   "track": "C",
+   "priority": 8,
+   "founding_band": "BLOCKER-2",
+   "verdict": "PARTIAL",
+   "na_justification": "Runtime agentic taxonomy (goal hijack, tool misuse, privilege abuse, code exec, memory/context poisoning, inter-agent comms, cascading failures, rogue agents) is architecturally N/A to the PRODUCT: there is no runtime model/agent/tool-call in the served site (audit/00-system-map.md 'In-product runtime models: none', 'Tools the model can call: In-product: none'). The bubblegauge feed's judgment_call.text is rendered as inert React-escaped DATA, never fed to a model, never used to build a request, never persisted \u2014 so no product-side agency exists to abuse. The check is NOT fully N/A because the DEV PIPELINE has real agency (human-agent-trust-exploitation mutation), assessed below.",
+   "probe": "Tried to falsify the N/A by hunting for any runtime tool-call, agent loop, or model inference in dashboard.jsx/bubblegauge.jsx (none \u2014 only Recharts rendering and a gated GET fetch). Then attacked the applicable slice: does a standing control govern the dev-agent's write/push/merge agency (the pipeline that trusts machine-authored code)?",
+   "evidence": "Product: grep confirms no inference/tool-invocation; bubblegauge.jsx fetch is GET-only, boundary-validated (validScore/isNum/pair), no dangerouslySetInnerHTML on feed data (verify/tests/30 'no HTML-injection sinks'). Dev-pipeline agency IS real and documented: audit/00-audit-surface.json identities flags the Claude Code session 'writes production directly; no gate between agent output and deploy at baseline'. The intended least-agency control is verify/gate.js (fail-closed policy gate: findings integrity + production_eligible computation, refuses PASS with null standing_control, refuses production_eligible while blockers open). BUT git ls-tree main shows verify/ and .github/workflows/ are NOT on main; Pages deploys from main on push with no admission control (R-GATE). So the gate that would constrain the dev-agent's agency does not run on the production branch \u2014 it blocks nothing on deploy today.",
+   "standing_control": {
+    "exists_now": true,
+    "mechanism": "verify/gate.js fail-closed policy gate + verify.yml running run.js/mutation.js/gate.js on push/PR",
+    "blocks": "in-CI: a findings-file with a PASS lacking a standing_control, an over-asserted production_eligible, any failed/golden-drift test; does NOT block a merge or a push-to-main deploy because verify/ is not on main and no required-status-check branch protection is active (R-GATE)",
+    "cadence": "on push/PR to any branch (work branch only); none on main",
+    "ratchet": "open_stop_ship down toward 0 (gate.js), mutation_score up (mutation.js)"
+   },
+   "structural_fix": {
+    "available": true,
+    "taken": false,
+    "rationale": "S13 door: land verify/ + verify.yml on main and make the gate a required status check (branch protection) so the dev-agent cannot deploy past a red gate. Owner enabled a ruleset but the gated content is not yet on the protected branch, so the door is built but not hung."
+   },
+   "residual_risk": {
+    "compensating_control": "git history is public append-only provenance; single-vendor (Anthropic) reduces heterogeneous-agent inter-comms risk but concentrates R-VENDOR",
+    "owner": "ai-security / repo owner mglaeser",
+    "tripwire": "a push to main that bypasses the (off-main) gate deploys instantly \u2014 no executable signal fires; the gate must be on main and required for this to close"
+   },
+   "substitution": "S1",
+   "wave": null,
+   "history": [
+    {
+     "date": "2026-07-16",
+     "event": "initialised NO-EVIDENCE at Phase 0'"
+    },
+    {
+     "date": "2026-07-16",
+     "event": "assessed PARTIAL"
+    }
+   ],
+   "remediation": "Commit verify/ and .github/workflows/verify.yml to main and require the 'verify' check via branch protection so the fail-closed gate stands between dev-agent output and production. No product runtime-agent control is needed (no runtime agent exists); the applicable control is the pipeline gate becoming standing on main.",
+   "adversarial_verification": "agreed: Confirmed. Product runtime-agent surface is genuinely N/A: grep of bubblegauge.jsx/dashboard.jsx shows only a gated GET fetch and Recharts rendering, no inference/tool-call/agent loop; audit-surface prompts:[] and no runtime model. The judgment_call.text and source/as_of strings (bubblegauge.jsx:601-602) render as React-escaped DATA, and no dangerouslySetInnerHTML (asserted by 30). The applicable dev-pipeline agency slice is correctly assessed: verify/gate.js is a real fail-closed policy gate (refuses PASS with null standing_control, refuses production_eligible with open blockers \u2014 I read it), but origin/main contains no verify/ or .github/workflows/, so it gates nothing on the production branch. PARTIAL is right: gate exists in CI, does not gate deploy."
+  },
+  {
+   "check_id": "C-07",
+   "track": "C",
+   "priority": 9,
+   "founding_band": "BLOCKER-1",
+   "verdict": "PASS",
+   "na_justification": null,
+   "probe": "Attempted to trace ANY path from untrusted external text to a consequential sink (a model prompt, eval, innerHTML, a constructed outbound request, or persistence) that a direct OR indirect prompt injection could ride. Inspected the full status-API render path and the URL-construction path.",
+   "evidence": "There is no model to inject: no input is fed to any LLM/agent (no runtime model exists). The nearest analogue \u2014 indirect injection via untrusted status-API content \u2014 is architecturally contained: (a) the response is boundary-validated (validScore/isNum/pair, bubblegauge.jsx L274-287) then rendered as React text children throughout (IndicatorRow ~L590-602, EpistemicPanel L742-784 including science_audit f.title/f.detail/f.ref as text, FusionPanel notes), which auto-escapes \u2014 no dangerouslySetInnerHTML anywhere in bg+dash (asserted RED-able by verify/tests/30-static-security L59); (b) the only href built from external influence is API_BASE + fixed indicator id (L602), where API_BASE derives from a key that must pass KEY_RE ^[a-z0-9-]{1,32}$ BEFORE URL construction \u2014 a dot/scheme fails, so ?status-api=evil.com is rejected (30-static-security L45-54 asserts KEY_RE.test at >=2 sites, unvalidated-key early return, and base = key+'.'+parent only); (c) validated data is NEVER fed to a model, NEVER used to build a further request, NEVER persisted beyond a 25-min in-memory cache. No untrusted text reaches a consequential sink. Containment is structural (there is no consequential action to trigger), not classifier-based.",
+   "standing_control": {
+    "exists_now": true,
+    "mechanism": "verify/tests/30-static-security: no-injection-sink (no dangerouslySetInnerHTML, non-interpolated innerHTML) + KEY_RE whitelist enforced before URL construction",
+    "blocks": "conversion of any rendered external string into an HTML/script sink, and construction of an attacker-chosen base URL from the activation key",
+    "cadence": "on push/PR",
+    "ratchet": "presence of the KEY_RE regex literal + the >=2 use-site count + the no-sink assertions (monotone booleans)"
+   },
+   "structural_fix": {
+    "available": true,
+    "taken": true,
+    "rationale": "The door is the architecture itself (no model = no injection target) reinforced by the S3 static no-sink proof. Both exist and hold at baseline."
+   },
+   "residual_risk": {
+    "compensating_control": "Worst case a malicious status API renders bad text/a bad tooltip in the optional gauge panel (which only appears with ?status-api=<key>) \u2014 no action, no exfiltration, no model to hijack.",
+    "owner": "ai-security",
+    "tripwire": "verify/tests/30-static-security goes red if dangerouslySetInnerHTML, an interpolated innerHTML, or a relaxed KEY_RE is introduced."
+   },
+   "substitution": "S3",
+   "wave": null,
+   "history": [
+    {
+     "date": "2026-07-16",
+     "event": "initialised NO-EVIDENCE at Phase 0'"
+    },
+    {
+     "date": "2026-07-16",
+     "event": "assessed PASS"
+    }
+   ],
+   "remediation": "Hold the standing control. If a runtime model/agent is ever added (making a true injection target exist), this check re-opens and requires architectural containment proof for the new sink \u2014 that would be the tripwire to re-assess.",
+   "adversarial_verification": "agreed: Traced the full untrusted-text path: no model to inject; the only href from external influence is line 602 API_BASE + fixed indicator id (API_BASE gated by KEY_RE ^[a-z0-9-]{1,32}$ which rejects dots/schemes before URL construction, confirmed at bubblegauge.jsx L25/39/44 and asserted at >=2 sites by 30-static-security); f.ref (L778) renders as escaped React text in parentheses, NOT as an href; no dangerouslySetInnerHTML anywhere (grep-empty). Validated data is never fed to a model, never used to build a further request, never persisted. A HELD committed standing control (30-static-security) blocks sink-conversion and attacker base-URL construction on every push/PR. PASS is justified, not an over-claim."
+  },
+  {
+   "check_id": "C-08",
+   "track": "C",
+   "priority": 8,
+   "founding_band": "BLOCKER-2",
+   "verdict": "PASS",
+   "na_justification": null,
+   "probe": "Tried to assemble the lethal trifecta on the served site: (1) untrusted input \u2014 bubblegauge status-API source/as_of/judgment_call text; (2) private data \u2014 searched dashboard.jsx/bubblegauge.jsx and data stores for any PII, secret, or user data; (3) external communication \u2014 CDN loads + status-API GET. Then tried to falsify a PASS by checking whether any committed test ASSERTS the empty private-data leg and bounds egress, or whether it is merely true-by-architecture.",
+   "evidence": "The trifecta cannot assemble because the private-data leg is empty: audit/00-audit-surface.json data_stores = sessionStorage['bubblegauge:enabled'] (key string matched ^[a-z0-9-]{1,32}$), a 25-min in-memory fetch cache, and git history \u2014 no PII, no credentials, no user data anywhere; verify/tests/30 'no plausible secrets/credentials' forbids secret idioms in served source. Untrusted-input leg is boundary-validated and rendered escaped (30 'no HTML-injection sinks', KEY_RE bounds the URL). External-comm leg is bounded: 35-supply-chain pins the 5 CDN URLs, KEY_RE forces key.<parent> subdomain-only. GAP that prevents PASS: there is NO test asserting the 'no private data exists' property and NO egress-allowlist test \u2014 the trifecta's emptiness is satisfied-by-architecture, not asserted by a standing control. Per the PASS rule, architecture-satisfied-but-unasserted => PARTIAL. (Note: the Phase-0 claim that 30-static-security enforces 'no-PII idioms' is not literally borne out \u2014 30 contains secret-idiom patterns but no PII grep.)",
+   "standing_control": {
+    "exists_now": true,
+    "mechanism": "verify/tests/62-security-surface (egress allowlist + no-private-data-leg + no-extra-fetch/socket) - the two-of-three rule evaluated mechanically on every build",
+    "blocks": "a merge that adds a private-data store/telemetry sink or a new egress destination (either would move toward completing the trifecta) - calibration seeds D7 (exfil path) and D9 (PII/telemetry sink)",
+    "cadence": "on push/PR (verify.yml)",
+    "ratchet": "sessions holding all three legs remain at zero (S11)"
+   },
+   "structural_fix": {
+    "available": true,
+    "taken": true,
+    "rationale": "Door built in Phase 5': verify/tests/62-security-surface asserts, by inspection every build, that the lethal-trifecta legs cannot all coexist - the [private data] leg is empty (no PII sink, no personal-data store, no telemetry) and the [external communication] leg is an allowlist (no undeclared egress/link host). The [untrusted input] leg (status-API text) can exist, but two-of-three can never become three. Decidable by inspection, now machine-enforced."
+   },
+   "residual_risk": {
+    "compensating_control": "read-only public site with no forms, no auth, no cookies; even a malicious status-API can only render bad text/link in one panel \u2014 nothing to exfiltrate",
+    "owner": "privacy / platform-security",
+    "tripwire": "the honest gap: a future edit that adds a form or a private-data read would not turn any test red; re-opens the trifecta risk undetected"
+   },
+   "substitution": "S3",
+   "wave": null,
+   "history": [
+    {
+     "date": "2026-07-16",
+     "event": "initialised NO-EVIDENCE at Phase 0'"
+    },
+    {
+     "date": "2026-07-16",
+     "event": "assessed PARTIAL"
+    },
+    {
+     "date": "2026-07-16",
+     "event": "Phase 5' built verify/tests/62-security-surface asserting the two-of-three trifecta property"
+    },
+    {
+     "date": "2026-07-16",
+     "event": "Phase 6' re-run: property asserted every build; watched to block seeds D7/D9; PASS (baseline PARTIAL preserved)"
+    }
+   ],
+   "remediation": "None required for the property; keep the egress allowlist current by decision record when a legitimate new destination is added.",
+   "adversarial_verification": "agreed: Confirmed, and the downgrade from PASS is correct. The lethal trifecta cannot assemble because the private-data leg is empty by architecture (audit-surface data_stores = key string + in-memory cache + git history; no forms/PII/auth). But I verified 30-static-security.test.js contains ONLY secret-idiom patterns (sk-, ghp_, AKIA, Bearer, X-API-Key, Authorization) and NO PII-capture grep (no input[type=email], geolocation, cookie, form). So the 'no private data' property is satisfied-by-architecture, NOT asserted by any standing control, and there is no egress allowlist \u2014 exactly the PASS-rule condition that mandates PARTIAL. The verdict's own note that Phase-0's 'no-PII idioms' claim is not literally borne out by 30 is accurate.",
+   "baseline_verdict": "PARTIAL"
+  },
+  {
+   "check_id": "C-09",
+   "track": "C",
+   "priority": 9,
+   "founding_band": "BLOCKER-1",
+   "verdict": "PARTIAL",
+   "na_justification": null,
+   "probe": "Determined whether the EU-AI-Act high-risk escalation triggers (does any AI system make decisions about people / sit on the Annex III high-risk list / is placed on the EU market as high-risk?), then assessed the Article 50 transparency slice (is machine-generated content disclosed?) and whether a STANDING control pins that disclosure.",
+   "evidence": "Escalation does NOT trigger: the product is a static financial-history dashboard; the optional AI-regime gauge DISPLAYS a heuristic and makes no decision about any person (no profiling, no eligibility, no automated decision affecting individuals) \u2014 not Annex III high-risk. Article 50 transparency slice is satisfied BY CONTENT but NOT by a standing control: bubblegauge.jsx labels the machine-generated score exhaustively (EpiChip 'Heuristic \u00b7 not a probability \u00b7 n\u22484' L419; EPISTEMIC 'NOT-A-PROBABILITY \u2026 structured expert judgment; uncalibrated' L184-190; FALSIFY criteria; COPY.notProbLong 'NOT a probability of a crash' L131; disclaimer 'Research, not advice'). BUT these strings live in mutable COPY/EPISTEMIC constants in bubblegauge.jsx \u2014 they are NOT golden-hashed (golden covers dashboard.jsx crisis data) and NO verify/ test asserts their presence (70-claims pins three unrelated claim corrections, not the AI-transparency labels). So a future edit could strip the disclosure with a green gate.",
+   "standing_control": {
+    "exists_now": false,
+    "mechanism": "no test pins the AI-regime transparency/disclaimer labels; they are unhashed source constants",
+    "blocks": "nothing \u2014 the disclosure could be removed without turning CI red",
+    "cadence": "none",
+    "ratchet": "none"
+   },
+   "structural_fix": {
+    "available": true,
+    "taken": false,
+    "rationale": "Door (S3): a verify/tests assertion that the transparency chips + not-a-probability disclaimer + falsification criteria are present in bubblegauge.jsx (and, ideally, hash-pinned). Buildable; not taken at baseline."
+   },
+   "residual_risk": {
+    "compensating_control": "The labelling is currently thorough and conspicuous; the gauge is gated behind ?status-api and clearly framed as research, reducing misclassification risk in practice.",
+    "owner": "privacy / ai-security",
+    "tripwire": "no executable signal \u2014 removal of the disclaimers would pass silently today (honest gap)."
+   },
+   "substitution": "",
+   "wave": null,
+   "history": [
+    {
+     "date": "2026-07-16",
+     "event": "initialised NO-EVIDENCE at Phase 0'"
+    },
+    {
+     "date": "2026-07-16",
+     "event": "assessed PARTIAL"
+    }
+   ],
+   "remediation": "Add a verify/tests assertion that the Article-50 transparency strings (heuristic/not-a-probability chip, 'Research, not advice' disclaimer, falsification criteria) exist in bubblegauge.jsx and fail red if removed. That is the standing control that would move the transparency slice to PASS; the high-risk obligations remain N/A unless the gauge starts making decisions about people (the re-opening tripwire).",
+   "adversarial_verification": "agreed: High-risk escalation correctly does NOT trigger (the gauge displays a heuristic, makes no decision about any person; not Annex III). Article 50 transparency slice is satisfied by content (EpiChip 'Heuristic \u00b7 not a probability \u00b7 n\u22484' L419, notProbLong L131, 'Research, not advice' L238/269) but these strings live in mutable COPY/EPISTEMIC constants in bubblegauge.jsx that are NOT golden-hashed (golden covers only dashboard.jsx CRISES/MATRIX per data-hash.json) and NO test pins them \u2014 70-claims pins three unrelated corrections (drawdown label, byte-for-byte, CORS). A future edit could strip the disclosure with a green gate. Satisfied-by-content with no standing control => PARTIAL. Correct."
+  },
+  {
+   "check_id": "C-10",
+   "track": "C",
+   "priority": 8,
+   "founding_band": "BLOCKER-2",
+   "verdict": "PASS",
+   "na_justification": null,
+   "probe": "Attacked the claim that evaluation methodology (versioned golden datasets, thresholds frozen BEFORE results, pipeline blocks on regression) is real and held. Verified each leg exists as committed code, not aspiration: is the golden dataset versioned and hashed? are thresholds in VCS and one-way? does the pipeline actually exit non-zero on regression? Tried to find a way to regress the numbers or drop the mutation score without CI going red.",
+   "evidence": "Product output is deterministic (verify/tests/10-data-invariants 'runFan is deterministic', golden med36 values 62/132/123 characterized), so there is no non-deterministic product surface \u2014 the methodology applies to the DEV assurance pipeline, which fully realizes all three legs with committed, running controls: (1) VERSIONED GOLDEN DATASET \u2014 verify/tests/20-golden-content hashes CRISES/MATRIX/CLASSIFICATION against verify/golden/data-hash.json; any number/string change goes RED. (2) THRESHOLDS FROZEN IN VCS BEFORE RESULTS \u2014 verify/golden/ratchet.json records mutation_score floor 0.75 (baseline 1.00), pipeline_catch_rate 6/6, all one-way ('Loosening requires a decision record and is itself a finding'); verify/calibration corpus seeds 6 defects caught 6/6. (3) PIPELINE BLOCKS ON REGRESSION \u2014 verify/run.js exits non-zero on any fail; verify/mutation.js enforces the floor; verify/gate.js requires golden + data-invariants to be status PASS (not merely non-fail) and fails the build on golden-hash drift. verify.yml runs run.js/mutation.js/gate.js on every push and PR. These are held controls that block a red build now.",
+   "standing_control": {
+    "exists_now": true,
+    "mechanism": "verify/tests/20-golden-content (hash freeze) + verify/mutation.js (floor 0.75) + verify/calibration (6/6) + verify/golden/ratchet.json (frozen one-way thresholds) + verify/gate.js (required-PASS + fail-closed)",
+    "blocks": "a red CI build on golden-data-hash drift, mutation score below floor, any seeded-defect escape, or any required test not PASS",
+    "cadence": "on push/PR via verify.yml",
+    "ratchet": "mutation_score up (floor 0.75), pipeline_catch_rate up (6/6), required_tests all-green one-way (ratchet.json)"
+   },
+   "structural_fix": {
+    "available": true,
+    "taken": true,
+    "rationale": "S13 door already built: the golden hash + frozen ratchet + fail-closed gate are the evaluation-methodology control and are committed and executing in CI. The only unbuilt piece is admission-onto-main (R-GATE), which is C-06/C-26 territory, not the methodology property itself."
+   },
+   "residual_risk": {
+    "compensating_control": "even without branch protection, a regression turns the CI job red and is visible on every PR/push",
+    "owner": "ai-security / repo owner mglaeser",
+    "tripwire": "R-GATE caveat: verify/ is not yet on main, so a red build does not block a direct push-to-main deploy; the methodology holds in CI but does not yet gate production admission"
+   },
+   "substitution": "S3 S11",
+   "wave": null,
+   "history": [
+    {
+     "date": "2026-07-16",
+     "event": "initialised NO-EVIDENCE at Phase 0'"
+    },
+    {
+     "date": "2026-07-16",
+     "event": "assessed PASS"
+    }
+   ],
+   "remediation": "Methodology control is standing; the smallest next step to convert its CI-block into a deploy-block is landing verify/ + verify.yml on main and requiring the check (shared with C-06/C-26 R-GATE remediation). No change to the evaluation methodology itself is needed.",
+   "adversarial_verification": "agreed: Confirmed as a genuinely built, held control set \u2014 not aspiration. I verified all three legs: (1) versioned golden dataset \u2014 20-golden-content.test.js hashes CRISES/MATRIX/CLASSIFICATION against verify/golden/data-hash.json, RED on any change; (2) thresholds frozen in VCS before results \u2014 mutation.js hardcodes FLOOR=0.75 with process.exit(1) below floor (lines 85-86), ratchet.json records one-way baselines, calibration/corpus.json seeds 6 defect classes each mapped to a catching test; (3) blocks on regression \u2014 run.js exits non-zero on any fail, gate.js requires golden+data-invariants status PASS (not merely non-fail). These are committed and run on push/PR via verify.yml. The R-GATE deploy-admission gap (verify/ not on main) is correctly scoped to C-06/C-26 and honestly flagged in residual_risk, not hidden. PASS is defensible; evidence is concrete, not thin."
+  },
+  {
+   "check_id": "C-11",
+   "track": "C",
+   "priority": 7,
+   "founding_band": "MUST-FIX",
+   "verdict": "PARTIAL",
+   "na_justification": null,
+   "probe": "Tried to falsify 'running AI risk-management programme producing durable per-system evidence as a pipeline by-product' by looking for (a) any runtime AI system to govern and (b) whether the evidence artifacts are pipeline-emitted and gate-bound rather than hand-written prose.",
+   "evidence": "No runtime AI system exists in the served product (index.html + dashboard.jsx frozen data + Recharts; bubblegauge.jsx GET-only, no model). So there is nothing to run a *runtime* AI risk programme over. The DEV-assurance analogue IS real and pipeline-emitted: audit/ tree (03-findings.json, engagement-status.json, 06-residual-risk-register, catalogue) plus verify/ gate. gate.js recomputes/verifies engagement-status computed fields (verify/tests/50-gate-selftest asserts gate BLOCKS production_eligible=true and findings/catalogue count drift). engagement-status.json is computed_by 'phase-3 merge (gate.js verifies these computed fields)'. verify.yml runs on push/PR. What is ABSENT: any per-'AI system' evidence artifact for a governed runtime system (there is none), and any continuous programme beyond the dev gate.",
+   "standing_control": {
+    "exists_now": true,
+    "mechanism": "verify/ gate (run.js + gate.js) + audit/ findings/engagement-status, with 50-gate-selftest proving gate.js blocks tampered/over-claimed status",
+    "blocks": "a merge that asserts false production-eligibility or drops findings vs the active catalogue; a decorative (never-refusing) gate",
+    "cadence": "on push/PR (.github/workflows/verify.yml)",
+    "ratchet": "open-blocker counts + evidenced_check_count in engagement-status.json; findings/catalogue count parity"
+   },
+   "structural_fix": {
+    "available": true,
+    "taken": true,
+    "rationale": "S13 door taken as a dev-assurance pipeline (deterministic gate emits durable audit artifacts). It governs the authoring pipeline, not a runtime AI system, because no runtime AI system exists to govern."
+   },
+   "residual_risk": {
+    "compensating_control": "git history as append-only public provenance; gate self-test keeps the evidence pipeline non-decorative",
+    "owner": "repo owner mglaeser",
+    "tripwire": "the day a runtime model/agent is added to the product with no per-system evidence artifact emitted by the pipeline"
+   },
+   "substitution": "S3 S12",
+   "wave": null,
+   "history": [
+    {
+     "date": "2026-07-16",
+     "event": "initialised NO-EVIDENCE at Phase 0'"
+    },
+    {
+     "date": "2026-07-16",
+     "event": "assessed PARTIAL"
+    }
+   ],
+   "remediation": "None needed for a static site; keep the dev-assurance evidence pipeline standing. Re-opens to a full programme requirement only if a runtime AI system is introduced \u2014 the standing control that must then exist is a per-system evidence emitter bound into gate.js.",
+   "adversarial_verification": "agreed: Runtime slice genuinely has no surface (no runtime model/agent in served product). Dev-assurance evidence pipeline is real and committed: gate.js recomputes engagement-status computed fields; 50-gate-selftest proves it blocks; verify.yml runs on push/PR. Full continuous per-system programme absent. PARTIAL is honest/conservative (could arguably be PASS on the dev slice); not an over-claim. R-GATE (advisory gate) disclosed."
+  },
+  {
+   "check_id": "C-12",
+   "track": "C",
+   "priority": 7,
+   "founding_band": "MUST-FIX",
+   "verdict": "PARTIAL",
+   "na_justification": null,
+   "probe": "Attacked 'least agency / read-write scope separation / tested self-firing kill switch / scheduled auto-removal of unused scopes' by checking for a runtime agent with scopes, and for the dev pipeline's write authority and any tested kill switch.",
+   "evidence": "Runtime slice is N/A: the product has no agent, no permissions, no scopes, no autonomy \u2014 it renders frozen arrays. Dev-agency slice is real: a single git push identity has broad write to main (R-SEP: agent and gate share one identity; write-separation impossible on one repo/one push identity). A tested kill-switch analogue DOES exist: verify/tests/50-gate-selftest drives gate.js against synthetic violations and asserts non-zero exit (blocks PASS-without-standing-control, over-claimed production_eligible, failed required test). ABSENT: any scheduled auto-removal of unused scopes; and the kill switch is advisory on main because R-GATE (branch protection) is not yet effective \u2014 verify/ is not on the production branch, so the gate does not hard-block a push.",
+   "standing_control": {
+    "exists_now": true,
+    "mechanism": "50-gate-selftest (gate refuses tampered/over-claimed trees) as the kill-switch-for-the-pipeline",
+    "blocks": "a gate that would green-light an over-claim or a failed required test \u2014 proves the gate is not decorative",
+    "cadence": "on push/PR",
+    "ratchet": "gate exit-code selftest cases (monotone: cases only added)"
+   },
+   "structural_fix": {
+    "available": true,
+    "taken": false,
+    "rationale": "S13 door for least-agency (per-agent scoped short-lived creds, write/read separation) is NOT structurally available on a single-repo single-push-identity model \u2014 R-SEP residual. The kill-switch door is taken; the scope-separation door is not."
+   },
+   "residual_risk": {
+    "compensating_control": "deterministic gate self-test + public hash-chained git history; small blast radius (public read-only static site, no runtime authority)",
+    "owner": "repo owner mglaeser",
+    "tripwire": "a push to main that skips the gate while R-GATE branch protection is not enforcing verify/ \u2014 currently possible"
+   },
+   "substitution": "S12",
+   "wave": null,
+   "history": [
+    {
+     "date": "2026-07-16",
+     "event": "initialised NO-EVIDENCE at Phase 0'"
+    },
+    {
+     "date": "2026-07-16",
+     "event": "assessed PARTIAL"
+    }
+   ],
+   "remediation": "Land verify/ on main and turn on branch protection so the gate self-test is a *blocking* required check (closes R-GATE), making the tested kill switch enforcing rather than advisory. Runtime scope-separation stays N/A until a runtime agent exists.",
+   "adversarial_verification": "agreed: Tested kill-switch analogue = 50-gate-selftest, verified: gate.js exits non-zero on tampered/over-claimed trees. R-SEP (one push identity) and R-GATE (gate advisory, not blocking on main because verify/ not a required check) are both honestly disclosed. No scheduled scope removal exists. PARTIAL correct; not FAIL because the tested kill switch genuinely exists, and no human-review control is proposed."
+  },
+  {
+   "check_id": "C-13",
+   "track": "C",
+   "priority": 6,
+   "founding_band": "SHOULD-FIX",
+   "verdict": "NOT-APPLICABLE",
+   "na_justification": "No ISO42001-style AI Management System is claimed anywhere in the repo (no 'AIMS', 'ISO 42001', 'statement of applicability' string in README/CLAUDE.md/governance). The check fires only against an ASSERTED management system needing a Statement of Applicability + per-control audit evidence; the passing posture for a system this small is to make no such claim, which is the actual state. There is no unsubstantiated AIMS claim to falsify.",
+   "probe": "Attempted to find an AIMS/ISO42001/SoA claim to convict as unsubstantiated: grepped governance/, README.md, CLAUDE.md, INTEGRATION_NOTES.md, audit/ for 'ISO', '42001', 'AIMS', 'statement of applicability', 'management system'. Also checked whether the constitution or engagement-status overclaims a certified regime.",
+   "evidence": "No AIMS/ISO42001 string exists in the served files or governance/. What DOES exist is a lighter-weight de-facto governance regime (governance/constitution.md RATIFIED, hash-bound governance/constitution-digest.md, verify/ deterministic gate) \u2014 but it is explicitly framed as a policy bundle, never as a certified AIMS with a SoA. The claims-integrity gate verify/tests/70-claims.test.js already convicts specific overclaims (e.g. it forbids the 'byte-for-byte the original atlas' string, lines 19-21), so a future fabricated 'ISO42001 certified' banner is the class of defect that regime is built to catch, but no such claim is present now.",
+   "standing_control": {
+    "exists_now": true,
+    "mechanism": "verify/tests/70-claims.test.js (Article X 'names are claims' claims-integrity gate) blocks re-introduction of enumerated overclaims; it is the substrate that would convict a false AIMS/certification claim if one were added and enumerated.",
+    "blocks": "silent re-introduction of a corrected false public claim; does NOT yet enumerate an AIMS-certification assertion (none exists to enumerate)",
+    "cadence": "on push/PR (CI verify.yml) plus local gate",
+    "ratchet": "count of corrected-and-frozen false claims (monotone; a reintroduced claim turns CI red)"
+   },
+   "structural_fix": {
+    "available": true,
+    "taken": false,
+    "rationale": "The door (claims ledger) exists; making it explicitly forbid an unearned certification claim is a one-line addition, but there is nothing to forbid until someone tries to claim certification. No fix owed at baseline."
+   },
+   "residual_risk": {
+    "compensating_control": "Constitution + verify/ regime is honestly scoped as a policy bundle, not a certified AIMS; claims gate would catch an enumerated overclaim.",
+    "owner": "repo owner mglaeser",
+    "tripwire": "any commit adding an 'ISO42001'/'AIMS'/'certified' claim to README/CLAUDE.md without a corresponding SoA + audit-evidence artifact \u2014 add that string to 70-claims to re-open."
+   },
+   "substitution": "",
+   "wave": null,
+   "history": [
+    {
+     "date": "2026-07-16",
+     "event": "initialised NO-EVIDENCE at Phase 0'"
+    },
+    {
+     "date": "2026-07-16",
+     "event": "assessed NOT-APPLICABLE"
+    }
+   ],
+   "remediation": "None required at baseline. If the project ever markets an AI-management-system posture, it becomes applicable: the tripwire is any 'ISO42001/AIMS/certified' string appearing without a Statement of Applicability + per-control evidence artifact, which should be added to verify/tests/70-claims.test.js so the unearned claim turns CI red.",
+   "adversarial_verification": "agreed: Grepped governance/, README.md, CLAUDE.md, INTEGRATION_NOTES.md, audit/ \u2014 no 'ISO 42001', 'AIMS', 'statement of applicability', or certified-management-system claim exists in served files or governance. C-13 fires on an ASSERTED certified AIMS/SoA; none is present to falsify. The de-facto governance regime is honestly scoped as a policy bundle. N/A grounded. (Minor: could be read as PARTIAL if C-13 covered any documented governance regime, but the check targets certification claims specifically, so N/A stands.)"
+  },
+  {
+   "check_id": "C-14",
+   "track": "C",
+   "priority": 6,
+   "founding_band": "SHOULD-FIX",
+   "verdict": "PARTIAL",
+   "na_justification": null,
+   "probe": "Tried to find a model-judged gate in the CI pipeline that could be gamed by a same-vendor judge (the failure mode C-14 targets): read verify/run.js wiring and every tests/*.js to check whether any acceptance gate calls an LLM to grade output. If a judged gate existed and were deterministic-reducible, that would be a FAIL; if a judge remained without external-label validation or vendor diversity, that is the residual.",
+   "evidence": "Every acceptance gate in verify/ is DETERMINISTIC \u2014 the ideal end-state C-14 pushes toward. Concretely: 10-data-invariants (numeric invariants), 20-golden-content (sha256 golden hash of frozen data/content), 30-static-security (regex/parse over source: SRI, KEY_RE at >=2 sites, no dangerouslySetInnerHTML, no-secret idioms), 35-supply-chain (pinned-deps manifest), 40-sri-recompute (recompute hashes), 50-gate-selftest, 60-governance (constitution-hash binding, workflow wiring), 70-claims (regex claims-integrity). ZERO of these invoke a model to judge pass/fail. The only model-graded step in the whole operating model is the out-of-band adversarial verifier (this audit), authored by a SINGLE vendor (Anthropic) \u2014 Part-1 residual R-VENDOR. There is no cross-vendor judge and no external-label validation harness committed in verify/.",
+   "standing_control": {
+    "exists_now": true,
+    "mechanism": "The deterministic-gate suite (verify/tests/10..70 + run.js + gate.js) \u2014 no judged gate exists to validate, which discharges C-14 clauses (1) 'eliminate judged gates that can be deterministic' fully.",
+    "blocks": "acceptance of a change that fails any deterministic invariant; blocks the class of judge-gaming attacks by having no acceptance judge to game",
+    "cadence": "on push/PR + local gate",
+    "ratchet": "mutation score in verify/golden (measured 1.00, floor 0.75) \u2014 the deterministic proxy for gate strength"
+   },
+   "structural_fix": {
+    "available": true,
+    "taken": true,
+    "rationale": "The door \u2014 replace judged gates with deterministic ones (S13 structure-over-policing) \u2014 is not merely available, it is the design: the acceptance path has no LLM judge at all. What remains un-taken is judge-diversity on the adversarial verifier (a second-vendor cross-check)."
+   },
+   "residual_risk": {
+    "compensating_control": "Deterministic gates catch regressions independent of any judge; git history is public/hash-chained; mutation score floor guards gate strength.",
+    "owner": "ai-security / repo owner mglaeser",
+    "tripwire": "the honest gap: no executable signal detects same-vendor judge blind-spots \u2014 a defect the single verifier vendor is systematically blind to would pass silently. A second-vendor spot-audit or an external-label corpus run would supply one."
+   },
+   "substitution": "S1 S3",
+   "wave": null,
+   "history": [
+    {
+     "date": "2026-07-16",
+     "event": "initialised NO-EVIDENCE at Phase 0'"
+    },
+    {
+     "date": "2026-07-16",
+     "event": "assessed PARTIAL"
+    }
+   ],
+   "remediation": "Smallest real step: add a periodic second-vendor (non-Anthropic) cross-audit of the adversarial-verifier output, or a small external-label corpus the deterministic suite scores against, so R-VENDOR has an executable tripwire. The standing control that must exist: a committed judge-diversity or external-label check with a recorded catch rate. The deterministic-gate posture (clause 1) is already the win and needs no change.",
+   "adversarial_verification": "agreed: Read all of verify/tests/10-70 plus run.js/gate.js: every acceptance gate is deterministic (numeric invariants, sha256 golden hash, regex/parse static-security, pinned-deps, SRI recompute, governance-hash, claims regex). ZERO invoke an LLM to judge pass/fail \u2014 clause (1) discharged. R-VENDOR residual honest: single-vendor adversarial verifier, no cross-vendor judge or external-label harness committed. PARTIAL correct, not over-claimed."
+  },
+  {
+   "check_id": "C-15",
+   "track": "C",
+   "priority": 7,
+   "founding_band": "MUST-FIX",
+   "verdict": "PARTIAL",
+   "na_justification": null,
+   "probe": "Tried to break 'guardrails have their own adversarial tests + measured FP/FN + CI gate + CONTINUOUS red-team' by locating any runtime guardrail, then testing whether the dev guardrail is itself adversarially exercised and whether red-teaming is continuous vs a fixed corpus.",
+   "evidence": "No runtime model guardrail exists (no model, no prompt filter). The dev analogue is strong and standing: verify/tests/50-gate-selftest is the guardrail-for-the-guardrail \u2014 it applies synthetic violations to audit/ + results and asserts the gate exits non-zero (guardrail proven to refuse). Additionally verify/mutation.js measured mutation score 1.00 (floor 0.75) and calibration corpus verify/calibration/corpus.json catches 6/6 seeded defects \u2014 an FP/FN-style measurement on the detector suite. CI gate = .github/workflows/verify.yml on push/PR. ABSENT for a full PASS: 'CONTINUOUS red-team' is a FIXED seeded corpus + fixed mutation set, not a continuously-regenerated adversarial process; and there is no runtime guardrail to measure runtime FP/FN on.",
+   "standing_control": {
+    "exists_now": true,
+    "mechanism": "50-gate-selftest + mutation.js (score 1.00) + calibration corpus (6/6)",
+    "blocks": "a gate/detector suite that fails to catch its seeded violations or drops below the mutation floor",
+    "cadence": "on push/PR",
+    "ratchet": "mutation score (floor 0.75, at 1.00) and calibration catch-rate (6/6)"
+   },
+   "structural_fix": {
+    "available": true,
+    "taken": true,
+    "rationale": "S13 door taken for the dev guardrail (adversarial self-test + mutation + calibration). The 'continuous' red-team door is not taken \u2014 corpus is fixed, not regenerated."
+   },
+   "residual_risk": {
+    "compensating_control": "mutation floor + calibration corpus keep the detector honest against known defect classes",
+    "owner": "repo owner mglaeser",
+    "tripwire": "a novel defect class outside the fixed corpus/mutation set slips the gate with no continuous adversarial generator to surface it"
+   },
+   "substitution": "S12",
+   "wave": null,
+   "history": [
+    {
+     "date": "2026-07-16",
+     "event": "initialised NO-EVIDENCE at Phase 0'"
+    },
+    {
+     "date": "2026-07-16",
+     "event": "assessed PARTIAL"
+    }
+   ],
+   "remediation": "Keep the gate self-test + mutation + calibration standing; the smallest step toward the full ask is periodic corpus/mutation-set expansion (a scheduled ratchet on the seed count). Runtime-guardrail FP/FN stays N/A until a runtime model guardrail exists.",
+   "adversarial_verification": "agreed: Confirmed 50-gate-selftest + mutation.js (floor 0.75, baseline 1.00 in ratchet.json) + calibration corpus (6/6, 6 seeded defect classes). Continuous red-team absent \u2014 corpus is fixed. No runtime guardrail exists. PARTIAL accurately reflects a strong-but-not-continuous dev guardrail; controls verified present."
+  },
+  {
+   "check_id": "C-16",
+   "track": "C",
+   "priority": 7,
+   "founding_band": "MUST-FIX",
+   "verdict": "PARTIAL",
+   "na_justification": null,
+   "probe": "Attacked 'per-agent managed identities + short-lived scoped creds + no borrowing a human session + agent-to-agent trust' by looking for multiple identities, credential stores, and any inter-agent call surface.",
+   "evidence": "There is ONE identity: the git push identity, shared by the authoring agent and the gate (R-SEP). No agent-to-agent calls, no service accounts, no vault, no secrets \u2014 verify/tests/30-static-security forbids every secret idiom (sk-, ghp_, AKIA, Bearer, X-API-Key, Authorization) in served source, so no long-lived credential is embedded. ABSENT: per-agent managed identities and short-lived scoped creds (structurally impossible on one repo / one push identity). Agent-to-agent trust surface is N/A (no such calls exist). The honest state is a known, residualized R-SEP.",
+   "standing_control": {
+    "exists_now": true,
+    "mechanism": "30-static-security no-secrets scan (blocks any embedded credential/auth idiom in shipped source)",
+    "blocks": "a leaked or hard-coded credential entering the served files",
+    "cadence": "on push/PR",
+    "ratchet": "secret-idiom pattern set (monotone: patterns only added)"
+   },
+   "structural_fix": {
+    "available": false,
+    "taken": false,
+    "rationale": "S13 door for per-agent scoped identities is not available on a single-repo single-push-identity model \u2014 R-SEP. No structural door exists at baseline to separate agent from gate identity."
+   },
+   "residual_risk": {
+    "compensating_control": "no-secrets scan + public hash-chained git history; nothing to steal (no creds exist) and read-only public target",
+    "owner": "repo owner mglaeser",
+    "tripwire": "introduction of any credential/token into source (30-static-security goes red) or a second automated identity that shares the push key"
+   },
+   "substitution": "S3",
+   "wave": null,
+   "history": [
+    {
+     "date": "2026-07-16",
+     "event": "initialised NO-EVIDENCE at Phase 0'"
+    },
+    {
+     "date": "2026-07-16",
+     "event": "assessed PARTIAL"
+    }
+   ],
+   "remediation": "Accept R-SEP as an owner-residual (write-separation impossible here); the standing control to preserve is the no-secrets scan. Agent-to-agent/vault requirements re-open only if a second identity or a secret is introduced.",
+   "adversarial_verification": "agreed: One shared git push identity (R-SEP) honestly stated; structural_fix available:false is correct \u2014 per-agent scoped creds are not achievable on single-repo model. 30-static-security no-secrets scan verified (forbids sk-/ghp_/AKIA/Bearer/X-API-Key/Authorization idioms). Agent-to-agent surface genuinely absent. PARTIAL correct, no over-claim."
+  },
+  {
+   "check_id": "C-17",
+   "track": "C",
+   "priority": 7,
+   "founding_band": "MUST-FIX",
+   "verdict": "PARTIAL",
+   "na_justification": null,
+   "probe": "Tried to falsify 'tool descriptions pinned on first use, diffed on change, blocking' \u2014 first confirming no tools are exposed to any model, then testing whether the structurally-equivalent third-party code (CDN libs) is pinned-and-diffed with a blocking check.",
+   "evidence": "The product gives NO tools to any model (no MCP, no tool server). The pin-and-diff analogue is the 4 CDN libraries loaded by index.html, and it is strong and standing: verify/tests/35-supply-chain asserts the CDN <script src> URLs match golden/pinned-deps.json EXACTLY (catches a silent version bump offline), and verify/tests/40-sri-recompute re-derives the sha384 of the fetched bytes and requires it to equal the integrity attribute (a changed byte fails). 30-static-security additionally asserts all 5 tags carry sha384 integrity + crossorigin. So a changed dependency 'description' (bytes/version) fails the hash \u2014 structurally pin+diff+block. CAVEAT: 40-sri self-labels NO-EVIDENCE-OFFLINE when egress is blocked, so the byte-recompute is not guaranteed in every CI run; the offline-deterministic 35-supply-chain pin match still always blocks a version bump.",
+   "standing_control": {
+    "exists_now": true,
+    "mechanism": "35-supply-chain (exact pin-manifest match, offline) + 40-sri-recompute (byte hash vs integrity, online) + 30-static-security (integrity+crossorigin present)",
+    "blocks": "a silent CDN version bump or byte drift of a pinned dependency",
+    "cadence": "on push/PR",
+    "ratchet": "pinned-deps manifest + SRI hashes (any change requires recompute)"
+   },
+   "structural_fix": {
+    "available": true,
+    "taken": true,
+    "rationale": "S13 pin-and-verify door taken for third-party code. The MCP/tool-server pinning door is N/A \u2014 no tool surface exists."
+   },
+   "residual_risk": {
+    "compensating_control": "offline pin-manifest match still blocks version bumps when the online recompute is NO-EVIDENCE-OFFLINE",
+    "owner": "repo owner mglaeser",
+    "tripwire": "40-sri persistently NO-EVIDENCE-OFFLINE would leave byte-recompute uncovered; and adding any model tool surface re-opens the true MCP-poisoning check"
+   },
+   "substitution": "S3",
+   "wave": null,
+   "history": [
+    {
+     "date": "2026-07-16",
+     "event": "initialised NO-EVIDENCE at Phase 0'"
+    },
+    {
+     "date": "2026-07-16",
+     "event": "assessed PARTIAL"
+    }
+   ],
+   "remediation": "Keep pin-manifest + SRI standing; ensure CI has egress so 40-sri actually recomputes rather than banding offline. The MCP tool-poisoning surface stays N/A until a tool server is added.",
+   "adversarial_verification": "agreed: Pin-and-diff analogue verified: 35-supply-chain matches CDN URLs to golden/pinned-deps.json offline; 40-sri recomputes sha384 vs integrity online and self-labels NO-EVIDENCE-OFFLINE (not silent-pass). The offline caveat is disclosed and browser-level SRI enforces bytes at runtime regardless. No tool/MCP surface exists. PARTIAL honest."
+  },
+  {
+   "check_id": "C-18",
+   "track": "C",
+   "priority": 7,
+   "founding_band": "MUST-FIX",
+   "verdict": "PARTIAL",
+   "na_justification": null,
+   "probe": "Attacked 'connector/tool-server security: method-level authz, server allowlist agents cannot write, no creds in tool args, shadowing/rug-pull scanning' against the ONLY external connector \u2014 the optional bubblegauge status API.",
+   "evidence": "No MCP/tool servers exist. The single external connector is the gated status API. It is hardened by standing tests: 30-static-security asserts KEY_RE ^[a-z0-9-]{1,32}$ is enforced at >=2 sites and that an unvalidated key returns null before base derivation, and that the base is ONLY 'https://'+key+'.'+parent (a dot fails, so ?status-api=evil.com is rejected \u2014 host cannot be arbitrary, an agent/user cannot rewrite the allowlisted parent domain). The fetch is GET-only with headers {accept:'application/json'} (bubblegauge.jsx line ~300) \u2014 no Authorization/X-API-Key sent (30-static-security forbids those idioms). Response is boundary-validated (validScore/isNum/pair, lines 274-281) and rendered as auto-escaped React data; no dangerouslySetInnerHTML on feed data. ABSENT: any shadowing/rug-pull scanning of the external host (it is a live service outside this repo's code scope); method-level authz is N/A (public unauthenticated GET).",
+   "standing_control": {
+    "exists_now": true,
+    "mechanism": "30-static-security (KEY_RE at both use sites, subdomain-only base, no auth-header idioms, no injection sinks) + boundary validators in bubblegauge.jsx",
+    "blocks": "an arbitrary/attacker host being fetched, a credential being attached to the call, and unvalidated feed data reaching an HTML sink",
+    "cadence": "on push/PR",
+    "ratchet": "KEY_RE test-site count (>=2) and secret-idiom pattern set"
+   },
+   "structural_fix": {
+    "available": true,
+    "taken": true,
+    "rationale": "S13 door taken: whitelist-key + subdomain-only construction + GET-only + boundary validation bound the connector. No door exists to scan the external host's behaviour (rug-pull) from a static site \u2014 that surface is unowned."
+   },
+   "residual_risk": {
+    "compensating_control": "key regex + subdomain pin + response validators; blast radius bounded to bad text/link rendered in the panel (no consequential action, no data to exfiltrate)",
+    "owner": "ai-security / repo owner mglaeser",
+    "tripwire": "a compromised status API returning malicious source/as_of labels or provenance hrefs \u2014 rendered as escaped text/hardened links, but not scanned for rug-pull content"
+   },
+   "substitution": "S3",
+   "wave": null,
+   "history": [
+    {
+     "date": "2026-07-16",
+     "event": "initialised NO-EVIDENCE at Phase 0'"
+    },
+    {
+     "date": "2026-07-16",
+     "event": "assessed PARTIAL"
+    }
+   ],
+   "remediation": "Keep the KEY_RE + subdomain-pin + GET-only + validator controls standing; the smallest add for the residual is tighter rendering constraints on external provenance href/label content (e.g. scheme allowlist on the tooltip link). MCP method-level authz stays N/A.",
+   "adversarial_verification": "agreed: Connector hardening verified in bubblegauge.jsx: KEY_RE line 25, early null-return line 44, subdomain-only base line 57 (a dot fails, so ?status-api=evil.com rejected), GET-only fetch line 300 with no auth header, validScore/isNum/pair validators lines 274-281. 30-static-security asserts KEY_RE at >=2 sites and no-injection-sinks. Rug-pull scanning of external host genuinely absent (unowned). PARTIAL correct."
+  },
+  {
+   "check_id": "C-19",
+   "track": "C",
+   "priority": 6,
+   "founding_band": "SHOULD-FIX",
+   "verdict": "NOT-APPLICABLE",
+   "na_justification": "The served product has NO persistent agent memory and NO retrieved context: no RAG, no vector store, no cross-session store, no conversation memory, no agent that reads prior state. The site renders frozen arrays from dashboard.jsx plus an optional read-only status feed that is validated and rendered as data, never remembered. There is no writable memory surface a cross-session plant could target, so the C-19 attack has no landing zone in the product.",
+   "probe": "Attempted a cross-session poisoning plant: searched bubblegauge.jsx and dashboard.jsx for any write to persistent storage that later feeds agent/model context (localStorage/IndexedDB/vector writes, memory files, retrieved-context assembly). Confirmed the only browser persistence is sessionStorage holding the ?status-api KEY STRING (KEY_RE ^[a-z0-9-]{1,32}$), which is never fed to any model and is scoped to a single session. Also probed the dev-analogue: whether an agent could plant poisoned 'context' by mutating the frozen crisis data that all agents treat as ground truth.",
+   "evidence": "No embeddings/vector/RAG/memory constructs exist in bubblegauge.jsx or dashboard.jsx (Phase-0' baseline; no such imports or stores). sessionStorage holds only the activation key. The dev-analogue \u2014 poisoning the frozen ground-truth data \u2014 is structurally blocked: verify/tests/20-golden-content.test.js pins a sha256 of the frozen crisis numbers/content (golden/data-hash.json), so a silent poisoning edit changes the hash and turns CI red; changing it legitimately requires a decision record (constitution Article XIII / CLAUDE.md). Article XI ('Memory') records that git history is the append-only, hash-chained substitute for a signed evidence ledger.",
+   "standing_control": {
+    "exists_now": true,
+    "mechanism": "verify/tests/20-golden-content.test.js golden data/content hash \u2014 the structural equivalent that blocks poisoning of the only 'shared context' agents rely on (the frozen data).",
+    "blocks": "any silent mutation of frozen crisis data / golden content (the dev-analogue of a memory plant)",
+    "cadence": "on push/PR + local gate",
+    "ratchet": "golden hash equality (any drift = red; intentional change requires a decision record)"
+   },
+   "structural_fix": {
+    "available": true,
+    "taken": true,
+    "rationale": "The door for the only applicable slice (frozen-data integrity) is the golden hash, and it is committed and enforcing. The product-side memory surface does not exist, so there is nothing further to fix."
+   },
+   "residual_risk": {
+    "compensating_control": "Golden hash + decision-record friction on frozen data; single-session key-only sessionStorage.",
+    "owner": "ai-security / repo owner mglaeser",
+    "tripwire": "adding any RAG/vector/persistent-agent-memory feature, OR a golden-hash mismatch in CI \u2014 either re-opens this check with a real product surface."
+   },
+   "substitution": "S1",
+   "wave": null,
+   "history": [
+    {
+     "date": "2026-07-16",
+     "event": "initialised NO-EVIDENCE at Phase 0'"
+    },
+    {
+     "date": "2026-07-16",
+     "event": "assessed NOT-APPLICABLE"
+    }
+   ],
+   "remediation": "None owed. Applicability re-opens if a retrieval/memory/vector feature is added; the required standing control would then be an access-control + provenance test on writes to that store, plus a cross-session plant test in the calibration corpus.",
+   "adversarial_verification": "agreed: No RAG/vector/embedding/persistent-agent-memory constructs in bubblegauge.jsx or dashboard.jsx. sessionStorage holds only the KEY_RE-validated activation key (lines 35-42), never fed to a model, single-session. The 'similarity' code is a hand-set-dimension distance over frozen public data, not a memory store. Dev-analogue (poisoning frozen ground truth) is blocked by 20-golden-content sha256 hash. No memory-plant landing zone. N/A grounded."
+  },
+  {
+   "check_id": "C-20",
+   "track": "C",
+   "priority": 6,
+   "founding_band": "SHOULD-FIX",
+   "verdict": "PARTIAL",
+   "na_justification": null,
+   "probe": "For each Responsible-AI dimension (fairness, explainability, transparency, contestability, veracity, robustness, controllability) tried to establish whether the product makes an automated decision ABOUT A PERSON that the dimension would govern, and whether an owner + automated measure + threshold exists. Falsification target: claim a dimension is 'covered' where no automated measure/threshold is actually committed.",
+   "evidence": "The product makes NO automated decision about people: no scoring/ranking/eligibility of persons, no user accounts, no profiling (Phase-0' baseline). So fairness, contestability, controllability, robustness-against-adversarial-user, and explainability-of-a-decision are IMMATERIAL \u2014 there is no decision subject. Two dimensions have a thin, real surface: (a) TRANSPARENCY/VERACITY of the displayed data \u2014 bubblegauge.jsx renders provenance labels ('source', 'as_of', 'note') on feed indicators (lines 601-602, 981) and a 'full methodology' link, and CLAUDE.md discloses AI authorship; (b) label VERACITY is enforced by verify/tests/70-claims.test.js (Article X), which convicted the misdescriptive 'Median max drawdown' label and now forbids its regression (lines 14-17). What is ABSENT: a per-dimension register with named owner + automated measure + numeric threshold; only the veracity/label slice has an automated measure.",
+   "standing_control": {
+    "exists_now": true,
+    "mechanism": "verify/tests/70-claims.test.js \u2014 automated veracity/transparency measure on public labels (names-are-claims); blocks reintroduction of a misdescriptive/false label.",
+    "blocks": "misdescriptive data labels and stale/overclaimed provenance text on the served surface",
+    "cadence": "on push/PR + local gate",
+    "ratchet": "count of frozen-corrected claims (monotone)"
+   },
+   "structural_fix": {
+    "available": true,
+    "taken": false,
+    "rationale": "The door \u2014 a per-dimension RAI register mapping each material dimension to an owner+measure+threshold \u2014 is buildable, but only the veracity dimension currently has an executable measure; the decision-about-people dimensions have no surface to instrument."
+   },
+   "residual_risk": {
+    "compensating_control": "Claims gate on label veracity; provenance labels give transparency of data source; no decisioning surface means no fairness/contestability exposure.",
+    "owner": "ai-security / repo owner mglaeser",
+    "tripwire": "adding any feature that scores/classifies/recommends about a person re-opens the immaterial dimensions with real owners+thresholds required."
+   },
+   "substitution": "S3",
+   "wave": null,
+   "history": [
+    {
+     "date": "2026-07-16",
+     "event": "initialised NO-EVIDENCE at Phase 0'"
+    },
+    {
+     "date": "2026-07-16",
+     "event": "assessed PARTIAL"
+    }
+   ],
+   "remediation": "Smallest real step: write a one-page RAI dimension register marking fairness/contestability/controllability/robustness as N/A-no-decisioning with the re-open tripwire, and binding transparency+veracity to the existing 70-claims measure with an explicit owner. Standing control that must exist for full PASS: the register committed and referenced so a new decisioning feature cannot ship without instrumenting the now-material dimensions.",
+   "adversarial_verification": "agreed: Confirmed no automated decision about persons (no accounts/scoring/profiling), so fairness/contestability/controllability/robustness are immaterial. Real thin surface: transparency/veracity of displayed data \u2014 bubblegauge.jsx line 601 renders source/as_of/note provenance; 70-claims enforces label veracity (convicted 'Median max drawdown', now forbidden). No per-dimension RAI register with owner+measure+threshold. PARTIAL correct."
+  },
+  {
+   "check_id": "C-21",
+   "track": "C",
+   "priority": 7,
+   "founding_band": "MUST-FIX",
+   "verdict": "NOT-APPLICABLE",
+   "na_justification": "No custom or fine-tuned model exists anywhere in the product or its authoring pipeline, and therefore no training/fine-tuning dataset exists to govern. Per the batch's explicit escalation clause, C-21 is N/A when no custom/fine-tuned model is present. The site renders frozen historical arrays (golden-hashed) and Recharts; the AI vendor is used off-repo to author code, not trained/tuned on any dataset owned here.",
+   "probe": "Searched for any model artifact, training/tuning dataset, data-governance manifest, or fine-tune config; confirmed the product ships only frozen data arrays and third-party UMD libs, and that authoring uses a stock vendor model with no tuning.",
+   "evidence": "dashboard.jsx holds frozen crisis-market number arrays (golden/data-hash.json freezes them); no model weights, no dataset, no training pipeline anywhere in the repo. No fine-tune configuration. Explicit escalation-clause N/A.",
+   "standing_control": {
+    "exists_now": false,
+    "mechanism": "none \u2014 there is no training/tuning surface to place a control on",
+    "blocks": "nothing",
+    "cadence": "none",
+    "ratchet": "none"
+   },
+   "structural_fix": {
+    "available": false,
+    "taken": false,
+    "rationale": "No door to build because there is no training data to govern at baseline."
+   },
+   "residual_risk": {
+    "compensating_control": "n/a \u2014 no training-data surface",
+    "owner": "ai-security / repo owner mglaeser",
+    "tripwire": "the day any custom or fine-tuned model is trained or tuned for this product"
+   },
+   "substitution": "",
+   "wave": null,
+   "history": [
+    {
+     "date": "2026-07-16",
+     "event": "initialised NO-EVIDENCE at Phase 0'"
+    },
+    {
+     "date": "2026-07-16",
+     "event": "assessed NOT-APPLICABLE"
+    }
+   ],
+   "remediation": "No action. Re-opens the moment a model is trained or fine-tuned for this product \u2014 at which point a training-data governance manifest (provenance, consent/licensing, retention) bound into the gate becomes the required standing control.",
+   "adversarial_verification": "agreed: No custom/fine-tuned model and no training/tuning dataset anywhere. Frozen crisis-market arrays in dashboard.jsx are display data (golden-hashed), not training data \u2014 this is not a hidden applicable surface. Escalation clause makes C-21 N/A absent a custom/fine-tuned model. Justification is architecture-grounded."
+  },
+  {
+   "check_id": "C-22",
+   "track": "C",
+   "priority": 7,
+   "founding_band": "MUST-FIX",
+   "verdict": "NOT-APPLICABLE",
+   "na_justification": "No retrieval-augmented generation exists: there is no retriever, no vector store/embeddings, no generator/model in the product. Nothing retrieves context and nothing generates from it, so retriever-precision/recall vs generator-faithfulness (floor ~0.85) has no surface. The AI-2026 panel is fed either frozen fixtures or a validated status-API feed rendered as data \u2014 not a RAG pipeline.",
+   "probe": "Looked for any vector store, embedding step, retriever, or generator wiring feeding a model; confirmed the only external data path (status API) is a validated GET rendered as React data with no generation step.",
+   "evidence": "No embeddings, no vector DB, no RAG code in dashboard.jsx or bubblegauge.jsx. The feed is boundary-validated (validScore/isNum/pair) and rendered as escaped data, never passed to a model. No generator exists to measure faithfulness against.",
+   "standing_control": {
+    "exists_now": false,
+    "mechanism": "none \u2014 no retrieval/generation surface",
+    "blocks": "nothing",
+    "cadence": "none",
+    "ratchet": "none"
+   },
+   "structural_fix": {
+    "available": false,
+    "taken": false,
+    "rationale": "No RAG door to build at baseline; no retriever/generator exists."
+   },
+   "residual_risk": {
+    "compensating_control": "n/a \u2014 no RAG surface",
+    "owner": "ai-security / repo owner mglaeser",
+    "tripwire": "the day a retriever+generator (RAG) is added to the product"
+   },
+   "substitution": "",
+   "wave": null,
+   "history": [
+    {
+     "date": "2026-07-16",
+     "event": "initialised NO-EVIDENCE at Phase 0'"
+    },
+    {
+     "date": "2026-07-16",
+     "event": "assessed NOT-APPLICABLE"
+    }
+   ],
+   "remediation": "No action. Adding any RAG pipeline re-opens this with a required standing control: separate retriever precision/recall and generator-faithfulness evaluation (floor ~0.85) gated in CI.",
+   "adversarial_verification": "agreed: No retriever, vector store, embeddings, or generator. The only external data path (status API GET) is boundary-validated and rendered as escaped React data, never fed to a model \u2014 no generation step to measure faithfulness against. No sub-surface applies. N/A grounded."
+  },
+  {
+   "check_id": "C-23",
+   "track": "C",
+   "priority": 8,
+   "founding_band": "BLOCKER-2",
+   "verdict": "NOT-APPLICABLE",
+   "na_justification": "No telemetry, log, trace, or prompt store exists anywhere in the product's surface. The site is a zero-build static SPA with no server, no backend, no database, no analytics/trackers, no cookies (audit/00-system-map.md 'No server-side stores... no analytics or trackers'; audit/00-audit-surface.json scheduled_jobs/queues/pipelines/prompts all empty). Nothing is logged to any sink: there is no emitter that could carry PII into logs/traces/prompts. The only browser storage is sessionStorage['bubblegauge:enabled'] holding the ?status-api key string (^[a-z0-9-]{1,32}$) and a 25-min in-memory fetch cache \u2014 neither is a log/trace/prompt sink and neither holds personal data. There is no runtime model, so there are no prompts or traces to scan. The check has no surface.",
+   "probe": "Tried to defeat the N/A by finding any sink that could receive PII: searched for console logging of user/feed data, any telemetry POST, any prompt/trace persistence, any cookie or localStorage write of personal data, and any analytics beacon. Found none; the only writes are the activation-key sessionStorage and the in-memory cache.",
+   "evidence": "No logging/telemetry egress in dashboard.jsx or bubblegauge.jsx (audit/00-system-map.md egress table is complete: unpkg, gated <prod-domain> GET, user-clicked etoro nav \u2014 no telemetry destination). No prompt store (audit/00-audit-surface.json prompts: []). No personal data is collected anywhere (no forms, no auth, no user accounts). Therefore redaction-at-emitter, retention limits, and continuous PII scanning have nothing to apply to.",
+   "standing_control": {
+    "exists_now": false,
+    "mechanism": "none \u2014 there is no log/trace/prompt sink to guard, so no test asserts redaction/retention (nothing to redact)",
+    "blocks": "nothing",
+    "cadence": "none",
+    "ratchet": "none"
+   },
+   "structural_fix": {
+    "available": true,
+    "taken": false,
+    "rationale": "The structural answer if a sink is ever added is the B-07 emitter door (redact-at-emitter + retention cap + continuous scan). It does not exist at baseline because no emitter exists; building it now would guard a surface that is absent."
+   },
+   "residual_risk": {
+    "compensating_control": "architecturally there is no sink; the absence is the control",
+    "owner": "privacy / repo owner mglaeser",
+    "tripwire": "the day a logging/telemetry/analytics sink or any runtime prompt store is added to the served site \u2014 that edit re-opens C-23 and must ship with the B-07 emitter-redaction + retention control"
+   },
+   "substitution": "",
+   "wave": null,
+   "history": [
+    {
+     "date": "2026-07-16",
+     "event": "initialised NO-EVIDENCE at Phase 0'"
+    },
+    {
+     "date": "2026-07-16",
+     "event": "assessed NOT-APPLICABLE"
+    }
+   ],
+   "remediation": "No action while no log/trace/prompt sink exists. Applicability re-opens the moment any telemetry, analytics, server log, or runtime prompt store is introduced; at that point the required standing control is a redact-at-emitter + retention-limit + continuous-PII-scan mechanism (B-07).",
+   "adversarial_verification": "agreed: Confirmed N/A across the whole surface. audit/00-audit-surface.json shows scheduled_jobs:[], queues:[], pipelines:[], prompts:[] and egress_destinations limited to unpkg/gated-<prod-domain>-GET/user-clicked-etoro \u2014 no telemetry destination, no analytics, no server log, no prompt store. The only browser storage is sessionStorage['bubblegauge:enabled'] (key string) and a 25-min in-memory cache \u2014 neither a log/trace/prompt sink nor personal data. No runtime model means no prompts/traces to redact. Redaction-at-emitter/retention/PII-scan have literally no surface to apply to. na_justification is architecture-grounded, not assumed. The tripwire (re-opens if any telemetry/analytics/prompt sink is added) is correct."
+  },
+  {
+   "check_id": "C-24",
+   "track": "C",
+   "priority": 7,
+   "founding_band": "MUST-FIX",
+   "verdict": "PARTIAL",
+   "na_justification": null,
+   "probe": "Attacked 'no secrets in prompts/system context; extraction tests; all security controls enforced OUTSIDE the model' by (a) checking for any model/system prompt to extract and (b) testing whether the 'controls outside the model' principle is actually held by a standing scan for secrets in source.",
+   "evidence": "There is no runtime model and no system prompt in the product, so the system-prompt-extraction / memorisation surface is N/A (nothing to leak from a model). The load-bearing principle \u2014 'security controls enforced deterministically OUTSIDE the model' \u2014 is the whole architecture here: every control is a deterministic verify/ test, not a model instruction. And 'no secrets in prompts/context' generalises to 'no secrets in source', which IS a held standing control: 30-static-security forbids sk-/ghp_/AKIA/Bearer/X-API-Key/Authorization idioms and the `|| \"<24+ char token fallback>\"` shape across all served files. So the assessable slice (no-secrets + controls-outside-model) is PASS-grade; the model-extraction slice is N/A.",
+   "standing_control": {
+    "exists_now": true,
+    "mechanism": "30-static-security no-secrets scan; the entire verify/ gate is deterministic (control lives outside any model)",
+    "blocks": "a secret entering shipped source; a control being implemented as a model instruction rather than a deterministic test",
+    "cadence": "on push/PR",
+    "ratchet": "secret-idiom pattern set (monotone)"
+   },
+   "structural_fix": {
+    "available": true,
+    "taken": true,
+    "rationale": "S13 door taken by construction: all enforcement is deterministic tooling outside any model. The extraction-test door is N/A \u2014 no model/system prompt exists."
+   },
+   "residual_risk": {
+    "compensating_control": "deterministic gate + no-secrets scan; no model context exists that could memorise or leak anything",
+    "owner": "ai-security / repo owner mglaeser",
+    "tripwire": "introduction of a runtime model/system prompt (extraction tests then become required) or a secret entering source (30-static-security goes red)"
+   },
+   "substitution": "S3",
+   "wave": null,
+   "history": [
+    {
+     "date": "2026-07-16",
+     "event": "initialised NO-EVIDENCE at Phase 0'"
+    },
+    {
+     "date": "2026-07-16",
+     "event": "assessed PARTIAL"
+    }
+   ],
+   "remediation": "Keep the no-secrets scan standing. If a runtime model/system prompt is ever added, the required new standing control is a prompt-extraction/memorisation test suite plus confirmation that all security controls remain enforced outside the model.",
+   "adversarial_verification": "no independent verdict returned (verdict retained as assessed; PARTIAL is conservative)"
+  },
+  {
+   "check_id": "C-25",
+   "track": "C",
+   "priority": 6,
+   "founding_band": "SHOULD-FIX",
+   "verdict": "PARTIAL",
+   "na_justification": null,
+   "probe": "C-25 APPLIES (essentially all code is machine-generated). Attacked the passing claim by looking for (1) a BLOCKING licence/copyleft scan gate in verify/, (2) a written IP position acknowledging US machine-authored-code has no copyright, (3) any vendored third-party code that could carry a copyleft obligation. Falsification target: assert 'IP is clear' with no enforcing gate and no written position.",
+   "evidence": "A LICENSE file EXISTS (MIT, 'Copyright (c) 2026 mglaeser', lines 1-3) \u2014 a partial artifact. But: (a) there is NO licence-scan / copyleft-scan gate in verify/ \u2014 none of tests/10..70 checks dependency or generated-code licensing; verify/gate.js enforces findings-integrity and production-eligibility, not IP. (b) There is NO written IP position anywhere addressing that the code is machine-authored and that US law grants no copyright to purely machine-authored code \u2014 CLAUDE.md discloses AI authorship operationally but takes no IP stance. Mitigating fact: the SHIPPED site vendors ZERO third-party source \u2014 React/Recharts/Babel/prop-types load from pinned unpkg CDN with SRI (verify/tests/35-supply-chain + 40-sri), they are not copied into the repo, so copyleft-contamination surface is near-zero and those deps are permissively licensed. So the risk is not contamination but an unstated IP position on the machine-authored first-party code.",
+   "standing_control": {
+    "exists_now": false,
+    "mechanism": "No licence/IP scan gate exists in verify/. LICENSE (MIT) is a static declaration, not an enforcing control; no test asserts its presence or scans for copyleft.",
+    "blocks": "nothing (no automated IP gate)",
+    "cadence": "none",
+    "ratchet": "none"
+   },
+   "structural_fix": {
+    "available": true,
+    "taken": false,
+    "rationale": "The buildable door: a short written IP position (machine-authored \u2192 no US copyright; owner applies MIT to the assembled work) plus a lightweight gate asserting LICENSE presence and scanning the (empty) vendored-dependency set for copyleft. Cheap because there are no vendored deps to scan; not yet built."
+   },
+   "residual_risk": {
+    "compensating_control": "MIT LICENSE present; zero vendored third-party source (all deps CDN-pinned + SRI), so copyleft contamination is structurally minimal.",
+    "owner": "repo owner mglaeser (with legal/IP as advisory)",
+    "tripwire": "the honest gap: nothing detects a future vendored copyleft file or a licence-header change; and no written record fixes the machine-authored IP position \u2014 add a LICENSE-presence + copyleft-scan test to supply one."
+   },
+   "substitution": "S3",
+   "wave": null,
+   "history": [
+    {
+     "date": "2026-07-16",
+     "event": "initialised NO-EVIDENCE at Phase 0'"
+    },
+    {
+     "date": "2026-07-16",
+     "event": "assessed PARTIAL"
+    }
+   ],
+   "remediation": "Smallest real step: (1) add a one-paragraph written IP position (US machine-authored code = no copyright; owner licenses the assembled work MIT) to README/governance; (2) add a deterministic test in verify/ asserting LICENSE presence and scanning served + any vendored files for copyleft markers (GPL/AGPL/CC-BY-SA). Standing control that must exist for PASS: that scan as a BLOCKING gate on push/PR.",
+   "adversarial_verification": "agreed: C-25 applies (machine-authored code). Verified: LICENSE (MIT, mglaeser) exists but NO license/copyleft scan gate anywhere in verify/tests or gate.js (grep found none), and NO written machine-authored IP position. standing_control.exists_now:false / blocks:nothing is honest \u2014 not disguised as a control. Zero vendored third-party source (all CDN+SRI) genuinely minimizes copyleft surface, so PARTIAL over FAIL is defensible per the satisfied-by-architecture-without-standing-control rule."
+  },
+  {
+   "check_id": "C-26",
+   "track": "C",
+   "priority": 8,
+   "founding_band": "BLOCKER-2",
+   "verdict": "PARTIAL",
+   "na_justification": null,
+   "probe": "Attacked the claim that SBOM/AI-BOM + signed provenance are VERIFIED AT DEPLOY by a fail-closed admission policy (not merely archived). Checked: is there a formal SBOM artifact (CycloneDX/SPDX)? an AI-BOM? signed provenance (attestation/signature)? and crucially, does anything verify provenance at DEPLOY and refuse to ship on mismatch?",
+   "evidence": "A machine-readable component list EXISTS \u2014 verify/golden/pinned-deps.json enumerates the 5 pinned CDN dependencies (react/react-dom 18.3.1, prop-types 15.8.1, recharts 2.12.7, @babel/standalone 7.29.7). INTEGRITY is verified at LOAD by the browser via SRI (index.html sha384 integrity + crossorigin on all 5 script tags, asserted by verify/tests/30 and recomputed from fetched bytes by verify/tests/40-sri-recompute; the exact URL set is pinned by verify/tests/35-supply-chain). No AI components exist in the product (no runtime model), so an AI-BOM is empty by architecture. GAPS that block PASS: (1) no formal SBOM artifact in a standard format (CycloneDX/SPDX) is emitted \u2014 pinned-deps.json is an ad-hoc URL list, not a component-with-provenance BOM; (2) no SIGNED provenance / attestation exists (Part-1 R-LEDGER: no per-commit signed provenance tag); (3) provenance is NOT verified AT DEPLOY by a fail-closed admission policy \u2014 Pages deploys from main on push with no admission control, and the gate/SRI-recompute run on push/PR on the work branch, NOT on main (git ls-tree main empty for verify/), so deploy admission is ungated (R-GATE). SRI blocks a drifted dependency at the visitor's browser load, but that is load-time client-side integrity, not deploy-time provenance admission.",
+   "standing_control": {
+    "exists_now": true,
+    "mechanism": "SRI (sha384) enforced by the browser at load + verify/tests/40-sri-recompute (rederive hash from fetched bytes) + verify/tests/35-supply-chain (exact pin manifest) + verify/tests/30 (integrity+crossorigin present)",
+    "blocks": "a dependency whose bytes drift from the recorded hash (fails to load / CI red) and any silent version/path bump; does NOT verify a signed provenance chain and does NOT gate deploy (no fail-closed admission on main)",
+    "cadence": "SRI on every page load; recompute + pin tests on push/PR (work branch, not main)",
+    "ratchet": "pinned-deps.json URL set exact + data-hash one-way; no provenance-attestation ratchet"
+   },
+   "structural_fix": {
+    "available": true,
+    "taken": false,
+    "rationale": "S13 door: emit a CycloneDX/SPDX SBOM as a committed artifact, add a provenance verifier to verify/, and require it as a fail-closed status check on main so deploy is refused on SBOM/provenance mismatch. Integrity-at-load (SRI) is built; SBOM-artifact + verify-at-deploy admission is not."
+   },
+   "residual_risk": {
+    "compensating_control": "SRI gives strong load-time integrity for all 5 served deps; the component surface is tiny and fully pinned",
+    "owner": "platform-security / repo owner mglaeser",
+    "tripwire": "R-GATE / R-LEDGER: a dependency or served-file change reaches main with no deploy-time provenance verification; only the browser SRI (post-deploy, client-side) would catch byte drift \u2014 nothing refuses the deploy itself"
+   },
+   "substitution": "S3 S1",
+   "wave": null,
+   "history": [
+    {
+     "date": "2026-07-16",
+     "event": "initialised NO-EVIDENCE at Phase 0'"
+    },
+    {
+     "date": "2026-07-16",
+     "event": "assessed PARTIAL"
+    }
+   ],
+   "remediation": "Emit a standard-format SBOM (CycloneDX) for the served component set, add a verify/ provenance/SBOM-consistency check, and land verify/ + verify.yml on main as a required status check so deploy admission is fail-closed on SBOM/pin/SRI mismatch \u2014 that deploy-time verifier is the standing control C-26 requires beyond the current load-time SRI.",
+   "adversarial_verification": "agreed: Confirmed. A component list exists (verify/golden/pinned-deps.json enumerates the 5 pinned CDN deps) and integrity is verified: 40-sri-recompute.test.js re-derives sha384 from fetched bytes vs index.html integrity attrs, 35 pins the exact URL set, 30 asserts integrity+crossorigin present, and the browser enforces SRI at load. But the gaps blocking PASS are real: (1) pinned-deps.json is an ad-hoc URL list, not a CycloneDX/SPDX SBOM; (2) no signed provenance/attestation exists (R-LEDGER); (3) SRI is load-time client-side integrity, NOT a deploy-time fail-closed admission \u2014 and origin/main has no verify/ or workflows, so nothing verifies at deploy. AI-BOM is empty by architecture (no runtime model). PARTIAL correctly captures 'strong integrity-at-load, no SBOM artifact, no signed provenance, no deploy admission.' Not FAIL (35/40 are genuine held controls), not PASS."
+  },
+  {
+   "check_id": "C-27",
+   "track": "C",
+   "priority": 9,
+   "founding_band": "BLOCKER-1",
+   "verdict": "NOT-APPLICABLE",
+   "na_justification": "No sector-compliance framework binds this system. PCI-DSS: no cardholder data, no payments, no checkout (egress to www.etoro.com is a user-clicked outbound link only). HIPAA: no PHI, not a covered entity or business associate \u2014 the site holds only frozen public market numbers. SOC 2 / ISO 27001: these bind only under a customer/enterprise contractual commitment to an attestation; this is a free, public, read-only static GitHub Pages site with no accounts, no tenants, no enterprise customers, and no signed contract requiring a Trust Services / ISMS attestation. GDPR-driven sector controls: no personal data is collected, processed, or stored (only sessionStorage of the ?status-api key string, matched ^[a-z0-9-]{1,32}$). No framework has an in-date or lapsed control to evidence because none is in scope.",
+   "probe": "Enumerated SOC2/ISO27001/PCI/HIPAA and tested each for a binding trigger (regulated data class, payment flow, covered-entity status, enterprise attestation contract). Searched the audit surface for any account/payment/health/PII data store or enterprise obligation.",
+   "evidence": "audit/00-audit-surface.json lists data_stores = sessionStorage(activation key), in-memory API cache, git history \u2014 no accounts, no payment, no health data. identities = repo owner + Claude sessions, no customers/tenants. No auth, no login (30-static-security forbids auth-secret idioms and they are absent). No enterprise contract exists in-repo. Nothing to attest, nothing lapsed.",
+   "standing_control": {
+    "exists_now": false,
+    "mechanism": "none \u2014 no framework is in scope, so there is no control to hold",
+    "blocks": "nothing",
+    "cadence": "none",
+    "ratchet": "none"
+   },
+   "structural_fix": {
+    "available": false,
+    "taken": false,
+    "rationale": "No door is needed at baseline: the check is inapplicable by architecture. If a framework later binds, the door becomes 'stand up the relevant control set + evidence collection'."
+   },
+   "residual_risk": {
+    "compensating_control": "The zero-data, zero-account, zero-payment architecture is itself the reason no framework binds; it is stable under the zero-build constraint.",
+    "owner": "repo owner mglaeser",
+    "tripwire": "the owner signing an enterprise contract that stipulates SOC2/ISO27001, OR the site beginning to handle payments (PCI), health data (HIPAA), or user accounts/PII \u2014 any of which re-opens this check."
+   },
+   "substitution": "",
+   "wave": null,
+   "history": [
+    {
+     "date": "2026-07-16",
+     "event": "initialised NO-EVIDENCE at Phase 0'"
+    },
+    {
+     "date": "2026-07-16",
+     "event": "assessed NOT-APPLICABLE"
+    }
+   ],
+   "remediation": "No action while inapplicable. Re-opens if the owner claims/needs any framework or the data surface changes (payments, PHI, accounts, enterprise attestation) \u2014 at which point the standing control is the framework's own evidence-in-date register.",
+   "adversarial_verification": "agreed: No sector-compliance framework binds. Confirmed no payments/cardholder data (etoro is a user-clicked outbound market link, dashboard.jsx L1362 EBASE, not a checkout), no PHI/covered-entity status, no accounts/tenants/auth (30-static-security forbids auth-secret idioms and they are absent), no enterprise attestation contract in-repo. SOC2/ISO27001 bind only under a customer commitment that does not exist for a free public read-only static site. N/A is architecture-grounded across the whole surface with a valid re-opening tripwire (payments/PHI/accounts/contract). Correct."
+  },
+  {
+   "check_id": "C-28",
+   "track": "C",
+   "priority": 7,
+   "founding_band": "MUST-FIX",
+   "verdict": "NOT-APPLICABLE",
+   "na_justification": "There is no data store of any kind to regionalise: no storage, cache, log, trace, queue, backup, or inference owned by the repo. The only browser storage is sessionStorage holding the ?status-api key string (matched ^[a-z0-9-]{1,32}$), which is not personal data. No personal data exists anywhere in the product, so there is no residency/regulatory obligation to pin a region. Static assets are served by the GitHub Pages CDN (global by design), which carries no personal-data residency duty precisely because no personal data flows through it.",
+   "probe": "Looked for any persistence/inference component whose location would trigger a residency obligation, and for any personal data that would create one; found only sessionStorage of a non-personal key string and a global static-asset CDN.",
+   "evidence": "No backend, no DB, no logs/traces/queues/backups owned by the repo (Phase-0' baseline; confirmed by architecture \u2014 served product is index.html + 2 JSX + frozen data). sessionStorage stores only the activation key (bubblegauge.jsx SS_KEY, KEY_RE-validated). 30-static-security enforces no-PII/no-secrets idioms. No personal data => no region to pin.",
+   "standing_control": {
+    "exists_now": false,
+    "mechanism": "none \u2014 no data store exists to regionalise; the no-PII/no-secrets scan (30-static-security) keeps the 'no personal data' premise true",
+    "blocks": "nothing directly on residency (a PII-idiom scan indirectly preserves the N/A premise)",
+    "cadence": "on push/PR",
+    "ratchet": "PII/secret idiom pattern set"
+   },
+   "structural_fix": {
+    "available": false,
+    "taken": false,
+    "rationale": "No residency door to build because there is no personal-data store to regionalise at baseline."
+   },
+   "residual_risk": {
+    "compensating_control": "no-PII/no-secrets static scan keeps the 'no personal data / no store' premise standing",
+    "owner": "privacy / repo owner mglaeser",
+    "tripwire": "the day any data store (storage/cache/log/queue/backup/inference) that touches personal data is added \u2014 residency scoping then becomes required"
+   },
+   "substitution": "",
+   "wave": null,
+   "history": [
+    {
+     "date": "2026-07-16",
+     "event": "initialised NO-EVIDENCE at Phase 0'"
+    },
+    {
+     "date": "2026-07-16",
+     "event": "assessed NOT-APPLICABLE"
+    }
+   ],
+   "remediation": "No action. Adding any personal-data store re-opens this; the required standing control is a deploy-time assertion that each store's region matches the declared regulatory scope.",
+   "adversarial_verification": "agreed: No repo-owned store (no backend/DB/log/queue/backup/inference). Only sessionStorage holding the KEY_RE-validated activation key string \u2014 non-personal, so no residency obligation attaches. GitHub Pages CDN is global by design and carries no personal-data residency duty because no personal data flows. No applicable slice hidden; N/A correct."
+  },
+  {
+   "check_id": "C-29",
+   "track": "C",
+   "priority": 6,
+   "founding_band": "SHOULD-FIX",
+   "verdict": "NOT-APPLICABLE",
+   "na_justification": "The product has NO generative and NO user-generated-content surface to misuse: it renders frozen historical crisis-market arrays and Recharts charts, plus an optional read-only status feed that is boundary-validated and rendered as data. There is no model producing open-ended content, no prompt intake, no form accepting user text, no place a user can inject content that is then served to others. A content-safety policy/taxonomy + classifiers with FP/FN + auto-throttle governs a generative/UGC pipeline that does not exist here.",
+   "probe": "Searched bubblegauge.jsx and dashboard.jsx for any generative or user-content path: text inputs, textareas, contenteditable, model calls, content that is composed from user input and displayed. Confirmed the only external strings are the status-feed source/as_of/note labels (bubblegauge.jsx lines 601, 981), which come from the operator's own status API, are validated (validScore/isNum/pair), and are React-escaped \u2014 they are provenance metadata, not open-ended generated content, and there is no throttle/escalation surface because there is no abuse channel.",
+   "evidence": "No <input type=text>/<textarea>/contenteditable/model-call in the served source (Phase-0' baseline: no runtime model, no UGC). The status feed is a single operator-controlled read-only GET; a malicious feed can at worst render bad text/link in the panel (bounded, no amplification to other users). verify/tests/30-static-security enforces no HTML-injection sink (no dangerouslySetInnerHTML, no interpolated innerHTML, lines 56-63) so even that bounded text cannot escalate to script execution.",
+   "standing_control": {
+    "exists_now": false,
+    "mechanism": "No content-safety classifier/throttle exists because there is no generative/UGC surface; the adjacent 30-static-security output-handling test bounds the only external-string render but is not a content-safety control.",
+    "blocks": "n/a for content safety (no surface); 30-static-security separately blocks HTML-injection on the feed text",
+    "cadence": "on push/PR (for the injection bound)",
+    "ratchet": "none for content safety"
+   },
+   "structural_fix": {
+    "available": false,
+    "taken": false,
+    "rationale": "No door needed at baseline \u2014 there is no generative/UGC pipeline to govern. A content-safety regime would be built only if such a feature were added."
+   },
+   "residual_risk": {
+    "compensating_control": "No abuse channel exists; feed text is escaped and injection-bounded by 30-static-security.",
+    "owner": "ai-security / repo owner mglaeser",
+    "tripwire": "adding any generative feature or user-content intake (comments, prompt box, model-authored text to users) re-opens the check."
+   },
+   "substitution": "",
+   "wave": null,
+   "history": [
+    {
+     "date": "2026-07-16",
+     "event": "initialised NO-EVIDENCE at Phase 0'"
+    },
+    {
+     "date": "2026-07-16",
+     "event": "assessed NOT-APPLICABLE"
+    }
+   ],
+   "remediation": "None owed. Re-opens if a generative or user-generated-content surface is introduced; the required standing control would then be a policy+taxonomy with classifiers reporting measured FP/FN and an escalation path that executes.",
+   "adversarial_verification": "agreed: No <input type=text>/<textarea>/contenteditable/model-call/generative path in served source. Only external strings are operator-controlled feed source/as_of/note labels, boundary-validated and React-escaped, no amplification channel to other users. 30-static-security bounds injection (no dangerouslySetInnerHTML). No generative/UGC pipeline to govern. N/A grounded."
+  },
+  {
+   "check_id": "C-30",
+   "track": "C",
+   "priority": 6,
+   "founding_band": "SHOULD-FIX",
+   "verdict": "NOT-APPLICABLE",
+   "na_justification": "There is no model in the product to jailbreak: no runtime LLM, no prompt intake, no tool-calling, no agent that plans or acts. Jailbreak-resistance measured against a benchmark with an attack-success-rate ceiling per release presupposes a deployed model that receives adversarial input \u2014 none exists on the served surface.",
+   "probe": "Searched the served files for any runtime model invocation, prompt handling, or agent loop that adversarial input could subvert. Confirmed the entire product is frozen-data rendering + Recharts + an optional validated read-only feed. The only 'AI' is at DEV time (agents author code offline), which is not a runtime jailbreak surface exposed to visitors.",
+   "evidence": "No model/agent/tool-call constructs in bubblegauge.jsx or dashboard.jsx (Phase-0' baseline). No user prompt path exists (see C-29 probe). Dev-time agents are governed by the deterministic gate (verify/) and constitution, not by a runtime jailbreak benchmark \u2014 and even a fully 'jailbroken' dev agent cannot ship a bad change silently because 20-golden-content, 30-static-security, 35/40 SRI, and 60/70 gates block it in CI.",
+   "standing_control": {
+    "exists_now": false,
+    "mechanism": "No jailbreak/ASR benchmark exists because there is no runtime model; the deterministic gate is the compensating structural control on the only AI in the loop (dev-time authorship).",
+    "blocks": "n/a for runtime jailbreak (no model); the verify gate blocks a subverted dev agent from landing an unsafe change",
+    "cadence": "on push/PR (gate)",
+    "ratchet": "mutation score floor (gate strength)"
+   },
+   "structural_fix": {
+    "available": false,
+    "taken": false,
+    "rationale": "No runtime model surface to harden at baseline; an ASR benchmark would be built only alongside a model-backed feature."
+   },
+   "residual_risk": {
+    "compensating_control": "Deterministic gate blocks unsafe changes regardless of dev-agent state.",
+    "owner": "ai-security / repo owner mglaeser",
+    "tripwire": "shipping any model-backed runtime feature (chat, generation, agent action) re-opens the check with a required ASR ceiling per release."
+   },
+   "substitution": "",
+   "wave": null,
+   "history": [
+    {
+     "date": "2026-07-16",
+     "event": "initialised NO-EVIDENCE at Phase 0'"
+    },
+    {
+     "date": "2026-07-16",
+     "event": "assessed NOT-APPLICABLE"
+    }
+   ],
+   "remediation": "None owed. Re-opens on shipping a model-backed feature; required standing control would be a jailbreak benchmark with an enforced ASR ceiling gating each release.",
+   "adversarial_verification": "agreed: No runtime LLM/agent/tool-call/prompt-intake in bubblegauge.jsx or dashboard.jsx. No user prompt path exists. Only 'AI' is dev-time authorship, governed by the deterministic verify gate (a subverted dev agent still cannot land silently). No runtime jailbreak surface to benchmark. N/A grounded."
+  },
+  {
+   "check_id": "C-31",
+   "track": "C",
+   "priority": 5,
+   "founding_band": "PLAN",
+   "verdict": "PARTIAL",
+   "na_justification": null,
+   "probe": "Tried to falsify a full N/A by hunting for ANY agentic runtime surface an ATLAS/7-layer decomposition would bite on: grep'd product source for model/agent/tool-call/planner/memory/RAG idioms, and inspected the two real external-trust surfaces (dev-time code-writing agent; bubblegauge feed). Then checked verify/ for any committed taxonomy-mapping artifact that is refreshed on a cadence.",
+   "evidence": "The served product has NO runtime model/agent/tool: crisis content is frozen constants in dashboard.jsx (CRISES/MATRIX/CLASSIFICATION, golden-hashed by tests/20-golden-content), charts are Recharts, and the only network read is bubblegauge.jsx bgFetch() GET (lines ~292-308) whose response is validated (validScore/isNum/pair) and rendered as escaped React data \u2014 no tool-calling, no planning, no memory. So the classical ATLAS (adversarial-ML) and the 7-layer AGENTIC decomposition are genuinely inapplicable to the runtime. BUT two slices remain applicable and are UNMAPPED: (1) the dev-time coding agent (audit/00-audit-surface.json identities: 'Claude Code sessions ... writes production directly; no gate between agent output and deploy') is a prompt-injection/poisoned-context target, and (2) the external status-API feed is an untrusted-input surface. No ATLAS-to-surface mapping and no 7-layer decomposition artifact exists anywhere in verify/ or governance/ (grep for ATLAS/threat-decomposition returns nothing but mandate/catalogue text). No test asserts or refreshes such a mapping.",
+   "standing_control": {
+    "exists_now": false,
+    "mechanism": "No committed ATLAS/agentic-threat-taxonomy mapping in verify/ or governance/; nothing enumerates the two live adversarial surfaces or refreshes on taxonomy updates.",
+    "blocks": "nothing",
+    "cadence": "none",
+    "ratchet": "none"
+   },
+   "structural_fix": {
+    "available": true,
+    "taken": false,
+    "rationale": "A one-page taxonomy map (ATLAS techniques + a short agentic-threat decomposition scoped to 'coding agent' + 'external feed') committed under governance/ and referenced by a 70-claims style test would give a standing coverage vocabulary; not built at baseline."
+   },
+   "residual_risk": {
+    "compensating_control": "The two live surfaces are already bounded by OTHER controls (30-static-security KEY_RE + no-injection-sink for the feed; boundary validation in bubblegauge.jsx; git history as provenance for the agent) \u2014 so the missing taxonomy is a documentation/coverage gap, not an unmitigated exploit path.",
+    "owner": "ai-security",
+    "tripwire": "Any addition of a runtime model/agent/tool-call to the product (grep for model/agent/tool idioms flips non-empty) re-opens this as a first-class agentic-threat surface requiring the 7-layer decomposition."
+   },
+   "substitution": "",
+   "wave": null,
+   "history": [
+    {
+     "date": "2026-07-16",
+     "event": "initialised NO-EVIDENCE at Phase 0'"
+    },
+    {
+     "date": "2026-07-16",
+     "event": "assessed PARTIAL"
+    }
+   ],
+   "remediation": "Write a short ATLAS + agentic-threat-decomposition mapping scoped to the two real surfaces (dev-time coding agent, external status-API feed), commit it under governance/, and bind it with a claims-style test so it must be refreshed when the surface changes. Standing control that must exist: a committed taxonomy-coverage artifact checked by verify/tests/70-claims.",
+   "adversarial_verification": "agreed: Confirmed no ATLAS/agentic-threat taxonomy artifact in verify/ or governance/ (grep hits are the product's 'crisis atlas' strings in 10-data-invariants/70-claims, not a threat map). No runtime model/agent exists; the two live surfaces (dev-time coding agent, gated status feed) are real and unmapped but bounded by other existing controls (30-static-security KEY_RE + no-injection-sink, bubblegauge boundary validation, git history). Verdict honestly sets standing_control.exists_now:false and does not over-claim; PARTIAL for satisfied-by-other-controls-but-no-dedicated-standing-control is correct."
+  },
+  {
+   "check_id": "C-32",
+   "track": "C",
+   "priority": 6,
+   "founding_band": "SHOULD-FIX",
+   "verdict": "NOT-APPLICABLE",
+   "na_justification": "No vector store and no embeddings exist anywhere in the product. There is no embedding generation, no similarity index, no RAG retrieval, and therefore no vector store to place under access control or tenant isolation, and no embedding artifact that could be inverted back to personal data. The 'treat embeddings as a personal-data store' concern has no object to attach to.",
+   "probe": "Searched bubblegauge.jsx and dashboard.jsx for embedding/vector constructs (embedding, vector, index, cosine, faiss, pinecone, similarity, nearest-neighbour). Also confirmed there is no personal data anywhere that could be embedded (Phase-0' baseline: no PII collected/stored/transmitted).",
+   "evidence": "No embedding/vector code in the served source (Phase-0' baseline). No personal data exists to embed. The site is fully public and read-only with no tenants \u2014 even the concept of tenant isolation on a vector store is inapplicable because there are neither tenants nor a store. verify/tests/30-static-security additionally enforces no-PII / no-secret idioms in the source (lines 24-43), keeping the source free of embeddable personal data.",
+   "standing_control": {
+    "exists_now": false,
+    "mechanism": "No vector-store access-control test exists because no vector store exists; 30-static-security's no-PII/no-secret idiom scan is the adjacent standing check that keeps personal data (hence embeddable personal data) out of source.",
+    "blocks": "n/a for vector store (none); 30-static-security blocks PII/secret idioms in source",
+    "cadence": "on push/PR",
+    "ratchet": "none for vectors"
+   },
+   "structural_fix": {
+    "available": false,
+    "taken": false,
+    "rationale": "No door needed \u2014 no embeddings/vector store to isolate at baseline."
+   },
+   "residual_risk": {
+    "compensating_control": "No embeddings and no personal data exist; no-PII source scan holds.",
+    "owner": "ai-security / privacy / repo owner mglaeser",
+    "tripwire": "adding embeddings/RAG/a vector index re-opens the check with required access-control + tenant-isolation + treat-as-personal-data handling."
+   },
+   "substitution": "",
+   "wave": null,
+   "history": [
+    {
+     "date": "2026-07-16",
+     "event": "initialised NO-EVIDENCE at Phase 0'"
+    },
+    {
+     "date": "2026-07-16",
+     "event": "assessed NOT-APPLICABLE"
+    }
+   ],
+   "remediation": "None owed. Re-opens if embeddings/a vector store are introduced; required standing control would then be access-control + tenant-isolation tests and a policy treating embeddings as a personal-data store.",
+   "adversarial_verification": "agreed: No embedding/vector/index/faiss/pinecone constructs and no personal data to embed. The 'similarity' computation (bubblegauge line 377) is a hand-set 5-dimension distance over frozen public crisis data \u2014 not embeddings, not a store, not PII. No tenants, no vector store to isolate or invert. 30-static-security no-PII/no-secret idiom scan keeps embeddable personal data out of source. N/A grounded."
+  },
+  {
+   "check_id": "C-33",
+   "track": "C",
+   "priority": 6,
+   "founding_band": "SHOULD-FIX",
+   "verdict": "PARTIAL",
+   "na_justification": null,
+   "probe": "Tested whether the AI usage policy is ENFORCED not merely published: took each machine-relevant clause of CLAUDE.md + constitution and looked for the verify/ test that compiles it into a blocking gate; then attacked the gap \u2014 clauses of the check (permitted TOOLS allowlisted, permitted MODELS at a gateway) that have no enforcing mechanism here.",
+   "evidence": "Strong compilation of the change-discipline clauses into blocking gates: (a) 'frozen crisis data / no silent number change' -> verify/tests/20-golden-content.test.js (golden data hash); (b) 'pinned CDN versions + SRI' -> 35-supply-chain (pinned-deps manifest) + 40-sri-recompute (recompute); (c) 'activation key cannot reach URL construction / no injection sink / no secrets' -> 30-static-security.test.js (KEY_RE at >=2 sites lines 45-54, no dangerouslySetInnerHTML lines 56-63, no-secret idioms lines 24-43); (d) 'gate + audit apparatus must remain wired, constitution honored' -> 60-governance.test.js (workflow wires run.js+gate.js, constitution-digest sha256 binding + engagement-status.constitution_hash match, lines 15-46); (e) 'names are claims' -> 70-claims. Permitted CHANGE CLASSES are enforced (decision-record + golden-hash friction, constitution Article XIII). What is NOT enforced: there is NO runtime gateway, so 'permitted models at the gateway' and 'permitted tools allowlisted' have no enforcement point \u2014 model-vendor singleness (R-VENDOR) is convention, not a gated allowlist; and any prose clause not yet compiled (e.g. 'no service workers', 'no analytics') relies on golden content rather than a dedicated assertion.",
+   "standing_control": {
+    "exists_now": true,
+    "mechanism": "The compiled-clause suite: 20-golden-content, 30-static-security, 35-supply-chain, 40-sri, 60-governance, 70-claims \u2014 each translates a specific policy clause into a deterministic push/PR gate.",
+    "blocks": "changes that violate frozen-data, SRI/pin, injection/secret, governance-wiring, or claims clauses of the policy",
+    "cadence": "on push/PR (CI verify.yml) + local gate",
+    "ratchet": "golden hashes + mutation score floor (0.75) + constitution-hash equality"
+   },
+   "structural_fix": {
+    "available": true,
+    "taken": true,
+    "rationale": "The door \u2014 compile policy prose into executable gates (S13 structure-over-policing) \u2014 is taken for the load-bearing clauses. Un-taken: a model/tool allowlist gate (no runtime gateway exists to host one) and compilation of the remaining prose bans into dedicated assertions."
+   },
+   "residual_risk": {
+    "compensating_control": "Golden content hash indirectly guards uncompiled bans (a service-worker/analytics insertion changes served content and the hash); R-GATE caveat: verify/ is not yet on main so the production branch gate is not yet deploy-blocking.",
+    "owner": "ai-security / repo owner mglaeser",
+    "tripwire": "R-GATE \u2014 until verify/ is on the main branch with branch protection, a push to main can bypass the gate; and no allowlist test detects a model/tool-scope change (no gateway to observe)."
+   },
+   "substitution": "S1 S3",
+   "wave": null,
+   "history": [
+    {
+     "date": "2026-07-16",
+     "event": "initialised NO-EVIDENCE at Phase 0'"
+    },
+    {
+     "date": "2026-07-16",
+     "event": "assessed PARTIAL"
+    }
+   ],
+   "remediation": "Smallest real step: land verify/ on main under the enabled ruleset so the compiled-clause gate is actually deploy-blocking (closes R-GATE), and compile the remaining hard bans (no service worker, no analytics/tracker, no npm dep in shipped files) into explicit deterministic assertions instead of relying on the golden content hash. The model/tool-allowlist clause stays a documented residual (no runtime gateway exists to enforce it).",
+   "adversarial_verification": "agreed: Verified load-bearing policy clauses ARE compiled into blocking deterministic gates: 20-golden (frozen data), 30-static-security (KEY_RE >=2 sites, no injection sink, no-secret idioms), 35-supply-chain, 40-sri, 60-governance (constitution-hash binding), 70-claims. Honest residual: NO runtime gateway for model/tool allowlist, and R-GATE confirmed \u2014 current branch is claude/crisis-winners-..., verify/ is on the feature branch not main, so the production branch (main) is ungated. PARTIAL correct."
+  },
+  {
+   "check_id": "C-34",
+   "track": "C",
+   "priority": 7,
+   "founding_band": "MUST-FIX",
+   "verdict": "NOT-APPLICABLE",
+   "na_justification": "The product sends NO data to any model provider at runtime \u2014 there is no runtime model call at all, so 'provider training on your data' has no runtime surface (no contract/account/API-assertion to schedule). The distinct dev-time relationship (an AI vendor authoring code off-repo) involves no customer-data flow into a model owned by this product, and the repo is fully public (git history is public), so there is no confidential customer data at stake in the authoring relationship either.",
+   "probe": "Attacked the claim by searching for any runtime fetch/POST of user or app data to a model/provider endpoint; found only the optional GET-only status API (data flows IN, validated, never sent to a model), and confirmed no model API is called with any data.",
+   "evidence": "bubblegauge.jsx performs a read-only GET (headers {accept:'application/json'}) to a validated subdomain; it never POSTs data to a model and never feeds the response to a model (Phase-0' boundary fact; validScore/isNum/pair at lines 274-281). No provider SDK, no inference call in served source. Dev authoring uses a stock single-vendor model (R-VENDOR) off-repo on a public repository \u2014 no private customer data is transmitted for training.",
+   "standing_control": {
+    "exists_now": false,
+    "mechanism": "none for runtime (no model call exists); no scheduled API no-train assertion because there is no provider data-flow to assert against",
+    "blocks": "nothing at runtime",
+    "cadence": "none",
+    "ratchet": "none"
+   },
+   "structural_fix": {
+    "available": false,
+    "taken": false,
+    "rationale": "No door to build at baseline: there is no runtime provider data-flow whose no-train posture could be contractually pinned and API-re-verified."
+   },
+   "residual_risk": {
+    "compensating_control": "public repo (no confidential authoring input) + no runtime provider data path",
+    "owner": "ai-security / repo owner mglaeser",
+    "tripwire": "the day the product calls any model provider API with ANY data \u2014 a no-train contract term, account setting, and scheduled API assertion then become required"
+   },
+   "substitution": "",
+   "wave": null,
+   "history": [
+    {
+     "date": "2026-07-16",
+     "event": "initialised NO-EVIDENCE at Phase 0'"
+    },
+    {
+     "date": "2026-07-16",
+     "event": "assessed NOT-APPLICABLE"
+    }
+   ],
+   "remediation": "No action for the static product. If a runtime model API is added, the required standing control is a scheduled assertion that the provider account is no-train, backed by contract; the dev-vendor relationship stays out of scope while the repo is public and no customer data is fed to tuning.",
+   "adversarial_verification": "agreed: No runtime model/provider call \u2014 bubblegauge.jsx GET flows data IN (validated), never POSTs data to a model, no provider SDK. Dev authoring off-repo on a fully public repo with no customer/personal data fed to tuning. The dev-vendor slice carries no confidentiality obligation and admits no standing control; the check's target (runtime provider data-flow) genuinely has no surface. N/A defensible."
+  },
+  {
+   "check_id": "C-35",
+   "track": "C",
+   "priority": 4,
+   "founding_band": "ASSESS",
+   "verdict": "PARTIAL",
+   "na_justification": null,
+   "probe": "Attacked both halves. Half A (benchmark contamination / held-out sets sent to a provider): searched for any eval set, benchmark corpus, or provider-bound training/eval data. Half B ('who evaluates the evaluator'): inspected whether the thing that grades the final merge/deploy decision is itself validated, and whether a model \u2014 which could be self-graded and gamed \u2014 sits in that path.",
+   "evidence": "Half A is architecturally empty: there is NO ML benchmark, NO eval set, and NO data sent to any provider for training/eval \u2014 the product renders frozen constants and the only egress is pinned CDN + the gated read-only feed (audit/00-audit-surface.json egress_destinations). Nothing can be contaminated because nothing is held out and re-used. Half B is REAL and controlled: the final merge/deploy decision is made by verify/gate.js \u2014 a deterministic code gate, NOT a model (gate.js header: 'Makes the merge/deploy decision by CODE, not by any model's opinion'). The 'evaluator' is itself validated by committed controls: verify/tests/50-gate-selftest asserts the gate BLOCKS what it claims, and verify/mutation.js + verify/calibration/corpus.json (6 seeded defects, catch 6/6, mutation score 1.00 vs floor 0.75) validate that the test suite actually detects defects. So no model grades its own work; a deterministic, mutation-validated gate does. The residual is R-VENDOR (single model vendor authors the code the gate checks) and R-GATE (gate not yet blocking on main \u2014 audit/03-findings.json ~2518: branch protection state_at_freeze NONE, 'gate is advisory, not blocking').",
+   "standing_control": {
+    "exists_now": true,
+    "mechanism": "verify/tests/50-gate-selftest (gate must block) + verify/mutation.js against verify/calibration/corpus.json (mutation-score floor 0.75, measured 1.00) validate the evaluator; verify/gate.js makes the decision by code, not by a model.",
+    "blocks": "A silently-broken gate or a suite that fails to catch seeded defects (self-test + mutation floor fail the build); on Half A there is nothing to block because no eval-set contamination channel exists.",
+    "cadence": "on push/PR (run.js suite in .github/workflows/verify.yml)",
+    "ratchet": "mutation score (monotone floor 0.75; must not regress)"
+   },
+   "structural_fix": {
+    "available": true,
+    "taken": true,
+    "rationale": "The door for 'who evaluates the evaluator' is a code gate + mutation-validated suite + self-test \u2014 it exists at baseline. The R-GATE limitation (not enforced on main yet) is the one open seam."
+   },
+   "residual_risk": {
+    "compensating_control": "Deterministic gate + mutation floor remove model self-grading; R-VENDOR (single vendor) and R-GATE (advisory until branch protection requires verify on main) remain and are tracked in audit/06-residual-risk-register.md / DR-002.",
+    "owner": "ai-security",
+    "tripwire": "Mutation score drops below floor, or gate-selftest fails, or a model is ever introduced into the merge-decision path (would re-open self-grading contamination)."
+   },
+   "substitution": "S1",
+   "wave": null,
+   "history": [
+    {
+     "date": "2026-07-16",
+     "event": "initialised NO-EVIDENCE at Phase 0'"
+    },
+    {
+     "date": "2026-07-16",
+     "event": "assessed PARTIAL"
+    }
+   ],
+   "remediation": "Close R-GATE: land verify/ on main and require the verify check via branch protection so the validated evaluator is BLOCKING, not advisory. Half A stays N/A unless an ML eval/benchmark is ever introduced. Standing control that must exist: branch protection requiring the (already self-tested, mutation-validated) gate on the production branch.",
+   "adversarial_verification": "agreed: Half A (benchmark/eval contamination) genuinely N/A \u2014 no eval sets or provider-bound data. Half B controls verified to EXIST and RUN: .github/workflows/verify.yml invokes run.js+mutation.js+gate.js on push/PR; 50-gate-selftest.test.js (79 lines) and calibration/corpus.json present; mutation.js FLOOR=0.75; gate.js decides 'by CODE, not by any model's opinion' \u2014 a deterministic, mutation-validated evaluator, not a human-in-disguise. Correctly downgraded PASS->PARTIAL on R-GATE (advisory, not enforced-blocking on main). No over-claim."
+  },
+  {
+   "check_id": "C-36",
+   "track": "C",
+   "priority": 6,
+   "founding_band": "SHOULD-FIX",
+   "verdict": "PARTIAL",
+   "na_justification": null,
+   "probe": "Assessed the marking/transparency-of-generated-output surface. EU AI Act Article 50 marking applies to generative OUTPUT shown to users; tried to find (a) any AI-generated content presented to users as if human/authoritative without disclosure, and (b) whether machine authorship of the code and provenance of the displayed data are disclosed. Falsification target: undisclosed machine-generated content passed off as human.",
+   "evidence": "The SITE content shown to visitors is historical crisis-market DATA and charts, not AI-authored prose presented as generated output \u2014 so the Article-50 generative-marking surface is thin/absent. Two disclosures DO exist: (a) code machine-authorship is disclosed in CLAUDE.md ('All code is authored by AI agents') and in commit trailers (Co-Authored-By Claude); (b) the optional status feed marks data provenance in-UI \u2014 bubblegauge.jsx renders 'source', 'as_of', 'note' on each indicator (lines 601-602, 981) and links 'full methodology'. What is ABSENT: no machine-readable marking (e.g. C2PA/metadata) \u2014 not legally required here since there is no generative output to users \u2014 and no STANDING test asserting that the machine-authorship/provenance disclosures remain present (a future edit could silently strip the CLAUDE.md disclosure or the source/as_of labels without turning CI red, since 70-claims only forbids specific overclaims, it does not require the disclosure to persist).",
+   "standing_control": {
+    "exists_now": false,
+    "mechanism": "No test asserts the presence of the AI-authorship disclosure or the feed provenance labels; 70-claims enforces truthfulness of claims that ARE made but does not require disclosure to remain.",
+    "blocks": "nothing guarantees the disclosure persists; injection-safety of the labels is separately held by 30-static-security",
+    "cadence": "none for disclosure-presence",
+    "ratchet": "none"
+   },
+   "structural_fix": {
+    "available": true,
+    "taken": false,
+    "rationale": "The buildable door: a deterministic test asserting CLAUDE.md's machine-authorship disclosure and bubblegauge's source/as_of provenance labels are present (names-are-claims extended to require the disclosure, not just forbid overclaims). Not yet built."
+   },
+   "residual_risk": {
+    "compensating_control": "Disclosures exist today (CLAUDE.md + commit trailers + feed labels); no generative-to-user output means minimal legal marking exposure.",
+    "owner": "ai-security / repo owner mglaeser",
+    "tripwire": "the honest gap: a commit could strip the disclosure/provenance labels without CI noticing \u2014 add a presence assertion to supply the tripwire."
+   },
+   "substitution": "S3",
+   "wave": null,
+   "history": [
+    {
+     "date": "2026-07-16",
+     "event": "initialised NO-EVIDENCE at Phase 0'"
+    },
+    {
+     "date": "2026-07-16",
+     "event": "assessed PARTIAL"
+    }
+   ],
+   "remediation": "Smallest real step: add a deterministic test asserting the machine-authorship disclosure in CLAUDE.md and the source/as_of provenance labels in bubblegauge.jsx remain present, so disclosure cannot be silently removed. Document that machine-readable Article-50 marking is not required (no generative output to users) \u2014 the tripwire that re-opens it is adding any AI-generated content presented to visitors.",
+   "adversarial_verification": "agreed: Disclosures exist (CLAUDE.md 'authored by AI agents', commit trailers, bubblegauge source/as_of provenance labels), and no generative-to-user output means minimal Article-50 marking exposure. Verified the honest gap: 70-claims only FORBIDS enumerated overclaims \u2014 it does NOT assert the disclosures persist, so a commit could strip them without turning CI red. standing_control.exists_now:false is accurate, not over-claimed. PARTIAL correct."
+  },
+  {
+   "check_id": "C-37",
+   "track": "C",
+   "priority": 5,
+   "founding_band": "PLAN",
+   "verdict": "PARTIAL",
+   "na_justification": null,
+   "probe": "Tested the escalation clause directly: does EVERY production component (index.html, dashboard.jsx, bubblegauge.jsx) carry an ATTESTED provenance chain (model/version/prompt/spec/policy-bundle/test-evidence/adversarial-result + named owning role) that a machine can reconstruct on demand, with a scheduled spot-reconstruction that fails loudly? Inspected git trailers, checked commit signatures, and searched for any provenance manifest + verifier.",
+   "evidence": "ESCALATES to BLOCKER-1: no production component has an attested provenance chain. Git carries only PARTIAL, UNENFORCED provenance \u2014 commit trailers name a model ('Co-Authored-By: Claude Fable 5') and a session link ('Claude-Session: \u2026'), but (1) commits are UNSIGNED (git log %G? = 'N' for all sampled commits; no gpg/ssh signing), so the trailer is unattested free text; (2) there is NO per-component manifest mapping each shipped file -> {spec, tests, adversarial result, policy bundle, model+prompt, owner, hash} \u2014 the only 'provenance' hits are narrative prose in governance/mandate.md and audit/*.md, not a machine-reconstructible artifact; (3) there is NO verifier test and NO scheduled spot-reconstruction that fails loudly. verify/gate.js enforces findings-file integrity + engagement-status computation, not artifact provenance. The append-only public git history + audit trail (audit/03-findings.json etc.) is a substrate but not an attestation. This is the C-37/C-26 surface / Part-1 residual R-LEDGER, explicitly open.",
+   "standing_control": {
+    "exists_now": true,
+    "mechanism": "verify/tests/61-provenance (hash-verified attested-chain reconstruction over every shipped component) + governance/provenance-manifest.json + governance/sbom.json; git history supplies the model/commit authorship link",
+    "blocks": "a merge/push that changes a shipped component without re-attesting its provenance, or ships a component absent from the manifest (calibration seed D8)",
+    "cadence": "on push/PR (verify.yml); a scheduled spot-reconstruction is the buildable cadence upgrade",
+    "ratchet": "production components without an attested chain remain at zero (S11)"
+   },
+   "structural_fix": {
+    "available": true,
+    "taken": true,
+    "rationale": "Door built in Phase 5': governance/provenance-manifest.json attests every shipped component (index.html, dashboard.jsx, bubblegauge.jsx, .nojekyll) with a content hash + derives-from-spec + policy-bundle + test-evidence + adversarial-result + named owning role; verify/tests/61-provenance reconstructs the chain every build and fails on drift or an unlisted shipped file. A fresh Phase-6' re-run confirms every production component now has an attested provenance chain, so the BLOCKER-1 escalation condition ('any component with no attested chain') no longer fires -> de-escalated to founding band PLAN."
+   },
+   "residual_risk": {
+    "compensating_control": "git history is the append-only, public, hash-chained record of which change/model authored each line; the manifest attests spec/policy/test/adversarial/owner + content hash per shipped component",
+    "owner": "engineering-leadership",
+    "tripwire": "R-LEDGER: no cryptographically-SIGNED per-commit model+prompt-hash field and no SCHEDULED spot-reconstruction cron yet; 61-provenance runs every build but not on a calendar. A signed Runner-only ledger + a scheduled reconstruction are the upgrades that would move this to PASS."
+   },
+   "substitution": "S13",
+   "wave": null,
+   "history": [
+    {
+     "date": "2026-07-16",
+     "event": "initialised NO-EVIDENCE at Phase 0'"
+    },
+    {
+     "date": "2026-07-16",
+     "event": "assessed FAIL (escalated to BLOCKER-1: production components lack an attested provenance chain)"
+    },
+    {
+     "date": "2026-07-16",
+     "event": "Phase 5' built provenance manifest + verify/tests/61-provenance (attested chain per shipped component)"
+    },
+    {
+     "date": "2026-07-16",
+     "event": "Phase 6' re-run: attested chain now exists for every production component; BLOCKER-1 escalation cleared -> de-escalated to PLAN; current PARTIAL (baseline BLOCKER-1 FAIL preserved; residual R-LEDGER)"
+    }
+   ],
+   "remediation": "Add a cryptographically-signed per-commit provenance field (model + prompt hash) and a SCHEDULED spot-reconstruction that fails loudly when a random production line cannot be reconstructed. Until then git history + the manifest are the attested substitute (PARTIAL, not PASS).",
+   "catalogue_founding_band": "PLAN",
+   "escalation_state": "escalated to BLOCKER-1 at baseline (no attested provenance chain)",
+   "adversarial_verification": "agreed: Escalation clause confirmed: no production component carries an attested provenance chain. `git log %G?` returns N (unsigned) for all sampled commits \u2014 trailers naming model/session are unattested free text. No per-component manifest maps shipped files to {spec, tests, adversarial result, model+prompt, owner, hash}; no verifier test; no scheduled loud spot-reconstruction. verify/gate.js enforces findings-file integrity + status computation, not artifact provenance. This is the open R-LEDGER residual. Standing control exists_now:false, blocks nothing. FAIL / BLOCKER-1 is correct.",
+   "baseline_band": "BLOCKER-1",
+   "baseline_verdict": "FAIL"
+  },
+  {
+   "check_id": "C-38",
+   "track": "C",
+   "priority": 6,
+   "founding_band": "SHOULD-FIX",
+   "verdict": "PARTIAL",
+   "na_justification": null,
+   "probe": "Looked for fabricated citations/links/identifiers the SYSTEM generates and relies on downstream. Tried to falsify the passing posture by (a) finding a dynamically generated citation/link the site presents as authoritative without resolution, and (b) checking whether the status-feed source/as_of labels are verified before display or could carry a fabricated source string.",
+   "evidence": "The product generates NO citations/claims dynamically: the static analysis prose and crisis data are FROZEN editorial content (golden-hashed, 20-golden-content). The DEV-analogue fabrication risk \u2014 an agent inventing a misdescriptive label/claim \u2014 has a real standing control: the claims ledger (constitution Article X) compiled into verify/tests/70-claims.test.js, which convicted the fabricated 'Median max drawdown' label and now forbids its regression plus two other stale/overclaims (lines 14-25). The APPLICABLE runtime slice is the status feed: bubblegauge.jsx renders 'source' (e.g. 'fred:BAMLH0A0HYM2', 'twelvedata:XAU/USD') and 'as_of' strings and a 'full methodology' href built from API_BASE (lines 601-602, 981). These labels are NOT independently resolved/verified \u2014 a malicious status API could render a fabricated source attribution or a plausible-but-wrong as_of. Bounded blast radius: the string is React-escaped (no injection, 30-static-security) and the href is same-origin under the operator's own validated key subdomain, so the risk is 'bad provenance text', not a resolvable fabricated external citation with downstream automated reliance.",
+   "standing_control": {
+    "exists_now": true,
+    "mechanism": "verify/tests/70-claims.test.js (claims ledger, Article X) \u2014 blocks reintroduction of fabricated/misdescriptive labels in the frozen editorial content.",
+    "blocks": "silent return of a corrected fabricated/misdescriptive claim in dashboard/CLAUDE.md/INTEGRATION_NOTES",
+    "cadence": "on push/PR + local gate",
+    "ratchet": "count of frozen-corrected claims (monotone)"
+   },
+   "structural_fix": {
+    "available": true,
+    "taken": false,
+    "rationale": "For the frozen-content slice the door (claims ledger) is taken. For the feed slice, a 'verify/resolve provenance labels or mark-as-unverified' control is buildable but not present; given the bounded blast radius it is low priority."
+   },
+   "residual_risk": {
+    "compensating_control": "Feed source/as_of strings are boundary-validated as data, React-escaped, never used to build a further request or persisted; the operator controls the feed origin (validated key subdomain).",
+    "owner": "ai-security / repo owner mglaeser",
+    "tripwire": "the honest gap: no check verifies that a rendered feed 'source'/'as_of' label is truthful \u2014 a compromised/hostile status API renders fabricated provenance with no tripwire. Marking feed provenance as operator-asserted-unverified in-UI would bound reliance."
+   },
+   "substitution": "S3",
+   "wave": null,
+   "history": [
+    {
+     "date": "2026-07-16",
+     "event": "initialised NO-EVIDENCE at Phase 0'"
+    },
+    {
+     "date": "2026-07-16",
+     "event": "assessed PARTIAL"
+    }
+   ],
+   "remediation": "Smallest real step: mark the status-feed 'source'/'as_of' provenance in-UI as operator-asserted (unverified by this site) so downstream reliance is bounded, and keep the claims ledger (70-claims) as the standing control on frozen-content fabrication. No dynamic high-stakes citation is generated, so no withhold/verify pipeline is owed beyond that labeling.",
+   "adversarial_verification": "agreed: No dynamically generated citations (frozen editorial content, golden-hashed). Dev-analogue fabrication has a real standing control: 70-claims (convicted the fabricated 'Median max drawdown' label). Applicable runtime slice confirmed: bubblegauge line 601 renders feed source/as_of strings that are NOT independently resolved \u2014 a hostile feed could render fabricated provenance with no tripwire. Blast radius bounded (React-escaped, operator-controlled subdomain). PARTIAL correct."
+  },
+  {
+   "check_id": "C-39",
+   "track": "C",
+   "priority": 4,
+   "founding_band": "ASSESS",
+   "verdict": "NOT-APPLICABLE",
+   "na_justification": "The check is explicitly conditional \u2014 lifecycle/vocabulary standards (ISO/IEC 22989-style terminology, 5338-style lifecycle) are only material if an AI Management System (AIMS, ISO/IEC 42001) is CLAIMED under C-13. No AIMS is claimed anywhere: grep for AIMS/42001/22989/management-system across governance/ and audit/ returns only mandate/catalogue reference text, no asserted management system; C-13 has no PASS/claim record in audit/03-findings.json (part2 planned-extension, not yet substantiated). With no AIMS claimed there is no lifecycle/vocabulary conformance obligation to substantiate \u2014 the whole surface of the check is absent, so N/A is architecture-grounded, not assumed.",
+   "probe": "Tried to defeat N/A by finding any explicit or implicit AIMS claim that would drag lifecycle/vocabulary standards into scope: searched governance/ and audit/ for AIMS/42001/22989/lifecycle-standard assertions, and checked whether C-13 (the AIMS check this one hinges on) records any management-system claim. Also checked that the governance regime (constitution + mandate) is framed as a deterministic policy gate, not as a claimed ISO management system.",
+   "evidence": "No AIMS is asserted: the governance regime is a RATIFIED constitution (governance/constitution.md) + deterministic gate (verify/), never framed or claimed as an ISO/IEC 42001 AIMS. No terminology/lifecycle-standard conformance is claimed. C-13 carries no substantiating claim record (part2, planned-extension per audit/00-check-catalogue.json). Because C-39 is derivative of C-13 and C-13 claims nothing, there is nothing for C-39 to hold to a lifecycle/vocabulary standard.",
+   "standing_control": {
+    "exists_now": false,
+    "mechanism": "None required and none exists: with no AIMS claimed there is no conformance obligation for a control to enforce. The related governance binding (constitution hash + digest, verify/tests/60-governance) is a real standing control but it enforces the constitution, not an ISO AIMS/vocabulary standard.",
+    "blocks": "nothing (no AIMS claim to police)",
+    "cadence": "none",
+    "ratchet": "none"
+   },
+   "structural_fix": {
+    "available": false,
+    "taken": false,
+    "rationale": "No door needed at baseline \u2014 the door only appears if C-13 later claims an AIMS. Nothing to substantiate now."
+   },
+   "residual_risk": {
+    "compensating_control": "N/A is stable as long as no AIMS is claimed; the constitution+gate already give a real (non-ISO) governance substrate.",
+    "owner": "repo owner mglaeser",
+    "tripwire": "If C-13 is ever answered by CLAIMING an AIMS / ISO 42001 conformance, this check immediately re-opens and must substantiate lifecycle (5338) + vocabulary (22989) alignment."
+   },
+   "substitution": "",
+   "wave": null,
+   "history": [
+    {
+     "date": "2026-07-16",
+     "event": "initialised NO-EVIDENCE at Phase 0'"
+    },
+    {
+     "date": "2026-07-16",
+     "event": "assessed NOT-APPLICABLE"
+    }
+   ],
+   "remediation": "No action at baseline. Re-opening tripwire: a C-13 record that claims an AIMS/ISO 42001 management system \u2014 at which point add a standing conformance check mapping the claimed AIMS to 22989 vocabulary and 5338 lifecycle stages.",
+   "adversarial_verification": "agreed: C-13 (the AIMS check C-39 derives from) has zero findings records and is planned-extension:part2; no AIMS/ISO 42001/22989/5338 conformance is claimed anywhere. The check is explicitly conditional and its subject \u2014 a standards-conformance obligation \u2014 has no surface unless conformance is asserted, unlike C-31/C-40 whose subjects exist regardless of any claim. N/A is scope/architecture-grounded and does not hide an applicable surface; tripwire (C-13 claims AIMS) correctly re-opens it."
+  },
+  {
+   "check_id": "C-40",
+   "track": "C",
+   "priority": 4,
+   "founding_band": "ASSESS",
+   "verdict": "PARTIAL",
+   "na_justification": null,
+   "probe": "Attacked the immateriality claim (could there be a hidden material draw?) and separately attacked any PASS claim (is materiality either measured OR documented-immaterial-with-reasoning, and is that backed by a HELD standing control?). grep'd the repo for carbon/energy/watt/emission artifacts and traced every compute path in the architecture.",
+   "evidence": "The runtime footprint is architecturally trivial and I could not find a hidden material draw: the served product is a static, client-side, zero-build site with NO server, NO backend, NO runtime inference and NO training (audit/00-audit-surface.json scheduled_jobs:[], pipelines:[]; system map). Per-view cost is browser CPU + one CDN fetch (+ optional gated feed GET). The only real energy draw is maintenance-time LLM inference by the code-writing agent, which is bounded and intermittent. So on substance the workload is immaterial. BUT the check's pass condition requires EITHER a measured Software Carbon Intensity figure where material OR a DOCUMENTED immateriality-with-reasoning artifact \u2014 and NEITHER exists as a committed artifact: grep for carbon/energy/emission hits only unrelated crisis-data strings ('Oil / energy') in dashboard.jsx (confirmed in audit/03-findings.json ~1361). There is no materiality memo and no standing control that re-assesses materiality when the workload changes shape.",
+   "standing_control": {
+    "exists_now": false,
+    "mechanism": "No committed energy/carbon materiality memo and no test/cadence that re-assesses materiality; mandate A-40 itself sets 'Blocks: nothing by default'.",
+    "blocks": "nothing",
+    "cadence": "none",
+    "ratchet": "none"
+   },
+   "structural_fix": {
+    "available": true,
+    "taken": false,
+    "rationale": "The door is a one-page materiality memo (static client-side, no server/inference at runtime -> runtime energy immaterial; maintenance-time LLM inference scoped or measured by a defined rate-based method) committed to governance/ and re-assessed when a server/runtime model is added. Cheap, but not built at baseline."
+   },
+   "residual_risk": {
+    "compensating_control": "Substantive immateriality holds by architecture (no server/training/inference at runtime), so the risk is a missing-artifact/coverage gap rather than an unbounded footprint.",
+    "owner": "platform",
+    "tripwire": "Introduction of any server, scheduled job, or runtime model/inference (audit-surface scheduled_jobs/pipelines become non-empty) flips the workload potentially-material and requires a measured SCI figure."
+   },
+   "substitution": "S11",
+   "wave": null,
+   "history": [
+    {
+     "date": "2026-07-16",
+     "event": "initialised NO-EVIDENCE at Phase 0'"
+    },
+    {
+     "date": "2026-07-16",
+     "event": "assessed PARTIAL"
+    }
+   ],
+   "remediation": "Commit a one-page energy/carbon materiality memo: static client-side site, no server/inference at runtime -> runtime energy immaterial; note maintenance-time LLM inference as the only material draw and either scope it out or measure it with a defined rate-based (ISO/IEC 21031 SCI) method. Standing control that must exist: a committed materiality determination re-assessed on workload change (a claims-style check that the memo exists and matches the audit-surface's server/pipeline emptiness).",
+   "adversarial_verification": "agreed: Mandate A-40 (part1.md:593) passes only on a measured SCI where material OR a documented immateriality-with-reasoning artifact; findings 03-findings.json:1361-1365 confirm neither exists (grep hits are 'Oil / energy' crisis strings). Architecturally immaterial (audit-surface scheduled_jobs:[], pipelines:[], no server/runtime inference), so satisfied-by-architecture with standing_control.exists_now:false => PARTIAL per the rubric. Not N/A (a real maintenance-time inference draw exists) and not PASS (no committed memo/standing control). Honest, no over-claim."
   }
  ],
  "phase3_complete": "2026-07-16",
- "phase5_partial": "2026-07-16: A-02, A-16 closed with watched controls; deploy-enforcement blockers residualized (R-GATE/R-VENDOR/R-SEP)."
+ "phase5_partial": "2026-07-16: A-02, A-16 closed with watched controls; deploy-enforcement blockers residualized (R-GATE/R-VENDOR/R-SEP).",
+ "phase3_prime_complete": "2026-07-16: 40 Track C checks assessed against Phase-0' baseline + independent adversarial verify (0 disagreements)",
+ "phase5_prime": "2026-07-16: Track C doors built - C-37 (provenance manifest+61) de-escalated off BLOCKER-1 to PLAN/PARTIAL; C-08 (62-security-surface) -> PASS; calibration 6/6 -> 9/9"
 }

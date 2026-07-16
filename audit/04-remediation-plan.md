@@ -32,3 +32,19 @@ signed provenance ledger, scheduler-driven drills). Neither is closable by an ag
 
 A `no` arrived at by default is a finding; every declined door above is declined **by architecture**
 (the capability does not exist) or **residualized to the owner**, never by omission.
+
+---
+
+## Track C waves (Phase 4'/5')
+
+**Wave C-α — doors built (closed by fresh Phase-6' re-run; baseline verdicts preserved):**
+- **C-37** (baseline BLOCKER-1 FAIL): built `governance/provenance-manifest.json` + `governance/sbom.json` + `verify/tests/61-provenance` (attested chain per shipped component, hash-verified, reconstruct-on-demand). Escalation cleared → de-escalated to PLAN/PARTIAL. Structural-ledger: baseline_affected_checks=[C-37,C-26]; door_built_by_change=61-provenance+manifest; checks_requiring_fresh_rerun=[C-37]; initial_verdict_preserved=true; current_verification_reference=verify/tests/61.
+- **C-08** (baseline PARTIAL): built `verify/tests/62-security-surface` asserting the two-of-three trifecta property + egress allowlist → PASS. Structural-ledger: door_built_by_change=62-security-surface; initial_verdict_preserved=true; current_verification_reference=verify/tests/62.
+
+**Wave C-β — open blockers, buildable next step named (not faked closed):**
+- C-03 (BLOCKER-1): commit `verify/package-lock.json`; `npm ci --ignore-scripts` in CI; add a package-existence/registry-age gate for the CI-only deps.
+- C-05 (BLOCKER-1): commit a 10-category LLM-risk matrix mapping each category to a control+test (9/10 justified N/A by no-runtime-LLM), bound by a claims-style check.
+- C-09 (BLOCKER-1): build the Article-50 disclosure UI test for the AI-regime panel; keep the (not-high-risk) classification current from the generated inventory.
+- C-02 (BLOCKER-2): commit `governance/threat-model.md` (DFD+STRIDE) + a new-boundary detector test (extend 62 to diff egress against a threat-entry manifest).
+- C-06 (BLOCKER-2): commit the agentic-taxonomy matrix scoped to the dev-pipeline agent (no runtime agent in the product).
+- C-26 (BLOCKER-2): move Pages to a CI-artifact deploy with a fail-closed provenance-verify admission step (the only way to verify *at deploy* on this host).
