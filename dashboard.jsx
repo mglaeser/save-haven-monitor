@@ -515,22 +515,27 @@ function Explorer() {
     CRISES.forEach((c) => c.series.forEach((s) => { if (s.defaultOff) h[c.id + s.key] = true; }));
     return h;
   });
+  // bubblegauge integration seam: live re-anchored AI-2026 series (null when gate off / feed down).
+  const aiLive = (BG.enabled && BG.useAiLive) ? BG.useAiLive() : null;
   const crisis = CRISES.find((c) => c.id === cid);
   const cat = CAT[crisis.cat];
 
   const data = useMemo(() => {
     const rows = Array.from({ length: 121 }, (_, i) => ({ m: i - 60 }));
     crisis.series.forEach((s) => {
-      const vals = rebase(interp(s.a), base === "peak" ? 0 : -60);
+      const vals = rebase(interp((crisis.id === "ai2026" && aiLive && aiLive.a[s.key]) || s.a), base === "peak" ? 0 : -60);
       vals.forEach((v, i) => {
         const mm = i - 60;
         rows[i][s.key] = s.end !== undefined && mm > s.end ? null : +v.toFixed(1);
       });
     });
     return rows;
-  }, [crisis, base]);
+  }, [crisis, base, aiLive]);
 
-  const visible = crisis.series.filter((s) => !hidden[crisis.id + s.key]);
+  // bubblegauge integration seam: honest proxy relabeling when a line is live.
+  const dispSeries = crisis.series.map((s) =>
+    (crisis.id === "ai2026" && aiLive && aiLive.live[s.key]) ? { ...s, label: aiLive.labels[s.key] } : s);
+  const visible = dispSeries.filter((s) => !hidden[crisis.id + s.key]);
 
   return (
     <div>
@@ -565,6 +570,8 @@ function Explorer() {
           POTENTIAL crisis — the peak is anchored at today (Jul 2026) <b>by construction, not as a forecast</b>. All lines end at t0 and the right half of the axis is intentionally empty: no forward projection. Backfill uses real market anchors (Jul 2021 → Jul 2026); current-state sources are ≤ 6 weeks old (BIS 28 Jun · ECB 2 Jun &amp; 27 May · Fed 8 May 2026). Safe-haven candidates are shown dashed.
         </div>
       )}
+      {/* bubblegauge integration seam: live re-anchor status + current readings */}
+      {crisis.potential && BG.enabled && BG.AiLivePanel && <BG.AiLivePanel />}
 
       <div style={{ ...S.panel, padding: "14px 8px 6px 0", marginTop: 12 }}>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center", padding: "0 14px 10px 18px" }}>
@@ -600,7 +607,7 @@ function Explorer() {
           </LineChart>
         </ResponsiveContainer>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 7, padding: "8px 14px 12px 18px" }}>
-          {crisis.series.map((s) => {
+          {dispSeries.map((s) => {
             const off = hidden[crisis.id + s.key];
             return (
               <button key={s.key} onClick={() => setHidden((h) => ({ ...h, [crisis.id + s.key]: !off }))}
@@ -827,20 +834,22 @@ function PairTile({ p, data }) {
 }
 
 function Aggregate() {
+  // bubblegauge integration seam: live re-anchored AI-2026 overlays when the feed is up.
+  const aiLive = (BG.enabled && BG.useAiLive) ? BG.useAiLive() : null;
   const data = useMemo(() => {
     const rows = buildAggregate();
     const AI = CRISES.find((c) => c.potential);
     if (AI) {
       AI.series.forEach((s) => {
         if (!["mkt", "au", "cash", "ust"].includes(s.key)) return;
-        const vals = rebase(interp(s.a), 0);
+        const vals = rebase(interp((aiLive && aiLive.a[s.key]) || s.a), 0);
         rows.forEach((row, i) => {
           row["ai_" + s.key] = row.m <= 0 ? +vals[i].toFixed(1) : null;
         });
       });
     }
     return rows;
-  }, []);
+  }, [aiLive]);
   const [mode, setMode] = useState("pairs");
   const [hidden, setHidden] = useState({});
   const stats = [
@@ -1049,8 +1058,11 @@ function FanTile({ title, sub, col, fan, expl, note }) {
 }
 
 function Analytics() {
+  // bubblegauge integration seam: the crisis clock's "today" window uses the live NASDAQ-100
+  // backfill when the feed is up (the chart is documented as computed live from the anchors).
+  const aiLive = (BG.enabled && BG.useAiLive) ? BG.useAiLive() : null;
   const xc = useMemo(() => {
-    const cur = logPath(rebase(interp(ser("ai2026", "mkt")), 0));
+    const cur = logPath(rebase(interp((aiLive && aiLive.a.mkt) || ser("ai2026", "mkt")), 0));
     const H2 = {
       dotcom: logPath(rebase(interp(ser("dotcom", "mkt")), 0)),
       y1929: logPath(rebase(interp(ser("depression", "mkt")), 0)),
@@ -1061,7 +1073,7 @@ function Analytics() {
       xcorrRow(cur, hl, 24).forEach(({ p, r }) => { (byP[p] = byP[p] || { p })[name] = r; });
     });
     return Object.values(byP).sort((a, b) => a.p - b.p);
-  }, []);
+  }, [aiLive]);
   const fans = useMemo(() => ({
     market: runFan([["dotcom", "mkt"], ["depression", "mkt"], ["japan", "mkt"]], 7, 1500),
     gold: runFan([["stagflation", "au"], ["gfc", "au"], ["euro", "au"]], 11, 1500),
