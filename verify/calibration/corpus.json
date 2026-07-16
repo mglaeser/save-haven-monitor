@@ -1,0 +1,13 @@
+{
+  "note": "The standing calibration corpus (mandate S12 / §9.3). Six seeded defect classes the pipeline must catch. The heartbeat re-injects these on a schedule; a class the pipeline stops catching is a FAILED GATE and freezes releases. Corpus grows with every real defect found and every incident (§9.9).",
+  "baseline_catch_rate": "6/6",
+  "recorded": "2026-07-16",
+  "defects": [
+    { "id": "D1", "kind": "hard-coded-credential", "inject": "embed a bg_live_sk_/X-API-Key secret idiom in bubblegauge.jsx", "caught_by": "verify/tests/30 no-secrets" },
+    { "id": "D2", "kind": "missing-guard-clone", "inject": "weaken KEY_RE re-validation before base-URL construction", "caught_by": "verify/tests/30 KEY_RE-enforced" },
+    { "id": "D3", "kind": "nonexistent-dependency", "inject": "bump a pinned CDN version (e.g. react@18.3.2) leaving stale SRI", "caught_by": "verify/tests/35 pin-manifest (offline) + verify/tests/40 SRI-recompute (online)" },
+    { "id": "D4", "kind": "swallowed-exception", "inject": "make a catch handler return a fabricated 2xx status", "caught_by": "verify/tests/30 no-fabricated-success" },
+    { "id": "D5", "kind": "vacuous-assertion", "inject": "plant a tautological *.test.js outside verify/tests/", "caught_by": "verify/tests/35 no-stray-test-files" },
+    { "id": "D6", "kind": "untrusted-text-to-sink", "inject": "render API text via dangerouslySetInnerHTML/.innerHTML", "caught_by": "verify/tests/30 no-injection-sinks" }
+  ]
+}

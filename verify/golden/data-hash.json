@@ -1,0 +1,7 @@
+{
+  "data_hash": "5c0c3a20d9a9de159dabe9e6e81df72b7e05121797bc363ef6ac1864fa3453a0",
+  "recorded": "2026-07-16",
+  "frozen_commit": "d19556d",
+  "covers": "CRISES + MATRIX + MX_CRISES + CLASSIFICATION + CAT + CLS from dashboard.jsx",
+  "update_rule": "Changing this requires a decision record in audit/decisions/ (weakening/altering frozen research data is a finding per CLAUDE.md + Article X)."
+}
