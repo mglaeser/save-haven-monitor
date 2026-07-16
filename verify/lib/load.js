@@ -29,7 +29,7 @@ function stubGlobals() {
     setItem: (k, v) => { store[k] = String(v); },
     removeItem: (k) => { delete store[k]; },
   };
-  const location = { href: "https://<prod-host>/", hostname: "<prod-host>", search: "" };
+  const location = { href: "https://crash.example.com/", hostname: "crash.example.com", search: "" };
   const win = { location, sessionStorage, addEventListener: () => {}, BubbleGauge: undefined };
   return { React, ReactDOM, Recharts: proxy, window: win, sessionStorage, location,
            document: { getElementById: () => null, addEventListener: () => {} },

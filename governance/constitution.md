@@ -183,7 +183,7 @@ format (the ONLY place emojis appear in this repository):
 
 ## Article XV — Scope: repository class
 
-This repository is **Production** (serves public traffic at <prod-host>). It holds no secrets, no
+This repository is **Production** (serves public traffic at the production host — deliberately not named in this public repository; the `CNAME` file necessarily carries it, as GitHub Pages requires). It holds no secrets, no
 credentials, and no personal data — verified by `verify/tests/30`. Graduation is a gate, not a
 decision: deploy admission reads `audit/engagement-status.json` and fails closed on
 `production_eligible` — which is `false` and computed. Track C is now **audited**

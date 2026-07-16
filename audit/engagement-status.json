@@ -20,7 +20,7 @@
   "B-24"
  ],
  "mandate_manifest_hash": "60f989d0b4c67b866fdce01446a451f5fd20a6b8f0918964d943e826892d02c0",
- "constitution_hash": "d8ef4f89aefbe706e66c2866795f7cd08431b9f83cb56dfa81c880f6e0a714dd",
+ "constitution_hash": "5891e26a983c507d5c3d60ac140492d70e82087e2a66f2c1063e27f9e21c6088",
  "computed_at": "2026-07-16",
  "computed_by": "phase-7' merge (gate.js verifies these computed fields)",
  "verdict_distribution": {

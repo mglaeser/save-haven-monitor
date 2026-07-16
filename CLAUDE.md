@@ -13,6 +13,13 @@ push/PR. This does not violate zero-build: it verifies the site, it does not bui
 it. See `audit/decisions/DR-001` and `DR-002`. Do not add a build/transform step to the
 *served* files, and do not add npm deps to the *shipped* code.
 
+## Privacy: the production domain is never written into this repo
+
+**Never name the production host/domain in any repository file** (docs, code comments, audit
+evidence, commit messages, PR bodies). Use `<prod-host>` / `<prod-domain>` placeholders or neutral
+phrases ("the production host", "the bubblegauge API host"). **Sole exception: `CNAME`** — GitHub
+Pages requires the literal domain there (DR-005). The verify-harness stub uses `crash.example.com`.
+
 ## Governance (no human reviews changes — by design)
 
 This repository is maintained without human code review. Before changing anything, run the

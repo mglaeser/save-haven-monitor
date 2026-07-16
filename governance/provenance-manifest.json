@@ -25,7 +25,7 @@
     },
     {
       "file": "bubblegauge.jsx",
-      "sha256": "6d576969fef98d572201a038a4051152bef583e02f79dc5559e44474e5ed5dab",
+      "sha256": "b12c1695495b0e3c58a6c4344ecff09624027cbe42d8b9d5e0824327d448595e",
       "role": "served OPTIONAL gated status-API integration (no-ops without ?status-api)",
       "derives_from_spec": "INTEGRATION_NOTES.md + DASHBOARD_FEED_SPEC.md; the KEY_RE gating contract",
       "test_evidence": "verify/tests/30-static-security (KEY_RE-enforced, no-injection-sink, no-fabricated-success), verify/tests/62-security-surface (egress allowlist, gated fetch)",

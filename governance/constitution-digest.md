@@ -1,6 +1,6 @@
 # Constitution — one-page digest (hash-bound)
 
-**Bound to governance/constitution.md sha256 `d8ef4f89aefbe706e66c2866795f7cd08431b9f83cb56dfa81c880f6e0a714dd`.** If this digest drifts from that file, the
+**Bound to governance/constitution.md sha256 `5891e26a983c507d5c3d60ac140492d70e82087e2a66f2c1063e27f9e21c6088`.** If this digest drifts from that file, the
 build fails (a digest that misquotes its source is worse than none). Routine sessions may load this;
 amendments, repair-lane merges and Article-XIV alerts require the full text.
 

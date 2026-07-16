@@ -51,7 +51,7 @@
       return { key: key, demo: false, base: "http://localhost:8000" };
     }
     const labels = host.split(".");
-    // NOTE: simple leftmost-strip. Correct for <prod-domain>; a multi-label public
+    // NOTE: simple leftmost-strip. Correct for a single-label parent domain; a multi-label public
     // suffix (e.g. co.uk) would need a public-suffix-list check. See INTEGRATION_NOTES.
     const parent = labels.length > 2 ? labels.slice(1).join(".") : host;
     return { key: key, demo: false, base: "https://" + key + "." + parent };
