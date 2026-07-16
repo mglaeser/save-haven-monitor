@@ -8,11 +8,12 @@
    in this tab). When disabled, window.BubbleGauge = {enabled:false}
    and dashboard.jsx renders exactly as it always has.
 
-   Data contract: bubblegauge REST API v2/v1, service_version 3.1.0
-   (see the integration spec). Live payloads MUST be re-verified
-   against /openapi.json — this file is built to the documented
-   contract + the golden fixture and validates at the boundary.
-   `?status-api=demo` renders the embedded fixture offline.
+   Data contract: bubblegauge REST API v1 — score/legs endpoints
+   per the integration spec (3.1.0) plus the dashboard feed
+   (GET /api/v1/dashboard/feed, DASHBOARD_FEED_SPEC v1.0,
+   service 3.4.0) used to re-anchor the atlas's AI-2026 panel.
+   Validated at the boundary; `?status-api=demo` renders embedded
+   fixtures (feed fixture scaled to the real 2026-07-15 capture).
    ============================================================ */
 
 (function () {
@@ -870,6 +871,161 @@
     return <Boundary fallback={null}><Strip goToDetail={props.goToDetail} /></Boundary>;
   }
 
+  /* ============================================================
+     Dashboard feed (bubblegauge >= 3.4.0, DASHBOARD_FEED_SPEC v1.0)
+     GET /api/v1/dashboard/feed — 12 monthly series (61 points,
+     t-60..t0) + 34 scalar metrics. Used to RE-ANCHOR the atlas's
+     AI-2026 panel with current data: the hardcoded anchors in
+     dashboard.jsx stay as the labeled static fallback.
+     ============================================================ */
+
+  // Demo-fixture series: stylized paths scaled to the real capture-#2
+  // endpoints (2026-07-15). Month index 0 = "2021-07" ... 60 = "2026-07".
+  const FEED_FIX_SERIES = {
+    qqq: [362.61,372.58,382.55,392.53,402.5,388.6,374.7,360.8,346.9,333,319.1,309.77,300.45,291.12,281.8,272.48,263.15,253.83,272.56,291.3,310.03,328.77,347.5,366.24,374.29,382.35,390.41,398.47,406.53,414.58,422.64,430.7,438.76,455.08,471.39,487.71,504.03,507.05,510.07,513.09,516.11,519.14,522.16,500.4,451.45,402.5,430.78,459.06,487.35,515.63,543.91,557.21,570.51,583.8,577.46,571.11,564.77,558.42,650.88,743.35,711.8],
+    gold: [169,168.1,167.2,166.3,165.39,164.49,163.59,162.69,161.79,160.89,159.99,159.09,158.18,157.28,156.38,155.48,158.65,161.82,164.99,168.16,171.32,174.49,177.66,180.83,183.65,186.46,189.28,192.1,194.91,197.73,200.55,203.36,206.18,210.69,215.19,219.7,224.21,228.71,233.22,237.73,242.23,246.74,258.57,270.4,282.23,294.34,306.45,318.56,330.68,342.79,354.9,378.56,402.22,425.88,475.74,525.59,485.59,445.6,405.6,397.15,388.7],
+    tbill3m_tr: [91.55,91.58,91.61,91.64,91.67,91.7,91.73,91.76,91.79,91.82,91.86,91.89,91.92,92.12,92.32,92.52,92.72,92.92,93.25,93.58,93.9,94.23,94.56,94.89,95.21,95.76,96.31,96.86,97.41,97.96,98.34,98.72,99.1,99.48,99.87,100.25,100.63,101.01,101.39,101.77,102.15,102.54,102.92,103.3,103.68,104.06,104.44,104.82,105.21,105.59,105.97,106.35,106.73,107.11,107.44,107.77,108.09,108.42,108.75,109.08,109.4],
+    ust10y_tr: [118,117.53,117.06,116.58,116.11,115.64,115.17,114.7,114.22,113.75,113.28,111.43,109.57,107.72,105.86,104.01,102.15,100.3,99.95,99.59,99.24,98.88,98.53,98.18,97.82,97.47,97.11,96.76,99.12,101.48,101.68,101.87,102.07,102.27,102.46,102.66,102.86,103.05,103.25,103.45,103.64,103.84,104.33,104.82,105.31,105.81,106.3,106.79,107.28,107.77,108.27,108.76,109.25,109.74,110.08,110.41,110.75,111.09,111.43,111.76,112.1],
+    usdchf: [0.905,0.9099,0.9148,0.9197,0.9247,0.9298,0.9349,0.9401,0.9453,0.9506,0.956,0.9614,0.9669,0.9724,0.978,0.9837,0.9709,0.9584,0.9462,0.9344,0.9228,0.9115,0.9005,0.8897,0.8793,0.869,0.859,0.8492,0.8396,0.8303,0.8354,0.8406,0.8458,0.8511,0.8565,0.8619,0.8674,0.873,0.8786,0.8844,0.8902,0.896,0.8865,0.8771,0.8679,0.8589,0.8501,0.8415,0.8331,0.8248,0.8167,0.8087,0.8009,0.7847,0.7691,0.7542,0.7637,0.7735,0.7835,0.7939,0.8044],
+    usdjpy: [109.8,111.81,113.9,116.07,118.32,120.66,123.09,125.63,128.27,131.03,133.9,136.91,140.05,143.34,146.79,150.41,150.24,150.07,149.9,149.73,149.56,149.39,149.22,149.05,148.88,148.71,148.55,148.38,149.73,151.1,152.5,153.93,155.38,156.86,158.37,159.9,161.47,160.68,159.9,159.13,158.37,157.61,156.86,156.11,155.38,154.65,153.93,153.21,152.5,153.26,154.03,154.81,155.6,156.39,157.19,158,158.82,159.65,160.49,161.33,162.19],
+    usd_broad_index: [112.67,114.68,116.7,118.71,120.72,122.73,124.74,126.76,128.77,130.78,132.79,134.8,136.82,138.83,140.84,139.71,138.59,137.46,136.33,135.21,134.08,132.95,131.83,130.7,129.57,128.45,127.32,126.19,125.07,123.94,124.6,125.25,125.91,126.57,127.22,127.88,128.54,129.2,129.85,130.51,131.17,131.83,129.73,127.64,125.55,123.46,121.36,119.27,117.18,117.55,117.93,118.3,118.68,119.06,119.43,119.62,119.81,120,120.18,120.37,120.56],
+    btc: [35628,44802,53976,63151,72325,68049,63774,59499,55223,50948,46673,42397,38122,33847,29571,25296,21021,16745,18645,20545,22446,24346,26246,28146,32006,35866,39725,43585,47445,51304,55164,59024,62883,66743,70603,74463,78322,82182,86042,89901,93761,97621,101077,104533,107988,111444,114900,118356,121812,125268,128724,132180,121670,111159,102965,94770,86576,78382,73869,69356,64843],
+  };
+  function fixMonth(i) {
+    const y = 2021 + Math.floor((6 + i) / 12), m = ((6 + i) % 12) + 1;
+    return y + "-" + (m < 10 ? "0" : "") + m;
+  }
+  const FEED_FIX_META = { qqq: ["NASDAQ-100 (QQQ ETF proxy, dividend-adjusted)", "total_return", "tiingo:QQQ"],
+    gold: ["Gold (GLD ETF proxy)", "price", "tiingo:GLD"], tbill3m_tr: ["3M T-bills / cash TR (BIL ETF proxy)", "total_return", "tiingo:BIL"],
+    ust10y_tr: ["10Y US Treasuries TR (IEF ETF proxy)", "total_return", "tiingo:IEF"], usdchf: ["USD/CHF (Fed H.10)", "price", "fred:DEXSZUS"],
+    usdjpy: ["USD/JPY (Fed H.10)", "price", "fred:DEXJPUS"], usd_broad_index: ["US dollar (Fed Broad Dollar Index)", "index", "fred:DTWEXBGS"],
+    btc: ["Bitcoin (BTC/USD)", "price", "twelvedata:BTC/USD"] };
+  const FEED_FIXTURE = {
+    data: {
+      anchor_month: "2026-07", anchor_partial: true,
+      series: (function () {
+        const out = {};
+        Object.keys(FEED_FIX_SERIES).forEach(function (k) {
+          out[k] = { name: FEED_FIX_META[k][0], kind: FEED_FIX_META[k][1], unit: "USD",
+            points: FEED_FIX_SERIES[k].map(function (v, i) { return { month: fixMonth(i), value: v }; }),
+            as_of: "2026-07-15", source: FEED_FIX_META[k][2], available: true, stale: false };
+        });
+        return out;
+      })(),
+      // Real capture-#2 scalar values (2026-07-15T23:29:51Z), abbreviated to the ones the card renders.
+      metrics: {
+        cape: { value: 42.18, unit: "ratio", as_of: "2026-07-15", source: "multpl", available: true, stale: false },
+        sp500_top10_weight_pct: { value: 37.54, unit: "pct", as_of: "2026-07-15", source: "ssga_spy_xlsx", available: true, stale: false },
+        hy_oas_bps: { value: 272.0, unit: "bps", as_of: "2026-07-14", source: "fred:BAMLH0A0HYM2", available: true, stale: false },
+        gold_spot: { value: 4058.69, unit: "USD", as_of: "2026-07-16", source: "twelvedata:XAU/USD", available: true, stale: false },
+        usdjpy: { value: 162.09, unit: "JPY-per-USD", as_of: "2026-07-16", source: "twelvedata:USD/JPY", available: true, stale: false },
+        usdchf: { value: 0.80483, unit: "CHF-per-USD", as_of: "2026-07-16", source: "twelvedata:USD/CHF", available: true, stale: false },
+        btc_spot: { value: 64843.57, unit: "USD", as_of: "2026-07-15", source: "twelvedata:BTC/USD", available: true, stale: false },
+        btc_drawdown_pct: { value: -43.99, unit: "pct", as_of: "2026-07-15", source: "twelvedata:BTC/USD", available: true, stale: false, note: "vs btc_ath (provider monthly closes since 2017-08 + spot - not a curated record)" },
+        gold_ttm_pct: { value: 22.9, unit: "pct", as_of: "2026-07-31", source: "tiingo:GLD", available: true, stale: false, note: "trailing 12 months, GLD basis" },
+        mmf_total_assets_usd: { value: 8289569.0, unit: "USD_mn", as_of: "2026-01-01", source: "fred:MMMFFAQ027S", available: true, stale: true, note: "quarterly Z.1 - publication lags ~1 quarter" },
+      },
+    },
+    meta: { computed_at: "2026-07-15T23:29:51+00:00", service_version: "3.4.0", disclaimer: "Research, not advice." },
+  };
+
+  function validFeed(j) {
+    return !!(j && j.data && j.data.series && typeof j.data.series === "object" &&
+      j.data.metrics && typeof j.data.metrics === "object" && typeof j.data.anchor_month === "string");
+  }
+  const useFeed = () => useEndpoint("/api/v1/dashboard/feed", FEED_FIXTURE, validFeed);
+
+  // Feed-key -> AI-2026 panel line. inv: chart shows the CURRENCY vs USD, so FX pairs invert.
+  const AI_MAP = {
+    mkt:  { key: "qqq",             inv: false, label: "NASDAQ-100 (QQQ TR proxy) — feared market" },
+    au:   { key: "gold",            inv: false, label: "Gold (GLD proxy) — lead regime-matched hedge" },
+    cash: { key: "tbill3m_tr",      inv: false, label: "3M T-bills / cash TR (BIL proxy) — phase 1" },
+    ust:  { key: "ust10y_tr",       inv: false, label: "10Y US Treasuries TR (IEF proxy) — challenged" },
+    chf:  { key: "usdchf",          inv: true,  label: "Swiss franc vs USD (inverted USD/CHF)" },
+    usd:  { key: "usd_broad_index", inv: false, label: "US dollar (Fed broad index — not DXY)" },
+    jpy:  { key: "usdjpy",          inv: true,  label: "Japanese yen vs USD (inverted USD/JPY)" },
+    btc:  { key: "btc",             inv: false, label: "Bitcoin (BTC/USD)" },
+  };
+
+  function buildAiLive(json) {
+    if (!json || !validFeed(json)) return null;
+    const d = json.data, out = { a: {}, labels: {}, live: {}, asOf: {}, anchorMonth: d.anchor_month,
+      anchorPartial: !!d.anchor_partial, computedAt: json.meta && json.meta.computed_at,
+      serviceVersion: json.meta && json.meta.service_version, metrics: d.metrics };
+    Object.keys(AI_MAP).forEach(function (lineKey) {
+      const m = AI_MAP[lineKey], s = d.series[m.key];
+      if (!s || !s.available || !Array.isArray(s.points)) { out.live[lineKey] = false; return; }
+      const anchors = [];
+      s.points.forEach(function (p, i) {
+        if (p && isNum(p.value) && p.value > 0) anchors.push([i - 60, m.inv ? 1 / p.value : p.value]);
+      });
+      if (anchors.length < 2) { out.live[lineKey] = false; return; }
+      out.a[lineKey] = anchors;
+      out.labels[lineKey] = m.label;
+      out.live[lineKey] = true;
+      out.asOf[lineKey] = s.as_of || null;
+    });
+    return Object.keys(out.a).length ? out : null;
+  }
+
+  // Hook consumed by dashboard.jsx (Explorer / Aggregate / Analytics integration seams).
+  function useAiLive() {
+    const f = useFeed();
+    return useMemo(function () { return f.json ? buildAiLive(f.json) : null; }, [f.json]);
+  }
+
+  // Compact live-readings card mounted under the AI-2026 "POTENTIAL crisis" banner.
+  function fmtMetric(mx, id, fmt) {
+    const m = mx && mx[id];
+    if (!m || !m.available || !isNum(m.value)) return null;
+    return { text: fmt(m.value), title: (m.as_of ? "as of " + m.as_of : "") + (m.source ? " · " + m.source : "") + (m.note ? " · " + m.note : ""), stale: !!m.stale };
+  }
+  function AiLiveInner() {
+    const live = useAiLive();
+    if (!live) return null;
+    const mx = live.metrics || {};
+    const pills = [
+      ["CAPE", fmtMetric(mx, "cape", (v) => v.toFixed(1))],
+      ["Gold spot", fmtMetric(mx, "gold_spot", (v) => "$" + Math.round(v).toLocaleString("en-US"))],
+      ["Gold 12m", fmtMetric(mx, "gold_ttm_pct", (v) => (v > 0 ? "+" : "") + v.toFixed(1) + "%")],
+      ["USD/JPY", fmtMetric(mx, "usdjpy", (v) => v.toFixed(1))],
+      ["USD/CHF", fmtMetric(mx, "usdchf", (v) => v.toFixed(3))],
+      ["BTC", fmtMetric(mx, "btc_spot", (v) => "$" + Math.round(v / 1000) + "k")],
+      ["BTC vs ATH", fmtMetric(mx, "btc_drawdown_pct", (v) => v.toFixed(0) + "%")],
+      ["HY OAS", fmtMetric(mx, "hy_oas_bps", (v) => Math.round(v) + " bp")],
+      ["Top-10 wt", fmtMetric(mx, "sp500_top10_weight_pct", (v) => v.toFixed(1) + "%")],
+      ["MMF assets", fmtMetric(mx, "mmf_total_assets_usd", (v) => "$" + (v / 1e6).toFixed(2) + "tn")],
+    ].filter((p) => p[1]);
+    const staticLines = Object.keys(AI_MAP).filter((k) => !live.live[k]);
+    return (
+      <div style={{ ...BS.panel, padding: "10px 14px", marginTop: 10, borderLeft: "3px solid #7fbf94" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 6 }}>
+          <span style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: "0.1em", color: "#7fbf94" }}>LIVE BACKFILL</span>
+          <span style={{ fontSize: 11, color: C.dim }}>
+            series re-anchored to <b>{live.anchorMonth}</b>{live.anchorPartial ? " (month in progress — t0 is month-to-date)" : ""} via the bubblegauge feed{live.serviceVersion ? " " + live.serviceVersion : ""}{DEMO ? " · demo fixture" : ""}
+          </span>
+          <Freshness computedAt={live.computedAt} />
+        </div>
+        {pills.length > 0 && (
+          <div style={{ display: "flex", gap: "4px 10px", flexWrap: "wrap", marginBottom: 6 }}>
+            {pills.map((p) => (
+              <span key={p[0]} title={p[1].title} style={{ fontSize: 10.5, color: C.dim, whiteSpace: "nowrap" }}>
+                <span style={{ color: C.muted }}>{p[0]}</span> <b style={{ color: C.text, fontVariantNumeric: "tabular-nums" }}>{p[1].text}</b>
+                {p[1].stale ? <span style={{ color: "#E8853D" }}> ·stale</span> : null}
+              </span>
+            ))}
+          </div>
+        )}
+        <div style={{ fontSize: 9.5, color: C.faint, lineHeight: 1.5 }}>
+          Chart lines use labeled proxies (QQQ / GLD / IEF / BIL ETFs; Fed broad dollar index, not ICE DXY; FX lines inverted to show the currency vs USD).
+          {staticLines.length ? " Static Jul-2026 snapshot (feed unavailable): " + staticLines.join(", ") + "." : ""}
+          {" "}The panel's written analysis remains the Jul 2026 editorial snapshot. Refreshes twice daily.
+        </div>
+      </div>
+    );
+  }
+  function AiLivePanel() { return <Boundary fallback={null}><AiLiveInner /></Boundary>; }
+
   /* ---------- expose ---------- */
 
   window.BubbleGauge = {
@@ -879,5 +1035,7 @@
     tab: { id: "bubblegauge", label: "AI Regime" },
     Strip: StripBoundary,
     DetailTab: DetailTab,
+    useAiLive: useAiLive,
+    AiLivePanel: AiLivePanel,
   };
 })();

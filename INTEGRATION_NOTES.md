@@ -54,6 +54,32 @@ Discovery Checklist output (spec §1.1) plus every deliberate deviation.
   correct for `klee.me`. A multi-label public suffix (e.g. `foo.github.io`, `bar.co.uk`) would
   need a public-suffix-list check before this is used on such a host.
 
+## Dashboard feed — live re-anchoring of the AI-2026 panel (bubblegauge ≥ 3.4.0)
+
+Per `DASHBOARD_FEED_SPEC.md` v1.0 (bubblegauge repo), `GET /api/v1/dashboard/feed` serves
+12 monthly series (61 points, t−60..t0) + 34 scalar metrics, refreshed twice daily. When the
+`?status-api` gate is active and the feed is reachable, the integration:
+
+- **Re-anchors the AI-2026 panel** in the Crisis Explorer: each of the 8 charted lines is
+  replaced by its feed series (`qqq`→mkt, `gold`→au, `tbill3m_tr`→cash, `ust10y_tr`→ust,
+  `usdchf`→chf *(inverted — the chart shows the franc vs USD)*, `usd_broad_index`→usd,
+  `usdjpy`→jpy *(inverted)*, `btc`→btc), rebased client-side exactly like the static anchors.
+  Lines are relabeled with their honest proxies (QQQ/GLD/IEF/BIL ETFs; Fed broad dollar
+  index — never DXY). The same live anchors drive the **Aggregate tab's 2026 overlays** and
+  the **Analytics crisis clock's "today" window** (both documented as computed from the anchors).
+- **Adds a LIVE BACKFILL card** under the POTENTIAL banner: anchor month + `anchor_partial`
+  state, feed freshness, current scalar readings (CAPE, gold spot, USD/JPY, USD/CHF, BTC +
+  drawdown-vs-provider-ATH, HY OAS, top-10 weight, MMF assets) each with `as_of`/source/stale
+  in the tooltip, plus the proxy-disclosure line.
+- **Falls back per-line**: any series that is `available:false` (or the whole feed being down)
+  reverts that line to the hardcoded Jul-2026 anchors with the original label; the card names
+  which lines are static. The panel's *written* analysis is always the Jul-2026 editorial
+  snapshot — the feed refreshes charts and numbers, not prose.
+- Integration seams in `dashboard.jsx` are marked "bubblegauge integration seam" (Explorer,
+  Aggregate, Analytics). All feed logic lives in `bubblegauge.jsx` (`useAiLive`, `AiLivePanel`).
+- Demo mode (`?status-api=demo`) uses an embedded feed fixture whose series are scaled to the
+  real 2026-07-15 capture endpoints and whose metrics are the real capture-#2 values.
+
 ## Preconditions & caveats for going live
 
 - **CORS (spec §8) is required and NOT handled here** — it's a change to the *bubblegauge* FastAPI
