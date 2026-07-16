@@ -82,10 +82,11 @@ Per `DASHBOARD_FEED_SPEC.md` v1.0 (bubblegauge repo), `GET /api/v1/dashboard/fee
 
 ## Preconditions & caveats for going live
 
-- **CORS (spec §8) is required and NOT handled here** — it's a change to the *bubblegauge* FastAPI
-  service (a different repo), not this one. Until `https://crash.klee.me` is in
-  `CORSMiddleware.allow_origins`, browser calls from the deployed dashboard are blocked by the
-  same-origin policy. `demo` mode works regardless (no network).
+- **CORS (spec §8) is a change to the *bubblegauge* FastAPI service (a different repo), not this
+  one.** Per `DASHBOARD_FEED_SPEC.md` v1.0 the service now allows `https://crash.klee.me`
+  (GET-only, no credentials), so the browser integration is unblocked; if a future deployment moves
+  the API or tightens origins, browser calls fail the same-origin policy until it is re-added.
+  `demo` mode works regardless (no network).
 - **Re-verify the payload contract.** This file was built to the documented `service_version 3.1.0`
   contract + the golden fixture. Confirm live shapes against `https://bubblegauge.klee.me/openapi.json`
   and `/docs` before trusting production data — the boundary validator will reject a mismatched

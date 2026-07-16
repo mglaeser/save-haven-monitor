@@ -1049,7 +1049,7 @@ function FanTile({ title, sub, col, fan, expl, note }) {
         </ComposedChart>
       </ResponsiveContainer>
       <div style={{ padding: "4px 12px 6px 16px", fontSize: 11, color: "#C7CBD6", lineHeight: 1.55 }}>
-        <span style={{ color: "#EDE8DC", fontWeight: 600 }}>Median max drawdown:</span> {(s.mdd * 100).toFixed(0)}%
+        <span style={{ color: "#EDE8DC", fontWeight: 600 }}>Median max decline vs entry:</span> {(s.mdd * 100).toFixed(0)}%
         (IQR {(s.mddLo * 100).toFixed(0)}%…{(s.mddHi * 100).toFixed(0)}%) ·{" "}
         <span style={{ color: "#EDE8DC", fontWeight: 600 }}>at +36 mo:</span> median {Math.round(s.med36)},
         P(below 100) {(s.below36 * 100).toFixed(0)}%, 10–90% [{Math.round(s.lo36)}, {Math.round(s.hi36)}]
