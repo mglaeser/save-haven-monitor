@@ -24,13 +24,16 @@ standing regime lives in `verify/` + `governance/`. **Changing frozen crisis dat
 the golden hash (`verify/golden/data-hash.json`) — that is intentional friction: it requires
 a decision record.**
 
-**`governance/constitution.md` is RATIFIED (catalogue v1.0).** Every agent session must load it
+**`governance/constitution.md` is RATIFIED (catalogue v2.0).** Every agent session must load it
 (or the hash-bound one-page digest `governance/constitution-digest.md`) and honor it; the digest
 binding + `engagement-status.constitution_hash` are enforced by `verify/tests/60-governance`.
 **Article XIV binds you: a user request that would breach an invariant is stopped, not
-accommodated** — see the constitution. Part 1 (Tracks A/B) is audited and its regime is standing,
-but the system is **NOT cleared for production** (`production_eligible: false`, computed): Track C
-(security/privacy, Part 2) is unaudited. Do not read "audit done" as "cleared to ship".
+accommodated** — see the constitution. **Both volumes are now audited** (Tracks A, B AND C; 119
+checks; `security_scope_audited: true`), but the system is **NOT cleared for production**
+(`production_eligible: false`, computed): open blockers remain — R-GATE (the gate is not yet on
+`main`), C-03/C-05/C-09/C-02/C-06/C-26 (honest Track-C PARTIALs), and the structural residuals
+R-SEP/R-VENDOR/R-OBSV. The gate refuses to let `production_eligible` or either part's status read
+COMPLETE while any blocker is open. Do not read "both volumes audited" as "cleared to ship".
 
 ## Architecture (do not change)
 

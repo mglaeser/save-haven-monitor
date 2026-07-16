@@ -1,46 +1,32 @@
-SCOPE: TRACKS A/B (CATALOGUE v1.0) COMPLETE — TRACK C (SECURITY, PRIVACY, ASSURANCE) NOT YET AUDITED — NOT CLEARED FOR PRODUCTION TRAFFIC UNTIL PART 2 CLOSES
+SCOPE: TWO-VOLUME MANDATE COMPLETE (catalogue v2.0, 119 checks — Tracks A, B AND C audited) — **NOT CLEARED FOR PRODUCTION TRAFFIC**. `production_eligible: false`, computed. Track C is now audited; the clearance is withheld because open blockers remain, not because scope is dark.
 
-# 09 — Executive summary (Part 1)
+# 09 — Executive summary (Parts 1 & 2 — the whole mandate)
 
-**What is still broken, first.**
+**What is still broken, first. This is the deliverable — not the reassurance.**
 
-1. **Nothing is deploy-blocking.** GitHub Pages deploys from `main` on push; there is no branch
-   protection, so a change can reach production entirely ungated. The verify gate exists, self-tests,
-   and fail-closes — but until the owner enables "Require status checks → verify, disallow bypass" on
-   `main`, it is advisory on the deploy. This one setting (R-GATE) is the single most important open
-   item and it is the owner's command to give. It is the root of most open BLOCKER-1/2 findings
-   (A-01, B-01, B-06, B-35).
-2. **The verifier is one vendor.** Independence (Article IV) is met by a separate adversarial agent
-   instance and a deterministic arbiter, not by a second vendor — UNSETTLED (R-VENDOR).
-3. **No write-separation** between the code-writing identity and the gate it is gated by (R-SEP);
-   **no scheduler** for continuous calibration (R-CRON); **no runtime observability** (R-OBSV, and a
-   static site structurally cannot host it); **no signed evidence ledger** — git history substitutes
-   (R-LEDGER, full signing is Track C).
-4. **Two NO-EVIDENCE checks** (B-03, B-24) — runtime-observability properties with no runtime to
-   observe; banded as failures, honestly.
+1. **Nothing is deploy-blocking on the served branch yet.** GitHub Pages deploys from `main` on push. The owner has enabled a protection **Ruleset** on `main` (R-GATE, owner-actioned — the REST `protected:false` field is the known ruleset false-negative), but **`main` is still at `d19556d` and does not carry `verify/`** — a ruleset requiring the `verify` check has nothing to require until the gate is merged to the production branch. Until the audit branch lands on `main`, the gate remains advisory on the deployed site. This is the single highest-value open item and it is one merge away.
+2. **Six Track-C blockers remain open, honestly.** 3 BLOCKER-1 — **C-03** (the CI-only harness deps in `verify/` are unpinned: `playwright-core ^1.40.0`, no committed lockfile, `esbuild` undeclared — the *shipped* 5 CDN deps are fully SRI-pinned), **C-05** (no runtime-LLM risk-matrix-with-tests — 9/10 categories have no runtime surface, but the matrix artifact is unbuilt), **C-09** (EU AI Act Article-50 marking machinery is not built — the product is not high-risk, so the hard gate does not fire). 3 BLOCKER-2 — **C-02** (no CI detector that fails when a *new* trust boundary/egress appears without a threat entry — the egress *allowlist* now exists via test 62, but the STRIDE-per-boundary doc does not), **C-06** (agentic-taxonomy matrix unbuilt; no runtime agent in the product), **C-26** (SBOM exists and is verified at load via SRI + at build via the gate, but GitHub Pages has no deploy-time admission controller to verify provenance *at deploy*). Each is a genuine PARTIAL needing infrastructure a static, single-vendor site lacks — none is faked closed.
+3. **The Part-1 structural/owner residuals still stand.** R-VENDOR (one model vendor; independence met by a separate adversarial instance + a deterministic arbiter, not a second vendor), R-SEP (no write-separation on a single repo/identity), R-OBSV (no runtime observability — a static site has no backend to observe), R-LEDGER (no cryptographically-signed per-commit model/prompt provenance — git history + the new provenance manifest are the substitute). These are the honest ceiling of this architecture.
+4. **Two NO-EVIDENCE checks** (B-03, B-24) — runtime-observability properties with no runtime to observe; banded as failures, honestly. **Zero Track-C checks are NO-EVIDENCE.**
 
-**What will break next, and what is watching for it.** If a future agent silently changes a crisis
-number, the golden hash goes red. If it plants a secret, weakens the key whitelist, adds an npm
-dependency, fabricates a success on error, or renders API text into an HTML sink, the static-security
-tests go red (calibration proves 6/6). If it weakens the test suite, mutation testing (floor 0.75)
-goes red. If it edits the constitution without re-binding the digest, CI goes red. **If nobody enables
-branch protection, none of that red stops the deploy** — that is R-GATE, and it is the thing to fix.
+**What is genuinely strong (stated without inflation).** For a zero-build static site the Track C security posture audits cleanly: **no server, no auth, no tenancy, no personal data, no runtime model/agent/tool/vector-store**, so the incident classes that dominate this field (cross-tenant/IDOR, GDPR processing, prompt injection to a consequential action, the lethal trifecta, tool poisoning, memory poisoning) have **no representable target** — and that absence is now **guarded by tests, not asserted**: `62-security-surface` fails the build the day a model client, a telemetry/PII sink, or a new egress host appears. **C-01 PASS, C-04 N/A, C-07 PASS, C-08 PASS, C-10 PASS.**
+
+**What will break next, and what is watching for it.**
+- Silent crisis-number change → golden hash (`20-golden-content`) red.
+- Secret, weakened key-whitelist, added npm dep in served source, fabricated success-on-error, HTML-injection sink → `30-static-security` red (calibration proves it).
+- **New egress/exfiltration host, or a session assembling the third lethal-trifecta leg** → `62-security-surface` red (seed D7, watched).
+- **Any shipped component changed without re-attesting its provenance** → `61-provenance` hash-drift red (seed D8, watched — this is the C-37 accountability control).
+- **A telemetry/PII/model-client sink added to served source** → `62-security-surface` red (seed D9, watched).
+- Weakened test suite → mutation testing (floor 0.75, measured 1.00) red.
+- Constitution edited without re-binding the digest → `60-governance` red.
+- **If the audit branch is never merged to `main`, none of that red stops the deploy** — that is R-GATE, and it is the thing to fix.
 
 **Numbers (produced this engagement, not rounded up).**
-- 79 checks evidenced. Verdicts: 2 PASS, 26 FAIL, 36 PARTIAL, 13 NOT-APPLICABLE, 2 NO-EVIDENCE.
-- Open: 1 STOP-SHIP (B-06, PARTIAL — no secrets exist and the control blocks the CI check; not
-  deploy-blocking → R-GATE), 9 BLOCKER-1, 16 BLOCKER-2. **These do not clear at Part 1 and are
-  honestly residualized, not faked closed.**
-- Pipeline seeded-defect catch rate: **6/6**. Mutation score: **1.00** (floor 0.75). Pre-engagement
-  verification: **0/6** (there was none).
-- Adversarial verification overturned **14 of 27** risky (PASS/N-A) verdicts.
+- **119 checks evidenced** (79 Track A/B + 40 Track C). Verdicts: **6 PASS, 26 FAIL, 59 PARTIAL, 26 NOT-APPLICABLE, 2 NO-EVIDENCE.**
+- Open: **1 STOP-SHIP** (B-06, PARTIAL — no secrets exist, control blocks the CI check; not deploy-blocking → R-GATE), **12 BLOCKER-1, 19 BLOCKER-2.** These do not clear and are honestly residualized, not faked closed.
+- Track C: **0 open STOP-SHIP**, 4 PASS, 23 PARTIAL, 13 N/A, 0 FAIL, 0 NO-EVIDENCE. Assessed under independent adversarial verification with **0 disagreements**; a second independent 36-agent run corroborated the blocking posture.
+- Pipeline seeded-defect catch rate: **9/9** (v1.0 was 6/6). Mutation score: **1.00** (floor 0.75). Pre-engagement verification: **0** (there was none).
 
-**The machine you are leaving.** `verify/` (deterministic gate, mutation testing, calibration corpus,
-gate self-test), `.github/workflows/verify.yml`, the ratchet register, the frozen-data + claims +
-supply-chain controls — each watched blocking a re-introduced defect (audit/05-verification.md). The
-constitution is in force (`IN_FORCE_PROVISIONAL`), hash-attested, digest hash-bound.
+**The machine you are leaving.** `verify/` (deterministic gate, mutation testing, 9-class calibration corpus, gate self-test), `.github/workflows/verify.yml`, the ratchet register (now with provenance-drift, undeclared-egress and trifecta-leg baselines), the frozen-data + claims + supply-chain + **provenance** + **security-surface** controls — each watched blocking a re-introduced defect (`audit/05-verification.md`). The constitution is **RATIFIED at catalogue v2.0**, hash-attested (`d8ef4f8…`), digest hash-bound; the mandate manifest names both volumes with their SHA-256 and all 119 required IDs.
 
-**The one line this volume may not write:** that the system is cleared for production. It is not.
-`audit/engagement-status.json` reads `production_eligible: false` — computed — held down by the two
-unaudited Track C STOP-SHIP checks (C-01, C-04). Schedule Part 2. Do not read "Part 1 done" anywhere
-as "cleared to ship".
+**The one line this volume may not write:** that the system is cleared for production. It is not. `audit/engagement-status.json` reads `production_eligible: false` — computed — and the gate refuses to let `production_eligible`, `part1_status: COMPLETE`, or `part2_status: COMPLETE` be asserted while any blocker is open. The path to a clearance is concrete: merge the gate to `main` (closes R-GATE), pin the `verify/` harness deps (closes C-03), and either build the remaining matrix/admission artifacts or accept them as dated residuals — but several ceilings (R-VENDOR, R-SEP, R-OBSV) are structural to a single-vendor static site and may never clear. **Do not read "both volumes audited" anywhere as "cleared to ship."**

@@ -1,4 +1,4 @@
-# 03 — Findings (Phase 3 complete)
+# 03 — Findings (Phase 3 + Phase 3' complete — catalogue v2.0, 119 checks)
 
 79 checks, evidenced against frozen baseline d19556d. Verdicts: FAIL 26, PARTIAL 38, NOT-APPLICABLE 13, NO-EVIDENCE 2, PASS 0.
 Adversarial verification overturned 14 of 27 risky (PASS/N-A) verdicts — all recorded in the JSON history.
@@ -85,3 +85,56 @@ Adversarial verification overturned 14 of 27 risky (PASS/N-A) verdicts — all r
 | B-39 | PLAN | PARTIAL | Name the framework(s) explicitly in a design record and apply the AI-specific lenses to the actual architectur |
 | A-40 | ASSESS | FAIL | Write a one-page materiality memo: static client-side site, no server/inference at runtime -> runtime energy i |
 | B-38 | ASSESS | NOT-APPLICABLE | Inference economics (prompt-cache hit rate, cost-based model routing, cost per unit of value) presuppose paid  |
+
+---
+
+## Track C — Security, Privacy & Assurance (Part 2, catalogue v2.0)
+
+40 checks, assessed against the Phase-0' baseline (work-branch `9a02414`, linked to Part 1's `d19556d`) under **independent adversarial verification** (a separate model instance per band, falsifying objective) — **0 disagreements**. A second, independent 36-agent run corroborated the blocking posture (it rendered C-01 N/A where this run rendered PASS; both agree C-01 is not an open STOP-SHIP).
+
+Verdicts: **PASS 4, PARTIAL 23, NOT-APPLICABLE 13, FAIL 0** (C-37's baseline BLOCKER-1 FAIL was closed by a door built in Phase 5' + a fresh Phase-6' re-run → de-escalated PLAN/PARTIAL; baseline preserved in the record history).
+
+**0 open Track-C STOP-SHIP** (C-01 PASS, C-04 N/A). Open: 3 BLOCKER-1 (C-03, C-05, C-09), 3 BLOCKER-2 (C-02, C-06, C-26) — all honest PARTIALs needing runtime/deploy-admission/second-vendor infrastructure absent by architecture.
+
+| Check | Band | Verdict | One-line |
+|---|---|---|---|
+| C-01 | STOP-SHIP | PASS | Land verify/ + .github/workflows/verify.yml on main (close R-GATE) so 30-static-security gates t |
+| C-04 | STOP-SHIP | NOT-APPLICABLE | To keep N/A self-enforcing (and to define the tripwire that re-opens the check): add a PII/analy |
+| C-03 | BLOCKER-1 | PARTIAL | Commit verify/package-lock.json, change the workflow step to `npm ci`, and add a verify/tests te |
+| C-05 | BLOCKER-1 | PARTIAL | Add verify/tests/*-llm-taxonomy asserting each of the 10 categories is either controlled-by-name |
+| C-07 | BLOCKER-1 | PASS | Hold the standing control. If a runtime model/agent is ever added (making a true injection targe |
+| C-09 | BLOCKER-1 | PARTIAL | Add a verify/tests assertion that the Article-50 transparency strings (heuristic/not-a-probabili |
+| C-27 | BLOCKER-1 | NOT-APPLICABLE | No action while inapplicable. Re-opens if the owner claims/needs any framework or the data surfa |
+| C-37 | PLAN (baseline BLOCKER-1) | PARTIAL | Add a cryptographically-signed per-commit provenance field (model + prompt hash) and a SCHEDULED |
+| C-02 | BLOCKER-2 | PARTIAL | Build a golden egress-manifest test in verify/tests/ that enumerates every allowed destination ( |
+| C-06 | BLOCKER-2 | PARTIAL | Commit verify/ and .github/workflows/verify.yml to main and require the 'verify' check via branc |
+| C-08 | BLOCKER-2 | PASS | None required for the property; keep the egress allowlist current by decision record when a legi |
+| C-10 | BLOCKER-2 | PASS | Methodology control is standing; the smallest next step to convert its CI-block into a deploy-bl |
+| C-23 | BLOCKER-2 | NOT-APPLICABLE | No action while no log/trace/prompt sink exists. Applicability re-opens the moment any telemetry |
+| C-26 | BLOCKER-2 | PARTIAL | Emit a standard-format SBOM (CycloneDX) for the served component set, add a verify/ provenance/S |
+| C-11 | MUST-FIX | PARTIAL | None needed for a static site; keep the dev-assurance evidence pipeline standing. Re-opens to a  |
+| C-12 | MUST-FIX | PARTIAL | Land verify/ on main and turn on branch protection so the gate self-test is a *blocking* require |
+| C-15 | MUST-FIX | PARTIAL | Keep the gate self-test + mutation + calibration standing; the smallest step toward the full ask |
+| C-16 | MUST-FIX | PARTIAL | Accept R-SEP as an owner-residual (write-separation impossible here); the standing control to pr |
+| C-17 | MUST-FIX | PARTIAL | Keep pin-manifest + SRI standing; ensure CI has egress so 40-sri actually recomputes rather than |
+| C-18 | MUST-FIX | PARTIAL | Keep the KEY_RE + subdomain-pin + GET-only + validator controls standing; the smallest add for t |
+| C-21 | MUST-FIX | NOT-APPLICABLE | No action. Re-opens the moment a model is trained or fine-tuned for this product — at which poin |
+| C-22 | MUST-FIX | NOT-APPLICABLE | No action. Adding any RAG pipeline re-opens this with a required standing control: separate retr |
+| C-24 | MUST-FIX | PARTIAL | Keep the no-secrets scan standing. If a runtime model/system prompt is ever added, the required  |
+| C-28 | MUST-FIX | NOT-APPLICABLE | No action. Adding any personal-data store re-opens this; the required standing control is a depl |
+| C-34 | MUST-FIX | NOT-APPLICABLE | No action for the static product. If a runtime model API is added, the required standing control |
+| C-13 | SHOULD-FIX | NOT-APPLICABLE | None required at baseline. If the project ever markets an AI-management-system posture, it becom |
+| C-14 | SHOULD-FIX | PARTIAL | Smallest real step: add a periodic second-vendor (non-Anthropic) cross-audit of the adversarial- |
+| C-19 | SHOULD-FIX | NOT-APPLICABLE | None owed. Applicability re-opens if a retrieval/memory/vector feature is added; the required st |
+| C-20 | SHOULD-FIX | PARTIAL | Smallest real step: write a one-page RAI dimension register marking fairness/contestability/cont |
+| C-25 | SHOULD-FIX | PARTIAL | Smallest real step: (1) add a one-paragraph written IP position (US machine-authored code = no c |
+| C-29 | SHOULD-FIX | NOT-APPLICABLE | None owed. Re-opens if a generative or user-generated-content surface is introduced; the require |
+| C-30 | SHOULD-FIX | NOT-APPLICABLE | None owed. Re-opens on shipping a model-backed feature; required standing control would be a jai |
+| C-32 | SHOULD-FIX | NOT-APPLICABLE | None owed. Re-opens if embeddings/a vector store are introduced; required standing control would |
+| C-33 | SHOULD-FIX | PARTIAL | Smallest real step: land verify/ on main under the enabled ruleset so the compiled-clause gate i |
+| C-36 | SHOULD-FIX | PARTIAL | Smallest real step: add a deterministic test asserting the machine-authorship disclosure in CLAU |
+| C-38 | SHOULD-FIX | PARTIAL | Smallest real step: mark the status-feed 'source'/'as_of' provenance in-UI as operator-asserted  |
+| C-31 | PLAN | PARTIAL | Write a short ATLAS + agentic-threat-decomposition mapping scoped to the two real surfaces (dev- |
+| C-35 | ASSESS | PARTIAL | Close R-GATE: land verify/ on main and require the verify check via branch protection so the val |
+| C-39 | ASSESS | NOT-APPLICABLE | No action at baseline. Re-opening tripwire: a C-13 record that claims an AIMS/ISO 42001 manageme |
+| C-40 | ASSESS | PARTIAL | Commit a one-page energy/carbon materiality memo: static client-side site, no server/inference a |

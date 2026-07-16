@@ -1,11 +1,62 @@
 {
-  "note": "Ratcheted baselines (mandate S11 / Article V). Each moves in one direction only: better. Loosening requires a decision record and is itself a finding. Enforced by the checks named.",
-  "recorded": "2026-07-16",
+  "note": "Ratcheted baselines (mandate S11 / Article V). Each moves in one direction only: better. Loosening requires a decision record and is itself a finding. Enforced by the checks named. | v2.0: Track C baselines added (provenance drift, egress hosts, trifecta legs).",
+  "recorded": "2026-07-16 (v2.0)",
   "metrics": {
-    "pipeline_catch_rate": { "baseline": "6/6", "direction": "up", "gate": "verify/calibration + node run.js", "blocks": "release on any seeded-defect escape" },
-    "mutation_score":      { "baseline": 1.00, "floor": 0.75, "direction": "up", "gate": "verify/mutation.js", "blocks": "release below floor or on un-appliable mutant" },
-    "required_tests":      { "baseline": "all green", "direction": "up", "gate": "verify/run.js + gate.js", "blocks": "release on any fail or golden-hash drift" },
-    "open_stop_ship":      { "baseline": "computed", "target": 0, "direction": "down", "gate": "verify/gate.js", "blocks": "production_eligible" },
-    "prod_credentials":    { "baseline": 0, "direction": "flat-zero", "gate": "verify/tests/30 no-secrets", "blocks": "any secret idiom in served source" }
+    "pipeline_catch_rate": {
+      "baseline": "9/9",
+      "direction": "up",
+      "gate": "verify/calibration + node run.js",
+      "blocks": "release on any seeded-defect escape"
+    },
+    "mutation_score": {
+      "baseline": 1.0,
+      "floor": 0.75,
+      "direction": "up",
+      "gate": "verify/mutation.js",
+      "blocks": "release below floor or on un-appliable mutant"
+    },
+    "required_tests": {
+      "baseline": "all green",
+      "direction": "up",
+      "gate": "verify/run.js + gate.js",
+      "blocks": "release on any fail or golden-hash drift"
+    },
+    "open_stop_ship": {
+      "baseline": "computed",
+      "target": 0,
+      "direction": "down",
+      "gate": "verify/gate.js",
+      "blocks": "production_eligible"
+    },
+    "prod_credentials": {
+      "baseline": 0,
+      "direction": "flat-zero",
+      "gate": "verify/tests/30 no-secrets",
+      "blocks": "any secret idiom in served source"
+    },
+    "provenance_drift": {
+      "baseline": 0,
+      "direction": "flat-zero",
+      "gate": "verify/tests/61-provenance",
+      "blocks": "any unattested change to a shipped component (C-37)"
+    },
+    "undeclared_egress_hosts": {
+      "baseline": 0,
+      "direction": "flat-zero",
+      "gate": "verify/tests/62-security-surface",
+      "blocks": "any egress/link host outside the allowlist (C-08/C-28)"
+    },
+    "trifecta_three_leg_sessions": {
+      "baseline": 0,
+      "direction": "flat-zero",
+      "gate": "verify/tests/62-security-surface",
+      "blocks": "any served session holding all three lethal-trifecta legs (C-08)"
+    },
+    "trackC_no_evidence": {
+      "baseline": 0,
+      "direction": "flat-zero",
+      "gate": "verify/gate.js security_scope_audited check",
+      "blocks": "security_scope_audited=true while any Track C check is NO-EVIDENCE"
+    }
   }
 }
