@@ -93,3 +93,23 @@ Per `DASHBOARD_FEED_SPEC.md` v1.0 (bubblegauge repo), `GET /api/v1/dashboard/fee
   `/score` payload and fall back to the "unavailable" chip rather than render garbage.
 - **Local preview:** `python3 -m http.server 8000` from the repo root, then
   `http://localhost:8000/?status-api=demo`.
+
+## Feed delta v1.1 (service ≥ 3.7.0) — CNN Fear & Greed
+
+`GET /api/v1/dashboard/feed` gains `fear_greed` in both sections (13 series + 35 metrics; additive
+only). The integration renders it inside the LIVE BACKFILL card (AI-2026 panel, Crisis Explorer):
+
+- **Gauge** — `metrics.fear_greed.value` (0–100, 1 dp) on a horizontal band gauge with zone edges at
+  25/45/55/75, labeled with `detail.rating` (rating-colored); tooltip carries as_of/source/timestamp
+  and the provenance caveat (*unofficial CNN endpoint; non-scoring context for the bubble score*).
+- **Delta row** — `detail.previous_close/_1_week/_1_month/_1_year`; **null ≠ zero**: a null
+  comparison is skipped, never rendered as 0.
+- **History strip** — `series.fear_greed` (61-month grid, `kind: "sentiment_index"`, the first
+  non-price kind) plotted on its **own 0–100 axis** with faint zone lines; **never rebased** with the
+  price/TR series (it is deliberately not in `AI_MAP`). Nulls (~48 leading — CNN's payload carries
+  only ~13 months) render as gaps, never interpolated.
+- **Failure shape** — `available:false` / invalid payload drops the block only; the rest of the card
+  is unaffected. Boundary contract: value finite 0–100 + rating ∈ CNN's five-value enum, enforced by
+  `validFearGreed` and pinned by `verify/tests/63-feargreed-contract`.
+- The browser **never** calls CNN (UA-gated, no CORS): the bubblegauge service snapshots it
+  server-side; test 63 + the egress allowlist (test 62) both fail the build on a direct CNN call.

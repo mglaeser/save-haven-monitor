@@ -895,6 +895,10 @@
     const y = 2021 + Math.floor((6 + i) / 12), m = ((6 + i) % 12) + 1;
     return y + "-" + (m < 10 ? "0" : "") + m;
   }
+  // Feed delta v1.1: fear_greed is a sentiment_index on its own 0-100 axis. CNN's payload only
+  // carries ~13 months of history, so the 61-month grid ships ~48 leading nulls — explicit,
+  // never interpolated, and null ≠ zero. Demo path is stylized; endpoints match the demo metric.
+  const FG_FIX_SERIES = [null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,31,36,44,52,58,49,41,34,27,24,29,31,46];
   const FEED_FIX_META = { qqq: ["NASDAQ-100 (QQQ ETF proxy, dividend-adjusted)", "total_return", "tiingo:QQQ"],
     gold: ["Gold (GLD ETF proxy)", "price", "tiingo:GLD"], tbill3m_tr: ["3M T-bills / cash TR (BIL ETF proxy)", "total_return", "tiingo:BIL"],
     ust10y_tr: ["10Y US Treasuries TR (IEF ETF proxy)", "total_return", "tiingo:IEF"], usdchf: ["USD/CHF (Fed H.10)", "price", "fred:DEXSZUS"],
@@ -910,6 +914,10 @@
             points: FEED_FIX_SERIES[k].map(function (v, i) { return { month: fixMonth(i), value: v }; }),
             as_of: "2026-07-15", source: FEED_FIX_META[k][2], available: true, stale: false };
         });
+        // v1.1: first non-price kind — kept off the rebasing path (AI_MAP) by design.
+        out.fear_greed = { name: "CNN Fear & Greed Index", kind: "sentiment_index", unit: "index_0_100",
+          points: FG_FIX_SERIES.map(function (v, i) { return { month: fixMonth(i), value: v }; }),
+          as_of: "2026-07-15", source: "cnn:fear_greed", available: true, stale: false };
         return out;
       })(),
       // Real capture-#2 scalar values (2026-07-15T23:29:51Z), abbreviated to the ones the card renders.
@@ -924,6 +932,9 @@
         btc_drawdown_pct: { value: -43.99, unit: "pct", as_of: "2026-07-15", source: "twelvedata:BTC/USD", available: true, stale: false, note: "vs btc_ath (provider monthly closes since 2017-08 + spot - not a curated record)" },
         gold_ttm_pct: { value: 22.9, unit: "pct", as_of: "2026-07-31", source: "tiingo:GLD", available: true, stale: false, note: "trailing 12 months, GLD basis" },
         mmf_total_assets_usd: { value: 8289569.0, unit: "USD_mn", as_of: "2026-01-01", source: "fred:MMMFFAQ027S", available: true, stale: true, note: "quarterly Z.1 - publication lags ~1 quarter" },
+        fear_greed: { value: 46.0, unit: "index_0_100", as_of: "2026-07-15", source: "cnn:fear_greed", available: true, stale: false,
+          note: "unofficial CNN endpoint; non-scoring context (demo fixture)",
+          detail: { rating: "neutral", timestamp: "2026-07-15T23:19:21+00:00", previous_close: 46, previous_1_week: 44, previous_1_month: 31, previous_1_year: 31 } },
       },
     },
     meta: { computed_at: "2026-07-15T23:29:51+00:00", service_version: "3.4.0", disclaimer: "Research, not advice." },
@@ -932,6 +943,20 @@
   function validFeed(j) {
     return !!(j && j.data && j.data.series && typeof j.data.series === "object" &&
       j.data.metrics && typeof j.data.metrics === "object" && typeof j.data.anchor_month === "string");
+  }
+
+  // Feed delta v1.1 — CNN Fear & Greed boundary contract. Snapshotted SERVER-side by the
+  // bubblegauge service (the unofficial CNN endpoint is UA-gated and serves no CORS; the
+  // browser never calls it). Non-scoring context for the bubble score. A reading outside the
+  // published 0..100 range or with an unknown rating is dropped, not rendered; previous_*
+  // values are 0-100 or null, and null means "no observation", never zero.
+  const FG_RATINGS = ["extreme fear", "fear", "neutral", "greed", "extreme greed"];
+  const FG_COLORS = { "extreme fear": "#E05252", "fear": "#C0564A", "neutral": "#C7CBD6", "greed": "#7fbf94", "extreme greed": "#5AA9A3" };
+  const FG_ZONES = [25, 45, 55, 75]; // zone band edges on the 0-100 axis
+  function validFearGreed(m) {
+    if (!(m && m.available && isNum(m.value) && m.value >= 0 && m.value <= 100)) return false;
+    const rating = m.detail && m.detail.rating;
+    return rating == null || FG_RATINGS.indexOf(rating) !== -1;
   }
   const useFeed = () => useEndpoint("/api/v1/dashboard/feed", FEED_FIXTURE, validFeed);
 
@@ -951,7 +976,9 @@
     if (!json || !validFeed(json)) return null;
     const d = json.data, out = { a: {}, labels: {}, live: {}, asOf: {}, anchorMonth: d.anchor_month,
       anchorPartial: !!d.anchor_partial, computedAt: json.meta && json.meta.computed_at,
-      serviceVersion: json.meta && json.meta.service_version, metrics: d.metrics };
+      serviceVersion: json.meta && json.meta.service_version, metrics: d.metrics,
+      // v1.1: fear_greed rides along RAW — its own 0-100 axis, never through the rebasing below.
+      fgSeries: d.series.fear_greed || null };
     Object.keys(AI_MAP).forEach(function (lineKey) {
       const m = AI_MAP[lineKey], s = d.series[m.key];
       if (!s || !s.available || !Array.isArray(s.points)) { out.live[lineKey] = false; return; }
@@ -980,6 +1007,73 @@
     if (!m || !m.available || !isNum(m.value)) return null;
     return { text: fmt(m.value), title: (m.as_of ? "as of " + m.as_of : "") + (m.source ? " · " + m.source : "") + (m.note ? " · " + m.note : ""), stale: !!m.stale };
   }
+  // v1.1 Fear & Greed block: 0-100 gauge with zone bands at FG_ZONES, rating label, previous_*
+  // delta row, and the 61-month history strip on its OWN 0-100 axis (nulls are gaps — the ~48
+  // leading nulls of CNN's short history render as empty space, never as zero or a bridge).
+  function FearGreedBlock({ live }) {
+    const m = live.metrics && live.metrics.fear_greed;
+    if (!validFearGreed(m)) return null; // failure shape (available:false / bad payload) → block absent
+    const det = m.detail || {};
+    const rating = det.rating || null;
+    const col = (rating && FG_COLORS[rating]) || C.dim;
+    const zoneCols = ["#E05252", "#C0564A", "#9AA3B5", "#7fbf94", "#5AA9A3"];
+    const edges = [0].concat(FG_ZONES, [100]);
+    const deltas = [["prev close", det.previous_close], ["1w", det.previous_1_week], ["1m", det.previous_1_month], ["1y", det.previous_1_year]]
+      .filter((p) => isNum(p[1])); // null ≠ zero: a null comparison is skipped, never shown as 0
+    const s = live.fgSeries;
+    const pts = (s && s.available && Array.isArray(s.points)) ? s.points : null;
+    // null-safe polyline segments: split wherever value == null (no interpolation across gaps)
+    let segs = [];
+    if (pts) {
+      let cur = [];
+      pts.forEach(function (p, i) {
+        if (p && isNum(p.value)) cur.push((i / 60) * 100 + "," + (100 - p.value));
+        else { if (cur.length > 1) segs.push(cur.join(" ")); cur = []; }
+      });
+      if (cur.length > 1) segs.push(cur.join(" "));
+    }
+    const tip = "as of " + (m.as_of || "?") + (det.timestamp ? " (" + det.timestamp + ")" : "") + " · " + (m.source || "cnn:fear_greed") +
+      " · unofficial CNN endpoint — context only, does not feed the bubble score" + (m.note ? " · " + m.note : "");
+    return (
+      <div title={tip} style={{ marginTop: 8, marginBottom: 6, maxWidth: 420 }}>
+        <div style={{ display: "flex", alignItems: "baseline", gap: 8, flexWrap: "wrap", marginBottom: 4 }}>
+          <span style={{ fontSize: 10.5, color: C.muted }}>CNN Fear &amp; Greed</span>
+          <b style={{ fontSize: 13, color: col, fontVariantNumeric: "tabular-nums" }}>{m.value.toFixed(1)}</b>
+          {rating ? <span style={{ fontSize: 10.5, color: col, fontStyle: "italic" }}>{rating}</span> : null}
+          {m.stale ? <span style={{ fontSize: 10, color: "#E8853D" }}>·stale</span> : null}
+        </div>
+        <div style={{ position: "relative", height: 8, borderRadius: 4, overflow: "hidden", display: "flex" }}>
+          {zoneCols.map((zc, i) => (
+            <div key={i} style={{ width: (edges[i + 1] - edges[i]) + "%", background: zc, opacity: 0.28 }} />
+          ))}
+          <div style={{ position: "absolute", left: "calc(" + m.value + "% - 1.5px)", top: 0, bottom: 0, width: 3, background: col, borderRadius: 1.5 }} />
+        </div>
+        {deltas.length > 0 && (
+          <div style={{ fontSize: 9.5, color: C.faint, marginTop: 3 }}>
+            {deltas.map((p, i) => (
+              <span key={p[0]}>{i > 0 ? " · " : ""}{p[0]} <span style={{ color: C.dim, fontVariantNumeric: "tabular-nums" }}>{Math.round(p[1])}</span></span>
+            ))}
+          </div>
+        )}
+        {segs.length > 0 && (
+          <svg viewBox="0 0 100 100" preserveAspectRatio="none" style={{ display: "block", width: "100%", height: 34, marginTop: 4 }}>
+            {FG_ZONES.map((z) => (
+              <line key={z} x1="0" x2="100" y1={100 - z} y2={100 - z} stroke="rgba(237,232,220,0.10)" strokeWidth="0.8" vectorEffect="non-scaling-stroke" />
+            ))}
+            {segs.map((d, i) => (
+              <polyline key={i} points={d} fill="none" stroke={col} strokeWidth="1.4" vectorEffect="non-scaling-stroke" />
+            ))}
+          </svg>
+        )}
+        {segs.length > 0 && (
+          <div style={{ fontSize: 8.5, color: C.faint, display: "flex", justifyContent: "space-between" }}>
+            <span>t−60 · gaps = no observation (CNN history ≈ 13 months)</span><span>{live.anchorMonth}</span>
+          </div>
+        )}
+      </div>
+    );
+  }
+
   function AiLiveInner() {
     const live = useAiLive();
     if (!live) return null;
@@ -1016,6 +1110,7 @@
             ))}
           </div>
         )}
+        <FearGreedBlock live={live} />
         <div style={{ fontSize: 9.5, color: C.faint, lineHeight: 1.5 }}>
           Chart lines use labeled proxies (QQQ / GLD / IEF / BIL ETFs; Fed broad dollar index, not ICE DXY; FX lines inverted to show the currency vs USD).
           {staticLines.length ? " Static Jul-2026 snapshot (feed unavailable): " + staticLines.join(", ") + "." : ""}
