@@ -45,7 +45,11 @@ function transpile(code) {
 
 // Load dashboard.jsx and return its data constants + pure functions.
 function loadDashboard() {
-  const src = fs.readFileSync(path.join(REPO, "dashboard.jsx"), "utf8");
+  return loadDashboardFromSource(fs.readFileSync(path.join(REPO, "dashboard.jsx"), "utf8"));
+}
+
+// Load from an explicit source string (used by the mutation harness to test mutants).
+function loadDashboardFromSource(src) {
   const js = transpile(src);
   const capture = "\nreturn {CRISES, CAT, CLS, MATRIX, MX_CRISES, CLASSIFICATION, interp, rebase, fmtM, logPath, ser, zArr, corrArr, xcorrRow, mulberry32, runFan, subFamily, buildAggregate, TABS};\n";
   const g = stubGlobals();
@@ -61,4 +65,5 @@ function raw(rel) {
   return fs.readFileSync(path.join(REPO, rel), "utf8");
 }
 
-module.exports = { loadDashboard, raw, transpile, REPO };
+function dashboardSource() { return fs.readFileSync(path.join(REPO, "dashboard.jsx"), "utf8"); }
+module.exports = { loadDashboard, loadDashboardFromSource, dashboardSource, raw, transpile, REPO };

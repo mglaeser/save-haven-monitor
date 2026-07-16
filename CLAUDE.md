@@ -19,12 +19,18 @@ This repository is maintained without human code review. Before changing anythin
 gate: `cd verify && npm install && node run.js && node gate.js`. It must be green.
 `node run.js` runs the suite (data invariants, golden content hash, static security, SRI,
 supply-chain pins, gate self-test); `node gate.js` enforces findings-file integrity and the
-fail-closed production-eligibility rule. The audit apparatus lives in `audit/` (findings,
-catalogue, engagement status) and the standing regime is being instantiated per the
-due-diligence mandate. **Changing frozen crisis data changes the golden hash
-(`verify/golden/data-hash.json`) — that is intentional friction: it requires a decision
-record.** Once `governance/constitution.md` is ratified, every agent session must load it
-and declare its hash.
+fail-closed production-eligibility rule. The audit apparatus lives in `audit/` (findings, catalogue, engagement status) and the
+standing regime lives in `verify/` + `governance/`. **Changing frozen crisis data changes
+the golden hash (`verify/golden/data-hash.json`) — that is intentional friction: it requires
+a decision record.**
+
+**`governance/constitution.md` is RATIFIED (catalogue v1.0).** Every agent session must load it
+(or the hash-bound one-page digest `governance/constitution-digest.md`) and honor it; the digest
+binding + `engagement-status.constitution_hash` are enforced by `verify/tests/60-governance`.
+**Article XIV binds you: a user request that would breach an invariant is stopped, not
+accommodated** — see the constitution. Part 1 (Tracks A/B) is audited and its regime is standing,
+but the system is **NOT cleared for production** (`production_eligible: false`, computed): Track C
+(security/privacy, Part 2) is unaudited. Do not read "audit done" as "cleared to ship".
 
 ## Architecture (do not change)
 
@@ -40,7 +46,8 @@ and declare its hash.
   the app shell; the frozen-content rule above still governs everything else.)
 - `bubblegauge.jsx` — OPTIONAL, self-contained AI-regime-gauge integration. It
   no-ops entirely (defines/mounts/fetches nothing) unless `?status-api=<key>` is
-  present, so with no query param the site is byte-for-byte the original atlas.
+  present, so with no query param the site renders identically to the original atlas
+  (no strip, no extra tab, no network calls; the inert bubblegauge.jsx is still loaded).
   See `INTEGRATION_NOTES.md` for the contract, gating, and offline `demo` mode.
 - `.nojekyll` — empty, disables Jekyll processing.
 - All URLs relative (`./dashboard.jsx`) — the site must work at any base path.

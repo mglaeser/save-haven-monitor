@@ -56,6 +56,8 @@ const eligibleAllowed = status.part1_status === "COMPLETE" && status.part2_statu
   ss === 0 && b1 === 0 && b2 === 0 && status.constitution_state === "RATIFIED" && status.security_scope_audited === true;
 if (status.production_eligible === true && !eligibleAllowed)
   fail("production_eligible=true is not supported by the computed state (Track C unaudited and/or open blockers) — fail closed");
+if (status.part1_status === "COMPLETE" && (ss > 0 || b1 > 0 || b2 > 0))
+  fail(`part1_status=COMPLETE is false while blockers are open (SS ${ss}, B1 ${b1}, B2 ${b2}) — mandate DoD #3`);
 
 if (blocked.length === 0) console.log("GATE PASS: findings integrity + status computation + required tests all hold.");
 else console.error(`\nGATE BLOCKED on ${blocked.length} condition(s).`);

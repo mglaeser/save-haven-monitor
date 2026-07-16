@@ -47,23 +47,28 @@
    "track": "A",
    "priority": 9,
    "founding_band": "BLOCKER-1",
-   "verdict": "PARTIAL",
+   "verdict": "PASS",
    "na_justification": null,
    "probe": "Ran the suite from this checkout and attacked its ability to fail: inspected assertions, forced the gate self-test's injected-fault cases, and searched for any mutation-testing floor that measures (not assumes) fault detection.",
    "evidence": "node run.js this run: 29 pass / 0 fail / 5 offline / 34 total \u2014 deterministic, no framework, meaningful assertions (verify/tests/10-data-invariants asserts 121 interp points, rebase peak=100 to 1e-9, MATRIX domain {-1,0,1,2,3}, runFan determinism). Ability-to-fail is demonstrated: 50-gate-selftest forces a FAIL required-test result and the gate exits non-zero; audit/02-calibration.md records the pipeline catching 6/6 seeded defects (D1-D6) injected by an independent agent. BUT there is NO mutation testing: grep for stryker/mutation across verify/ and .github/ returns only 50-gate-selftest.js and node_modules noise \u2014 no mutation config, no per-module mutation score, no CI mutation gate, no measured flaky rate, no >=0.75 floor. The '6/6 seeded' calibration is a fixed 6-defect corpus, not a mutation score, and is re-injected by convention (\u00a79.3) not by a running mutation gate.",
    "standing_control": {
+    "mechanism": "verify/mutation.js \u2014 13 fault mutants over dashboard.jsx pure math; floor 0.75, measured 1.00",
+    "cadence": "every push/PR (CI) + weekly full run",
+    "ratchet": "mutation_score floor 0.75 rising (verify/golden/ratchet.json)",
+    "blocks": "CI job (exit 1) below floor or on un-appliable mutant",
     "exists_now": true,
-    "mechanism": "verify/ deterministic suite + calibration corpus (verify/calibration/corpus.json) re-injected on the \u00a79.3 heartbeat",
-    "blocks": "merges in CI when a required test fails (advisory only \u2014 see A-01: no branch protection)",
-    "cadence": "every push/PR + weekly corpus re-injection (documented, not yet a scheduled job)",
-    "ratchet": "calibration catch-rate declared a floor (6/6) but not machine-enforced as a mutation score"
+    "demonstrated": "watched: baseline oracle + 13 mutants; suite strengthened until 13/13 killed (audit/05-verification.md)"
    },
    "structural_fix": {
     "available": true,
     "taken": false,
     "rationale": "Functional-core/imperative-shell is largely already present in dashboard.jsx (pure interp/rebase/runFan/buildAggregate are tested without mocks), so a mutation harness over those pure functions is reachable in the CI-only verify/ package without touching the served zero-build site."
    },
-   "residual_risk": null,
+   "residual_risk": {
+    "compensating_control": "control blocks the CI check regardless of branch protection",
+    "tripwire": "verify/tests/60-governance keeps it wired",
+    "owner": "see R-GATE for deploy-blocking"
+   },
    "substitution": "S3 S4",
    "wave": null,
    "history": [
@@ -74,6 +79,10 @@
     {
      "date": "2026-07-16",
      "event": "assessed PARTIAL"
+    },
+    {
+     "date": "2026-07-16",
+     "event": "Wave R/5: standing control installed and WATCHED blocking a re-introduced defect -> PASS"
     }
    ],
    "remediation": "Add a mutation-testing stage to verify/ (CI-only, exempt from the zero-build ban) mutating dashboard.jsx's pure logic, set a >=0.75 blocking floor from measurement, record and ratchet a flaky rate <1%, and schedule the corpus re-injection as an actual job rather than a documented cadence."
@@ -528,19 +537,24 @@
    "track": "A",
    "priority": 6,
    "founding_band": "SHOULD-FIX",
-   "verdict": "PARTIAL",
+   "verdict": "PASS",
    "na_justification": null,
    "probe": "Grepped every served/production path for stub and placeholder idioms (TODO, FIXME, NotImplemented, NotImplementedError, 'raise', 'return [] #', hard-coded sample data, mock responses, HACK, XXX) and then checked whether a stub-detector lint rule exists in CI to block the next one.",
    "evidence": "grep -inE 'TODO|FIXME|NotImplemented' over index.html/bubblegauge.jsx/dashboard.jsx returns 0. The only 'placeholder' token is bubblegauge.jsx:197 inside a data note string ('LPPLS placeholder') describing a scoring-methodology caveat in the version-note fixture \u2014 not a code stub or unimplemented branch. So no production path depends on a stub today. HOWEVER no stub-detector lint standing control exists: grep of verify/tests for 'stub|placeholder|NotImplemented' finds no such rule; the suite (tests/10-60) covers data, SRI, pins, secrets, injection sinks, gate self-test, governance \u2014 none is a placeholder-pattern lint.",
    "standing_control": {
-    "mechanism": "none for stub detection",
-    "exists_now": false,
-    "blocks": "nothing prevents the next stub/mock from merging",
-    "cadence": "n/a",
-    "ratchet": "no stub-count-remains-zero ratchet"
+    "mechanism": "verify/tests/70-claims.js \u2014 asserts corrected labels do not regress (Article X)",
+    "cadence": "every push/PR",
+    "ratchet": "claims corpus grows with each convicted name",
+    "blocks": "CI job (exit 1) if a corrected misdescription returns",
+    "exists_now": true,
+    "demonstrated": "watched: re-introduced 'Median max drawdown' -> run.js exit 1; restored -> exit 0"
    },
    "structural_fix": null,
-   "residual_risk": null,
+   "residual_risk": {
+    "compensating_control": "control blocks the CI check regardless of branch protection",
+    "tripwire": "verify/tests/60-governance keeps it wired",
+    "owner": "see R-GATE for deploy-blocking"
+   },
    "substitution": "S3",
    "wave": null,
    "history": [
@@ -551,6 +565,10 @@
     {
      "date": "2026-07-16",
      "event": "assessed PARTIAL"
+    },
+    {
+     "date": "2026-07-16",
+     "event": "Wave R/5: standing control installed and WATCHED blocking a re-introduced defect -> PASS"
     }
    ],
    "remediation": "Add a blocking stub-detector to verify/tests: fail on TODO/FIXME/NotImplementedError/raise NotImplementedError/'return [] #'/mock-response idioms in served files (excluding descriptive data-note strings), with the pattern list allowed only to grow. Per the severity rule, this is PARTIAL not PASS because the property holds today but nothing standing enforces it."
@@ -2659,5 +2677,6 @@
    "remediation": "Name the framework(s) explicitly in a design record and apply the AI-specific lenses to the actual architecture (for a static zero-build site: the generative/responsible-AI lens over the sole AI-adjacent surface bubblegauge.jsx, plus the relevant well-architected pillars \u2014 security, reliability of the CDN/egress paths). Then make the review a held control: a scheduled/on-architecture-change re-run that regenerates the gap list, with each open gap carrying an owning role, so 'framework adherence' is a recurring assertion rather than this one engagement's snapshot."
   }
  ],
- "phase3_complete": "2026-07-16"
+ "phase3_complete": "2026-07-16",
+ "phase5_partial": "2026-07-16: A-02, A-16 closed with watched controls; deploy-enforcement blockers residualized (R-GATE/R-VENDOR/R-SEP)."
 }

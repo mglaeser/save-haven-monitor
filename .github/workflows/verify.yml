@@ -24,5 +24,7 @@ jobs:
         run: npm install --no-audit --no-fund
       - name: Run verification suite
         run: node run.js
+      - name: Run mutation testing (suite must be able to fail)
+        run: node mutation.js
       - name: Run policy gate (fail-closed)
         run: node gate.js

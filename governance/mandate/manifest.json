@@ -1,0 +1,10 @@
+{
+  "catalogue_version": "1.0",
+  "registered_check_count": 119,
+  "active_check_count": 79,
+  "parts": {
+    "part1": { "status": "IN_PROGRESS", "checks": "A-01..A-40, B-01..B-39", "file": "part1.md" },
+    "part2": { "status": "NOT_STARTED", "checks": "C-01..C-40", "file": "part2.md" }
+  },
+  "note": "The normative catalogue. audit/00-check-catalogue.json is the machine index derived from this."
+}
