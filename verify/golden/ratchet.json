@@ -3,7 +3,7 @@
   "recorded": "2026-07-16 (v2.0)",
   "metrics": {
     "pipeline_catch_rate": {
-      "baseline": "9/9",
+      "baseline": "10/10",
       "direction": "up",
       "gate": "verify/calibration + node run.js",
       "blocks": "release on any seeded-defect escape"
@@ -57,6 +57,12 @@
       "direction": "flat-zero",
       "gate": "verify/gate.js security_scope_audited check",
       "blocks": "security_scope_audited=true while any Track C check is NO-EVIDENCE"
+    },
+    "harness_dep_integrity": {
+      "baseline": 0,
+      "direction": "flat-zero",
+      "gate": "verify/tests/65-lockfile",
+      "blocks": "any non-registry/unpinned/no-integrity CI dependency (C-03)"
     }
   }
 }

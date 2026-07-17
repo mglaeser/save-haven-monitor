@@ -2,15 +2,20 @@
   "name": "crisis-winners-verify",
   "version": "1.0.0",
   "private": true,
-  "description": "CI-only verification harness (the deterministic gate). NOT part of the served zero-build site.",
+  "description": "CI-only verification + acceptance harness deps (the deterministic gate + the frozen acceptance suite). NOT part of the served site. Exact-pinned with a committed lockfile; installed via `npm ci --ignore-scripts` (closes C-03).",
   "type": "commonjs",
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "test": "node run.js",
     "gate": "node gate.js",
     "mutation": "node mutation.js",
-    "all": "node run.js && node mutation.js && node gate.js"
+    "all": "node run.js && node mutation.js && node gate.js",
+    "acceptance": "node ../acceptance/run.js"
   },
   "devDependencies": {
-    "playwright-core": "^1.40.0"
+    "esbuild": "0.19.12",
+    "playwright": "1.61.1"
   }
 }

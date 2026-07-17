@@ -1,0 +1,81 @@
+# Publish to GitHub Pages FROM GitHub Actions (not "deploy from branch"). A red gate physically
+# cannot publish: the deploy job needs the verification gate AND the frozen acceptance suite to pass
+# first. This structurally closes R-GATE (deploy is gate-blocked), B-01 (no ungated path to prod)
+# and advances C-26 (signed SLSA provenance over the exact served bytes). See DR-006.
+#
+# ONE owner action makes this live: Settings -> Pages -> Source = "GitHub Actions". Until then this
+# workflow builds+verifies but the final deploy step has nowhere to publish (that is expected).
+# The served-file allowlist below also stops publishing verify/, audit/, governance/ (repo-internal).
+name: deploy
+on:
+  push:
+    branches: ["main"]
+  workflow_dispatch: {}
+permissions:
+  contents: read
+concurrency:
+  group: pages
+  cancel-in-progress: false
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: "22"
+      - name: Install harness deps (pinned; no lifecycle scripts)
+        working-directory: verify
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Verification suite + mutation + policy gate (fail-closed)
+        working-directory: verify
+        run: node run.js && node mutation.js && node gate.js
+      - name: Install Chromium for the acceptance suite
+        working-directory: verify
+        run: npx --no-install playwright install --with-deps chromium
+      - name: Frozen acceptance suite (parity contract)
+        run: node acceptance/run.js
+
+  build:
+    needs: gate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      # Served-file ALLOWLIST — only these reach Pages. verify/, audit/, governance/, acceptance/,
+      # rewrite/, .github/ are internal and MUST NOT be published. (Post code-migration this becomes
+      # `npm run build` into dist/; today it is an explicit copy of the browser-transpiled site.)
+      - name: Assemble the published artifact (explicit allowlist)
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          for f in index.html dashboard.jsx bubblegauge.jsx .nojekyll CNAME; do
+            test -f "$f" || { echo "missing served file: $f"; exit 1; }
+            cp "$f" dist/
+          done
+          echo "published set:"; ls -la dist
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa # v3
+        with:
+          path: dist
+      - name: Attest build provenance (SLSA) over the served bytes
+        uses: actions/attest-build-provenance@e8998f949152b193b063cb0ec769d69d929409be # v2
+        with:
+          subject-path: "dist/**"
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    permissions:
+      pages: write
+      id-token: write
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e # v4

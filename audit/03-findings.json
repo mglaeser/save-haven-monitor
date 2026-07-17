@@ -2794,9 +2794,13 @@
     {
      "date": "2026-07-16",
      "event": "assessed PARTIAL"
+    },
+    {
+     "date": "2026-07-16",
+     "event": "Phase-2: harness deps exact-pinned (esbuild 0.19.12, playwright 1.61.1) + committed verify/package-lock.json + npm ci --ignore-scripts; verify/tests/65-lockfile enforces registry-only/integrity/exact-pin (seed D10 watched). PINNING gap closed; registry-age/existence SCA still absent -> remains PARTIAL."
     }
    ],
-   "remediation": "Commit verify/package-lock.json, change the workflow step to `npm ci`, and add a verify/tests test asserting the lockfile is present and every dep resolves to a pinned integrity (the standing control that must exist). That converts the CI-dep slice from ungated to blocked and moves this to PASS.",
+   "remediation": "Remaining C-03 gap: a package-existence + registry-age/reputation check blocking newly-registered deps before install (nightly on the full lockfile). Pinning + lockfile + registry integrity are now done (test 65, seed D10).",
    "adversarial_verification": "agreed: Verified on both surfaces. Shipped slice strongly gated: index.html has zero npm runtime deps; the 5 CDN libs match verify/golden/pinned-deps.json exactly (35-supply-chain) with SRI integrity+crossorigin asserted (30-static-security) and sha384 recompute (40-sri). CI slice genuinely ungated: verify/package.json declares floating 'playwright-core':'^1.40.0', `git ls-files` shows NO lockfile, and .github/workflows/verify.yml runs `npm install --no-audit --no-fund` (not `npm ci`). The gate runs in that unpinned env. PARTIAL is correct \u2014 under-claims nothing, over-claims nothing."
   },
   {
