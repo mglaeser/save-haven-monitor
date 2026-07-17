@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta http-equiv="content-type" content="text/html; charset=utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!-- JsWidget (WidgetWeb) mandatory title -->
+<meta name="js-widget-title" content="AI Bubble Monitor">
+<title>AI Bubble Monitor — JS-Widget</title>
+<style type="text/css">
+  :root{
+    --bg:#0E1526; --text:#EDE8DC; --dim:#C7CBD6; --muted:#9AA3B5; --faint:#78829a;
+    --gold:#E0B458; --line:rgba(237,232,220,0.09); --panel2:#0B111F;
+    --serif:Georgia,'Times New Roman',serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;background:var(--bg);height:100%;width:100%}
+  body{color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Helvetica Neue',sans-serif;
+    -webkit-font-smoothing:antialiased;overflow:hidden}
+  .glow{position:absolute;inset:0;pointer-events:none;
+    background:radial-gradient(60% 45% at 50% 38%,rgba(224,180,88,0.13),rgba(224,180,88,0.04) 45%,transparent 70%)}
+  .wrap{position:relative;height:100vh;width:100%;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;gap:6px;padding:12px 14px}
+  .eyebrow{font-size:9px;letter-spacing:0.18em;text-transform:uppercase;color:var(--muted);text-align:center;line-height:1.2}
+  .gaugeBox{width:100%;max-width:236px}
+  .gaugeBox svg{display:block;width:100%;height:auto}
+  .info{display:flex;flex-direction:column;align-items:center;gap:6px;width:100%}
+  .subtxt{font-size:10px;color:var(--faint);font-variant-numeric:tabular-nums;text-align:center}
+  .chips{display:flex;flex-wrap:wrap;gap:7px;justify-content:center}
+  .chip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:999px;
+    padding:5px 10px;color:var(--dim);font-size:11px;background:var(--panel2)}
+  .chip .dot{width:5px;height:5px;border-radius:999px;flex:0 0 auto}
+  .chip .k{color:var(--muted)}
+  .chip .v{color:var(--text);font-variant-numeric:tabular-nums}
+  .fg{width:100%;max-width:236px}
+  .fg .head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px}
+  .fg .lab{font-size:9px;letter-spacing:0.18em;text-transform:uppercase;color:var(--muted)}
+  .fg .val{font-family:var(--serif);font-size:14px;font-variant-numeric:tabular-nums}
+  /* flipped: green left -> red right, matching the regime gauge */
+  .fg .bar{position:relative;height:6px;border-radius:999px;
+    background:linear-gradient(90deg,#5AA9A3,#7fbf94,#9AA3B5,#C0564A,#E05252)}
+  .fg .mk{position:absolute;top:-3px;width:2px;height:12px;border-radius:2px;background:var(--text);
+    box-shadow:0 0 0 2px var(--bg);transform:translateX(-50%)}
+  .foot{font-size:9px;color:var(--faint);text-align:center;display:flex;align-items:center;justify-content:center;gap:6px;flex-wrap:wrap}
+  .foot .badge{border:1px solid var(--line);border-radius:999px;padding:1px 6px;font-size:8px;
+    letter-spacing:0.08em;text-transform:uppercase;color:var(--muted)}
+  .foot .live{width:5px;height:5px;border-radius:999px;background:#7fbf94;display:inline-block}
+  @media (min-width:250px) and (max-height:210px){
+    .wrap{flex-direction:row;justify-content:center;gap:18px}
+    .eyebrow{display:none}
+    .gaugeBox{max-width:150px;flex:0 0 auto}
+    .info{align-items:flex-start;width:auto;max-width:190px}
+    .subtxt{text-align:left}.chips{justify-content:flex-start}.fg{max-width:190px}.foot{display:none}
+  }
+  @media (max-width:210px){
+    .chips{display:none}.fg{display:none}.foot{display:none}.subtxt{display:none}
+    .eyebrow{font-size:8px}.gaugeBox{max-width:190px}
+  }
+</style>
+</head>
+<body>
+  <div class="glow"></div>
+  <div class="wrap">
+    <div class="eyebrow">AI Bubble · where we stand</div>
+    <div class="gaugeBox"><svg id="gauge" viewBox="0 0 200 170" aria-label="regime gauge"></svg></div>
+    <div class="info">
+      <div class="subtxt" id="subtxt">—</div>
+      <div class="fg" id="fgblock">
+        <div class="head"><span class="lab">Fear &amp; Greed</span><span class="val" id="fgval">—</span></div>
+        <div class="bar"><span class="mk" id="fgmk"></span></div>
+      </div>
+      <div class="chips" id="chips"></div>
+    </div>
+    <div class="foot" id="foot"><span id="footmark"></span></div>
+  </div>
+
+<script type="text/javascript">
+/* ============ WidgetWeb JS-Widget: AI Bubble Monitor (served from GitHub Pages) ============
+   Self-contained, no external assets (30MB widget budget), STATELESS (no cookies / no local store).
+   Gated exactly like the dashboard: ?status-api=<key> constructs the API base as a subdomain of the
+   widget's own host (KEY_RE-whitelisted; no host/domain literal in source). Without a valid key it
+   renders an embedded sample. "Same appearance on reload" holds because live data re-fetches and the
+   sample is constant. */
+
+function __wweb2JsWidgetTitle(){ return "AI Bubble Monitor"; }
+function __wweb2Log(m){ /* Developer-mode log hook */ }
+
+/* ---- gating (mirrors src/bubblegauge.tsx resolveActivation) ---- */
+const KEY_RE = /^[a-z0-9-]{1,32}$/;               // strict whitelist — no dots, no full URLs
+var DEMO_KEYS = { demo: true, fixture: true };
+function resolveBase(){
+  var url; try { url = new URL(window.location.href); } catch (e) { return { live: false }; }
+  var key = url.searchParams.get("status-api");
+  if (!key || !KEY_RE.test(key)) return { live: false };        // no/invalid key -> sample
+  if (DEMO_KEYS[key]) return { live: false, demo: true };       // offline preview
+  var host = window.location.hostname, labels = host.split(".");
+  var parent = labels.length > 2 ? labels.slice(1).join(".") : host;
+  return { live: true, base: "https://" + key + "." + parent }; // subdomain-of-parent only
+}
+var ACT = resolveBase();
+var API_BASE = ACT.base || null;
+var DEMO = !!ACT.demo;
+
+/* ---- tokens ---- */
+var BAND={hold:{label:"HOLD",color:"#5B8DEF",blurb:"Structural risk present, not acute."},
+  trim:{label:"TRIM",color:"#E0B458",blurb:"Fragility elevated — watch the trend rule."},
+  "de-risk":{label:"DE-RISK",color:"#E05252",blurb:"Fragility high, or an override fired."}};
+function bandOf(b){return BAND[b]||BAND.hold;}
+var FG_COLORS={"extreme fear":"#E05252","fear":"#C0564A","neutral":"#9AA3B5","greed":"#7fbf94","extreme greed":"#5AA9A3"};
+
+var SAMPLE={score:40,band:"hold",point:40.35,iqr:[34,47],
+  fg:{value:46,rating:"neutral"},cape:42.2,goldTtm:22.9,btcDd:-44,asOf:"sample"};
+var DATA=SAMPLE;
+
+/* ---- radial gauge geometry (same construction as the app splash) ---- */
+var GX=100,GY=96,GR=74,A0=135,SW=270;
+function pol(r,deg){var a=deg*Math.PI/180;return [GX+r*Math.cos(a),GY+r*Math.sin(a)];}
+function garc(t0,t1,r){r=r||GR;var p0=pol(r,A0+t0*SW),p1=pol(r,A0+t1*SW);
+  var large=(t1-t0)*SW>180?1:0;
+  return "M"+p0[0].toFixed(1)+" "+p0[1].toFixed(1)+" A"+r+" "+r+" 0 "+large+" 1 "+p1[0].toFixed(1)+" "+p1[1].toFixed(1);}
+function drawGauge(score,band){
+  var b=bandOf(band),s=Math.max(0,Math.min(100,score)),t=s/100,ang=A0+t*SW;
+  var mk=pol(GR,ang),mkI=pol(GR-12,ang),mkO=pol(GR+14,ang);
+  // NOTE: only fixed-palette colors, computed coordinates and numbers are interpolated here —
+  // no external/API string ever reaches innerHTML (ratings/values render via textContent below).
+  var svg=""
+    +'<circle cx="100" cy="96" r="90" fill="none" stroke="rgba(237,232,220,0.05)" stroke-width="1"/>'
+    +'<path d="'+garc(0,1)+'" fill="none" stroke="rgba(237,232,220,0.07)" stroke-width="10" stroke-linecap="round"/>'
+    +'<path d="'+garc(0,0.45)+'" fill="none" stroke="#5B8DEF" stroke-opacity="0.28" stroke-width="10" stroke-linecap="round"/>'
+    +'<path d="'+garc(0.45,0.60)+'" fill="none" stroke="#E0B458" stroke-opacity="0.30" stroke-width="10"/>'
+    +'<path d="'+garc(0.60,1)+'" fill="none" stroke="#E05252" stroke-opacity="0.28" stroke-width="10" stroke-linecap="round"/>'
+    +'<path d="'+garc(0,t)+'" fill="none" stroke="'+b.color+'" stroke-width="4" stroke-linecap="round"/>'
+    +'<line x1="'+mkI[0].toFixed(1)+'" y1="'+mkI[1].toFixed(1)+'" x2="'+mkO[0].toFixed(1)+'" y2="'+mkO[1].toFixed(1)+'" stroke="#0E1526" stroke-width="4"/>'
+    +'<line x1="'+mkI[0].toFixed(1)+'" y1="'+mkI[1].toFixed(1)+'" x2="'+mkO[0].toFixed(1)+'" y2="'+mkO[1].toFixed(1)+'" stroke="'+b.color+'" stroke-width="2"/>'
+    +'<circle cx="'+mk[0].toFixed(1)+'" cy="'+mk[1].toFixed(1)+'" r="6" fill="#0E1526" stroke="'+b.color+'" stroke-width="2"/>'
+    +'<circle cx="'+mk[0].toFixed(1)+'" cy="'+mk[1].toFixed(1)+'" r="2" fill="'+b.color+'"/>'
+    +'<text x="100" y="66" text-anchor="middle" font-size="8" letter-spacing="3" fill="#9AA3B5">REGIME</text>'
+    +'<text x="100" y="108" text-anchor="middle" font-family="Georgia,serif" font-size="52" fill="'+b.color+'" style="font-variant-numeric:tabular-nums">'+Math.round(s)+'</text>'
+    +'<text x="100" y="128" text-anchor="middle" font-size="11" letter-spacing="4" fill="'+b.color+'">'+b.label+'</text>'
+    +'<text x="46" y="162" text-anchor="middle" font-family="Georgia,serif" font-size="9" fill="#78829a">0</text>'
+    +'<text x="154" y="162" text-anchor="middle" font-family="Georgia,serif" font-size="9" fill="#78829a">100</text>';
+  document.getElementById("gauge").innerHTML=svg;
+}
+
+function el(tag,cls){var e=document.createElement(tag);if(cls)e.className=cls;return e;}
+function chip(k,v,c){
+  var d=el("div","chip");
+  var dot=el("span","dot");dot.style.background=c;d.appendChild(dot);
+  var ks=el("span","k");ks.textContent=k;d.appendChild(ks);
+  var vs=el("span","v");vs.textContent=v;d.appendChild(vs);   // textContent — safe
+  return d;
+}
+function render(){
+  var d=DATA,b=bandOf(d.band);
+  drawGauge(d.score,d.band);
+  document.getElementById("subtxt").textContent=b.blurb+"  ·  IQR "+d.iqr[0]+"–"+d.iqr[1];
+  // F&G bar (flipped: red on the right); marker mirrored to 100 - value
+  var fgblock=document.getElementById("fgblock");
+  if(d.fg&&isFinite(d.fg.value)){
+    fgblock.style.display="";
+    var fgc=FG_COLORS[d.fg.rating]||"#9AA3B5";
+    var fv=document.getElementById("fgval");
+    fv.textContent=(Math.round(d.fg.value*10)/10)+(d.fg.rating?" · "+d.fg.rating:"");
+    fv.style.color=fgc;
+    document.getElementById("fgmk").style.left=(100-Math.max(0,Math.min(100,d.fg.value)))+"%";
+  } else { fgblock.style.display="none"; }
+  // a few decision-relevant stats, shown directly (no local state)
+  var box=document.getElementById("chips"); box.textContent="";
+  if(isFinite(d.cape)) box.appendChild(chip("CAPE",(Math.round(d.cape*10)/10)+"","#E05252"));
+  if(isFinite(d.goldTtm)) box.appendChild(chip("Gold 12m",(d.goldTtm>0?"+":"")+(Math.round(d.goldTtm*10)/10)+"%","#E0B458"));
+  if(isFinite(d.btcDd)) box.appendChild(chip("BTC vs ATH",Math.round(d.btcDd)+"%","#E05252"));
+  var live=(d.asOf&&d.asOf!=="sample");
+  var fm=document.getElementById("footmark");
+  if(live){ fm.textContent=""; var s=el("span","live");fm.appendChild(s);
+    fm.appendChild(document.createTextNode(" updated "+rel(d.asOf))); }
+  else { fm.textContent=""; var bd=el("span","badge");bd.textContent="sample";fm.appendChild(bd);
+    fm.appendChild(document.createTextNode(" not advice — a heuristic, not a probability")); }
+}
+function rel(iso){var t=Date.parse(iso);if(!isFinite(t))return String(iso);
+  var h=(Date.now()-t)/36e5;return h<1?"just now":h<48?Math.round(h)+"h ago":Math.round(h/24)+"d ago";}
+
+/* ---- optional live fetch: the ONLY network call, to the gated API_BASE ---- */
+var LIVE_READY=!ACT.live;
+if(ACT.live){
+  var ctrl=("AbortController" in window)?new AbortController():null;
+  if(ctrl) setTimeout(function(){try{ctrl.abort();}catch(e){}},2600);
+  var opt={headers:{accept:"application/json"},signal:ctrl&&ctrl.signal};
+  Promise.all([
+    fetch(API_BASE+"/api/v1/score",opt).then(function(r){return r.ok?r.json():null;}).catch(function(){return null;}),
+    fetch(API_BASE+"/api/v1/dashboard/feed",opt).then(function(r){return r.ok?r.json():null;}).catch(function(){return null;})
+  ]).then(function(res){
+    try{
+      var sc=res[0]&&res[0].data, mx=(res[1]&&res[1].data&&res[1].data.metrics)||{}, fg=mx.fear_greed;
+      if(sc){
+        DATA={score:sc.headline_median,band:sc.action_band,point:sc.point_score,iqr:sc.iqr||[0,0],
+          fg:(fg&&fg.available&&isFinite(fg.value))?{value:fg.value,rating:fg.detail&&fg.detail.rating}:null,
+          cape:(mx.cape&&mx.cape.available)?mx.cape.value:NaN,
+          goldTtm:(mx.gold_ttm_pct&&mx.gold_ttm_pct.available)?mx.gold_ttm_pct.value:NaN,
+          btcDd:(mx.btc_drawdown_pct&&mx.btc_drawdown_pct.available)?mx.btc_drawdown_pct.value:NaN,
+          asOf:(res[0].meta&&res[0].meta.computed_at)||new Date().toISOString()};
+        render();
+      }
+    }catch(e){__wweb2Log("map error "+e);}
+    LIVE_READY=true;
+  },function(){LIVE_READY=true;});
+}
+function __wweb2WaitMillisecondsToWidgetIsReady(currentDelayMs){
+  return LIVE_READY ? 0 : (currentDelayMs < 3000 ? 400 : 0);
+}
+
+render();
+</script>
+</body>
+</html>
