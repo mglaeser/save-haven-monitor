@@ -113,3 +113,18 @@ only). The integration renders it inside the LIVE BACKFILL card (AI-2026 panel, 
   `validFearGreed` and pinned by `verify/tests/63-feargreed-contract`.
 - The browser **never** calls CNN (UA-gated, no CORS): the bubblegauge service snapshots it
   server-side; test 63 + the egress allowlist (test 62) both fail the build on a direct CNN call.
+
+### Top-strip F&G status (compact surface)
+
+In addition to the detailed block inside the LIVE BACKFILL card, a compact **CNN Fear & Greed
+status** line renders in the top strip area (directly under the AI-regime strip, above the tab bar)
+whenever the gate is on and the feed carries a valid `fear_greed` metric. It shows the current
+reading + `detail.rating` on the same 0–100 zone gauge, plus **the last three readings**
+(`previous_close` / `previous_1_week` / `previous_1_month` — the three most recent CNN reference
+values, null-safe: a null comparison is skipped, never shown as 0). It is `BG.FearGreedStrip`
+(own `aria-label="CNN Fear and Greed status"`, distinct from the regime strip), reads the feed
+through the shared 25-min `useEndpoint` cache (no extra request), and no-ops entirely when the
+metric is absent or invalid — so with no `?status-api` param there is zero footprint (the frozen
+acceptance negative contract still holds), and a feed failure drops only this line. Same axis
+discipline as the block: own 0–100 scale, never rebased, never in `AI_MAP`; value is the
+server-side snapshot (the browser still never calls CNN).

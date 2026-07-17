@@ -1436,6 +1436,8 @@ function CrisisWinnersDashboard() {
         </div>
 
         {BG.enabled && <BG.Strip goToDetail={() => setTab("bubblegauge")} />}
+        {/* bubblegauge integration seam: compact CNN Fear & Greed status + last 3 readings (feed-sourced, gated) */}
+        {BG.enabled && BG.FearGreedStrip && <BG.FearGreedStrip />}
 
         <div className="tabbar-scroll" style={{ display: "flex", gap: 6, margin: "18px 0 16px", borderBottom: "1px solid rgba(237,232,220,0.1)", overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
           {tabs.map((t) => (
