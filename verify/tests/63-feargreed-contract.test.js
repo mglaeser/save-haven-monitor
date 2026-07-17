@@ -13,7 +13,7 @@ const ENUM = ["extreme fear", "fear", "neutral", "greed", "extreme greed"];
 
 module.exports = function register(t) {
   t("v1.1: rating whitelist, 0..100 guard, and zone bands 25/45/55/75 exist", () => {
-    const src = raw("bubblegauge.jsx");
+    const src = raw("src/bubblegauge.tsx");
     ok(/FG_RATINGS\s*=/.test(src), "FG_RATINGS whitelist missing");
     for (const r of ENUM) ok(src.includes('"' + r + '"'), `rating enum value missing: "${r}"`);
     ok(/function\s+validFearGreed\s*\(/.test(src), "validFearGreed boundary validator missing");
@@ -24,7 +24,7 @@ module.exports = function register(t) {
   });
 
   t("v1.1: series is null-safe (null ≠ zero, no interpolation) and never rebased", () => {
-    const src = raw("bubblegauge.jsx");
+    const src = raw("src/bubblegauge.tsx");
     // the gauge/series block must exist and split its polyline on nulls rather than bridging them
     const i = src.indexOf("function FearGreedBlock");
     ok(i > -1, "FearGreedBlock renderer missing");
@@ -36,7 +36,7 @@ module.exports = function register(t) {
   });
 
   t("v1.1: demo fixture ships metrics.fear_greed (detail.rating enum, value 0..100) + a 61-point series with leading nulls", () => {
-    const src = raw("bubblegauge.jsx");
+    const src = raw("src/bubblegauge.tsx");
     const m = src.match(/fear_greed:\s*\{[\s\S]{0,900}?detail:\s*\{([^}]+)\}/);
     ok(m, "FEED_FIXTURE.metrics.fear_greed with detail{} missing");
     const r = m[1].match(/rating:\s*"([^"]+)"/);
@@ -53,7 +53,7 @@ module.exports = function register(t) {
   });
 
   t("no served file calls CNN directly — server-side snapshot only (feed consumption)", () => {
-    for (const f of ["index.html", "dashboard.jsx", "bubblegauge.jsx"])
+    for (const f of ["index.html", "src/dashboard.tsx", "src/bubblegauge.tsx"])
       ok(!/dataviz\.cnn\.io|cnn\.com/.test(raw(f)),
         `CNN host referenced in ${f} — the browser must never call CNN (UA-gated, no CORS, undeclared egress)`);
   });

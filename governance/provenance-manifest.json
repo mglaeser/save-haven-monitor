@@ -1,5 +1,5 @@
 {
-  "note": "C-37/C-26 attested provenance chain. Every SHIPPED production component (what GitHub Pages serves) is listed with its content hash and the chain that produced it: the frozen specification it derives from, the policy bundle that gated it, the test evidence, the adversarial-verification result, and the NAMED OWNING ROLE answerable for it. verify/tests/61-provenance verifies (a) every shipped file is listed, (b) each hash matches the file on disk (a silent change to a shipped component breaks the chain and fails the build), and (c) the chain fields are non-empty. This is git-anchored and machine-reconstructible on demand. RESIDUAL (R-LEDGER, honest): the model+prompt-hash per commit is NOT cryptographically signed here; git history + this manifest are the append-only substitute. Full Runner-only signed provenance is the buildable upgrade. | v2.1 (compiled-ahead): served set is index.html + compiled ./*.js + self-hosted ./vendor/* ; the .jsx are attested SOURCE, and 66-compiled-fresh proves compiled==source.",
+  "note": "C-37/C-26 attested provenance chain. Every SHIPPED production component (what GitHub Pages serves) is listed with its content hash and the chain that produced it: the frozen specification it derives from, the policy bundle that gated it, the test evidence, the adversarial-verification result, and the NAMED OWNING ROLE answerable for it. verify/tests/61-provenance verifies (a) every shipped file is listed, (b) each hash matches the file on disk (a silent change to a shipped component breaks the chain and fails the build), and (c) the chain fields are non-empty. This is git-anchored and machine-reconstructible on demand. RESIDUAL (R-LEDGER, honest): the model+prompt-hash per commit is NOT cryptographically signed here; git history + this manifest are the append-only substitute. Full Runner-only signed provenance is the buildable upgrade. | v2.1 (compiled-ahead): served set is index.html + compiled ./*.js + self-hosted ./vendor/* ; the .jsx are attested SOURCE, and 66-compiled-fresh proves compiled==source. | v2.2 (module migration): sources under src/ (data as JSON, esbuild bundle); .jsx removed; data hash unchanged.",
   "catalogue_version": "2.0",
   "recorded": "2026-07-16",
   "hash_algorithm": "sha256",
@@ -11,52 +11,70 @@
       "role": "served page shell (self-hosted vendors + SRI, loads compiled ./*.js \u2014 no unpkg, no in-browser Babel)",
       "derives_from_spec": "CLAUDE.md architecture section + DR-002 (CI gate) + Pinned CDN versions section",
       "test_evidence": "verify/tests/35-supply-chain (pin manifest), verify/tests/40-sri (integrity recompute), verify/tests/30-static-security (hardened links, http-only-localhost/w3.org)",
-      "adversarial_verification": "frozen acceptance suite (35/0, byte-behavioral parity) + Track C seeds",
+      "adversarial_verification": "frozen acceptance suite (35/0 against the modularized bundle) + Track C seeds",
       "owning_role": "platform-security"
     },
     {
       "file": "dashboard.js",
-      "sha256": "bf82f298da8ec36f2283b22f144336b0c6a6a3de558170cb7167a545d9c41a7d",
+      "sha256": "cdee228adf3db56619b965d95574a53df7c830f81e62c601457694ea9cbddf5d",
       "role": "served compiled crisis-atlas (esbuild transpile of dashboard.jsx, IIFE-wrapped)",
       "derives_from_spec": "rewrite/00-recommendation.md + DR-006 (compiled-ahead)",
-      "test_evidence": "verify/tests/66-compiled-fresh (byte-identical to source build) + 30/62/63",
-      "adversarial_verification": "frozen acceptance suite (35/0, byte-behavioral parity) + Track C seeds",
+      "test_evidence": "verify/tests/66-compiled-fresh (bundle==src) + 30/62/63",
+      "adversarial_verification": "frozen acceptance suite (35/0 against the modularized bundle) + Track C seeds",
       "owning_role": "platform-security"
     },
     {
       "file": "bubblegauge.js",
-      "sha256": "851cb70be328b30ab6a5aaf635c1351266457e69be6e199935c9d293356c59b3",
+      "sha256": "a9a1cfc6596db91f9b962df73bdb5f559fa2746724e26307da66d2a0e91cb079",
       "role": "served compiled gated integration (esbuild transpile of bubblegauge.jsx)",
       "derives_from_spec": "rewrite/00-recommendation.md + DR-006 (compiled-ahead)",
-      "test_evidence": "verify/tests/66-compiled-fresh (byte-identical to source build) + 30/62/63",
-      "adversarial_verification": "frozen acceptance suite (35/0, byte-behavioral parity) + Track C seeds",
+      "test_evidence": "verify/tests/66-compiled-fresh (bundle==src) + 30/62/63",
+      "adversarial_verification": "frozen acceptance suite (35/0 against the modularized bundle) + Track C seeds",
       "owning_role": "platform-security"
     },
     {
-      "file": "dashboard.jsx",
-      "sha256": "d8d16282aabd4728145728cf6ecf9d92eaf0926d79d5ded730def7049f90cd4c",
-      "role": "SOURCE of dashboard.js (frozen crisis data + pure calcs)",
-      "derives_from_spec": "the frozen crisis-winners specification; golden data hash verify/golden/data-hash.json",
-      "test_evidence": "verify/tests/10-data-invariants, verify/tests/20-golden-content (golden hash), verify/mutation.js (13 mutants, score 1.00), verify/tests/70-claims (Article X labels)",
-      "adversarial_verification": "frozen acceptance suite (35/0, byte-behavioral parity) + Track C seeds",
-      "owning_role": "ai-quality (data) + engineering-leadership (accountability)"
+      "file": "src/dashboard.tsx",
+      "sha256": "871d37e882a6e062bfbe0b333ae9de53ea59988841230387787e3fc14c73b7cc",
+      "role": "SOURCE of dashboard.js (view + math; imports ./data)",
+      "derives_from_spec": "rewrite/00-recommendation.md + DR-006 (module migration)",
+      "test_evidence": "verify/tests/*",
+      "adversarial_verification": "frozen acceptance suite (35/0 against the modularized bundle) + Track C seeds",
+      "owning_role": "platform-security"
     },
     {
-      "file": "bubblegauge.jsx",
+      "file": "src/bubblegauge.tsx",
       "sha256": "56a6b08d791aa5be76cd36bf89fa042ffb062f2a1b1af618b984fbce886a4ac9",
-      "role": "SOURCE of bubblegauge.js (gated status-API integration)",
-      "derives_from_spec": "INTEGRATION_NOTES.md + DASHBOARD_FEED_SPEC.md; the KEY_RE gating contract",
-      "test_evidence": "verify/tests/30-static-security (KEY_RE-enforced, no-injection-sink, no-fabricated-success), verify/tests/62-security-surface (egress allowlist, gated fetch), verify/tests/63-feargreed-contract (v1.1 F&G: 0..100+rating-enum boundary, null-safe series, never-rebased, no direct CNN call)",
-      "adversarial_verification": "frozen acceptance suite (35/0, byte-behavioral parity) + Track C seeds",
-      "owning_role": "ai-security"
+      "role": "SOURCE of bubblegauge.js (gated integration)",
+      "derives_from_spec": "rewrite/00-recommendation.md + DR-006 (module migration)",
+      "test_evidence": "verify/tests/*",
+      "adversarial_verification": "frozen acceptance suite (35/0 against the modularized bundle) + Track C seeds",
+      "owning_role": "platform-security"
+    },
+    {
+      "file": "src/data.ts",
+      "sha256": "fcba8f86ede2a011723e4bf94aa53a16f91b08beed6e22d1c60e1c1658d89731",
+      "role": "typed loader re-exporting the frozen atlas data",
+      "derives_from_spec": "rewrite/00-recommendation.md + DR-006 (module migration)",
+      "test_evidence": "verify/tests/*",
+      "adversarial_verification": "frozen acceptance suite (35/0 against the modularized bundle) + Track C seeds",
+      "owning_role": "platform-security"
+    },
+    {
+      "file": "src/data/atlas.json",
+      "sha256": "d259c3a9d3045528e336d6cac6b970ba552bae5944a53d92262ae1aacd166189",
+      "role": "frozen crisis-atlas data (golden-hashed; byte-preserved from the former dashboard.jsx literals)",
+      "derives_from_spec": "rewrite/00-recommendation.md + DR-006 (module migration)",
+      "test_evidence": "verify/tests/20-golden-content (data hash unchanged) + 10-data-invariants",
+      "adversarial_verification": "frozen acceptance suite (35/0 against the modularized bundle) + Track C seeds",
+      "owning_role": "platform-security"
     },
     {
       "file": "vendor/react.production.min.js",
       "sha256": "d949f1c3687aedadcedac85261865f29b17cd273997e7f6b2bfc53b2f9d4c4dd",
       "role": "self-hosted vendor: React 18.3.1 UMD (byte-identical to former unpkg; SRI-pinned)",
       "derives_from_spec": "rewrite/00-recommendation.md + DR-006 (compiled-ahead)",
-      "test_evidence": "verify/tests/35-supply-chain + 40-sri-recompute (offline sha384) + vendor-pins.json",
-      "adversarial_verification": "frozen acceptance suite (35/0, byte-behavioral parity) + Track C seeds",
+      "test_evidence": "verify/tests/35 + 40 (offline sha384)",
+      "adversarial_verification": "frozen acceptance suite (35/0 against the modularized bundle) + Track C seeds",
       "owning_role": "platform-security"
     },
     {
@@ -64,8 +82,8 @@
       "sha256": "35f4f974f4b2bcd44da73963347f8952e341f83909e4498227d4e26b98f66f0d",
       "role": "self-hosted vendor: ReactDOM 18.3.1 UMD",
       "derives_from_spec": "rewrite/00-recommendation.md + DR-006 (compiled-ahead)",
-      "test_evidence": "verify/tests/35-supply-chain + 40-sri-recompute (offline sha384) + vendor-pins.json",
-      "adversarial_verification": "frozen acceptance suite (35/0, byte-behavioral parity) + Track C seeds",
+      "test_evidence": "verify/tests/35 + 40 (offline sha384)",
+      "adversarial_verification": "frozen acceptance suite (35/0 against the modularized bundle) + Track C seeds",
       "owning_role": "platform-security"
     },
     {
@@ -73,8 +91,8 @@
       "sha256": "e653471aba824786aee5dce1bcb5a86ed30c8518d346d2ace0460a5633a9cbdb",
       "role": "self-hosted vendor: prop-types 15.8.1",
       "derives_from_spec": "rewrite/00-recommendation.md + DR-006 (compiled-ahead)",
-      "test_evidence": "verify/tests/35-supply-chain + 40-sri-recompute (offline sha384) + vendor-pins.json",
-      "adversarial_verification": "frozen acceptance suite (35/0, byte-behavioral parity) + Track C seeds",
+      "test_evidence": "verify/tests/35 + 40 (offline sha384)",
+      "adversarial_verification": "frozen acceptance suite (35/0 against the modularized bundle) + Track C seeds",
       "owning_role": "platform-security"
     },
     {
@@ -82,8 +100,8 @@
       "sha256": "d9aa8577cf67317ed7d27f10f5ce88d56e4bfc15d37ba5ba62f8dedf24edae4d",
       "role": "self-hosted vendor: Recharts 2.12.7 UMD",
       "derives_from_spec": "rewrite/00-recommendation.md + DR-006 (compiled-ahead)",
-      "test_evidence": "verify/tests/35-supply-chain + 40-sri-recompute (offline sha384) + vendor-pins.json",
-      "adversarial_verification": "frozen acceptance suite (35/0, byte-behavioral parity) + Track C seeds",
+      "test_evidence": "verify/tests/35 + 40 (offline sha384)",
+      "adversarial_verification": "frozen acceptance suite (35/0 against the modularized bundle) + Track C seeds",
       "owning_role": "platform-security"
     },
     {
@@ -92,8 +110,17 @@
       "role": "served empty marker disabling Jekyll",
       "derives_from_spec": "CLAUDE.md architecture section",
       "test_evidence": "presence asserted by verify/tests/61-provenance",
-      "adversarial_verification": "frozen acceptance suite (35/0, byte-behavioral parity) + Track C seeds",
+      "adversarial_verification": "frozen acceptance suite (35/0 against the modularized bundle) + Track C seeds",
       "owning_role": "platform-security"
+    },
+    {
+      "file": "src/lib/math.ts",
+      "role": "pure crisis-atlas math (typed; mutation-tested; tsc-strict)",
+      "derives_from_spec": "rewrite/00-recommendation.md + DR-006",
+      "test_evidence": "verify/mutation.js (13/13) + verify/tests/67-typecheck (tsc strict) + 10-data-invariants",
+      "adversarial_verification": "frozen acceptance 35/0 + mutation",
+      "owning_role": "ai-quality",
+      "sha256": "1f7a22b60fc809be5916599769e23ce82575f151cbd6525b55366408a9b59508"
     }
   ],
   "reconstruction_control": "verify/tests/61-provenance reconstructs the chain for every shipped component on every build and fails loudly if a component is unlisted or its hash drifted; the git history supplies which commit/model authored each change. A scheduled spot-reconstruction is the standing cadence (governance/mandate cadence table)."

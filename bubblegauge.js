@@ -1,1021 +1,1024 @@
-(function() {
-  "use strict";
-  const PARAM = "status-api";
-  const KEY_RE = /^[a-z0-9-]{1,32}$/;
-  const SS_KEY = "bubblegauge:enabled";
-  const DEMO_KEYS = { demo: true, fixture: true };
-  function resolveActivation(loc) {
-    loc = loc || window.location;
-    let url;
-    try {
-      url = new URL(loc.href);
-    } catch (e) {
-      return null;
-    }
-    if (url.searchParams.get(PARAM + "-off") !== null) {
+(() => {
+  // src/bubblegauge.tsx
+  (function() {
+    "use strict";
+    const PARAM = "status-api";
+    const KEY_RE = /^[a-z0-9-]{1,32}$/;
+    const SS_KEY = "bubblegauge:enabled";
+    const DEMO_KEYS = { demo: true, fixture: true };
+    function resolveActivation(loc) {
+      loc = loc || window.location;
+      let url;
       try {
-        sessionStorage.removeItem(SS_KEY);
+        url = new URL(loc.href);
       } catch (e) {
+        return null;
       }
-      return null;
-    }
-    let key = url.searchParams.get(PARAM);
-    if (key && KEY_RE.test(key)) {
-      try {
-        sessionStorage.setItem(SS_KEY, key);
-      } catch (e) {
+      if (url.searchParams.get(PARAM + "-off") !== null) {
+        try {
+          sessionStorage.removeItem(SS_KEY);
+        } catch (e) {
+        }
+        return null;
       }
-    } else if (!key) {
-      try {
-        key = sessionStorage.getItem(SS_KEY);
-      } catch (e) {
-        key = null;
+      let key = url.searchParams.get(PARAM);
+      if (key && KEY_RE.test(key)) {
+        try {
+          sessionStorage.setItem(SS_KEY, key);
+        } catch (e) {
+        }
+      } else if (!key) {
+        try {
+          key = sessionStorage.getItem(SS_KEY);
+        } catch (e) {
+          key = null;
+        }
       }
+      if (!key || !KEY_RE.test(key))
+        return null;
+      if (DEMO_KEYS[key])
+        return { key, demo: true, base: null };
+      const host = loc.hostname;
+      if (host === "localhost" || host === "127.0.0.1" || host.endsWith(".local")) {
+        return { key, demo: false, base: "http://localhost:8000" };
+      }
+      const labels = host.split(".");
+      const parent = labels.length > 2 ? labels.slice(1).join(".") : host;
+      return { key, demo: false, base: "https://" + key + "." + parent };
     }
-    if (!key || !KEY_RE.test(key))
-      return null;
-    if (DEMO_KEYS[key])
-      return { key, demo: true, base: null };
-    const host = loc.hostname;
-    if (host === "localhost" || host === "127.0.0.1" || host.endsWith(".local")) {
-      return { key, demo: false, base: "http://localhost:8000" };
+    const activation = resolveActivation();
+    if (!activation) {
+      window.BubbleGauge = { enabled: false };
+      return;
     }
-    const labels = host.split(".");
-    const parent = labels.length > 2 ? labels.slice(1).join(".") : host;
-    return { key, demo: false, base: "https://" + key + "." + parent };
-  }
-  const activation = resolveActivation();
-  if (!activation) {
-    window.BubbleGauge = { enabled: false };
-    return;
-  }
-  const API_BASE = activation.base;
-  const DEMO = activation.demo;
-  const { useState, useMemo, useEffect, useRef } = React;
-  const {
-    LineChart,
-    Line,
-    XAxis,
-    YAxis,
-    CartesianGrid,
-    Tooltip,
-    ReferenceLine,
-    ResponsiveContainer,
-    Area,
-    ComposedChart,
-    ReferenceArea
-  } = Recharts;
-  const C = {
-    bg: "#0E1526",
-    panel: "#141D31",
-    panel2: "#0B111F",
-    text: "#EDE8DC",
-    dim: "#C7CBD6",
-    muted: "#9AA3B5",
-    faint: "#78829a",
-    gold: "#E0B458",
-    line: "rgba(237,232,220,0.09)"
-  };
-  const BS = {
-    serif: { fontFamily: "Georgia, 'Times New Roman', serif" },
-    panel: { background: C.panel, border: "1px solid " + C.line, borderRadius: 10 },
-    eyebrow: { fontSize: 10.5, letterSpacing: "0.18em", textTransform: "uppercase", color: C.muted }
-  };
-  const BAND = {
-    hold: { label: "HOLD", color: "#5B8DEF", zone: "rgba(91,141,239,0.14)" },
-    trim: { label: "TRIM", color: "#E0B458", zone: "rgba(224,180,88,0.16)" },
-    "de-risk": { label: "DE-RISK", color: "#E05252", zone: "rgba(224,82,82,0.16)" },
-    "suppressed (block degraded)": { label: "SUPPRESSED", color: "#9AA3B5", zone: "rgba(154,163,181,0.12)" }
-  };
-  const bandOf = (b) => BAND[b] || BAND.hold;
-  const GROUND = {
-    "literature-grounded": { c: "#7fbf94", t: "Backed by peer-reviewed research." },
-    "literature-adjacent": { c: "#5AA9A3", t: "Motivated by the research, with a reasoned (not directly fitted) mapping." },
-    "judgmental": { c: "#d9b45c", t: "Reasoned expert choice, not a fitted model." },
-    "contested": { c: "#E8853D", t: "Known to misfire — deliberately down-weighted." },
-    "lagging-confirmation": { c: "#9AA3B5", t: "Confirms stress already underway; does not predict." }
-  };
-  const groundOf = (g) => GROUND[g] || { c: C.muted, t: "" };
-  const COPY = {
-    micro: "Regime heuristic — not a probability, not advice.",
-    epiChip: "Heuristic · not a probability · calibrated on n≈4 · see limits",
-    bandOneLiner: {
-      hold: "Hold — structural risk is present but not acute. No action indicated by the trend rule.",
-      trim: "Trim — fragility is elevated. Consider easing risk if the trend rule confirms.",
-      "de-risk": "De-risk — fragility is high or a hard override has fired. The trend rule is now the thing to watch.",
-      "suppressed (block degraded)": "Not scored right now — too many inputs for one block are unavailable, so the action band is withheld rather than guessed."
-    },
-    ladder: {
-      ceiling: "The score sets your ceiling on risk — how much caution is warranted. It does not tell you to sell today.",
-      trigger: "The 10-month trend rule (Faber) is the trigger — historically it reduces drawdowns, and honestly, does not boost returns.",
-      speed: "The fast alarm (VIX / variance premium) reacts faster than a monthly trend, for when things break quickly.",
-      caveat: "Acting early is expensive: missing the 10 best days over 1900–2006 — just 0.03% of trading days — cost ~65% of terminal wealth (Estrada). And any de-risking rule can lose money net of costs (Cederburg et al.). That is exactly why the score is a ceiling, not a button."
-    },
-    redFlagHeader: "What would have to happen — each flag has a specific threshold (encoded in its name). If at least 3 of 4 fire, the score is floored at 70 regardless of everything else (a deliberate non-compensatory override).",
-    falsifyHeader: "This gauge is falsifiable, on purpose. It is WRONG if:",
-    coverageTip: "Coverage = how much of each block's intended weight is actually live right now. When an input is unavailable, we drop it and re-weight the rest, rather than guessing.",
-    changelogTip: "v2 → v3: this step was an aggregation fix — a change in how the sub-scores are combined — NOT the market getting worse. We show it here so you never mistake a methodology change for a market event.",
-    fusionHeader: "Which past crisis does today most resemble? (This is an analogy, not a forecast.)",
-    notProbLong: "This is a 0–100 regime heuristic built from structured expert judgment. It is NOT a probability of a crash. There have been maybe four comparable US equity manias in a century — 1929, 2000, 2007, 2021 — far too few to calibrate a real probability. And today may not be a bubble at all: it could be rational repricing of a genuine general-purpose technology."
-  };
-  const REDFLAG_COPY = {
-    gsadf_explosive_noncontested: "GSADF reads explosive (and not contested-suppressed)",
-    semi_runup_ge_150pp: "Semis' 2-yr net-of-market run-up ≥ 150 pp",
-    hy_oas_widen_gt_100bps: "HY OAS widened > 100 bps",
-    breadth_lt_50_near_ath: "< 50% of S&P 500 above the 200-DMA near an ATH"
-  };
-  const REG = {
-    s1: {
-      block: "S",
-      name: "Valuation extremity",
-      plain: "How expensive are stocks versus their own history, once you account for interest rates?",
-      fire: "CAPE sits at a historic extreme and the Excess CAPE Yield (stocks' edge over bonds) is thin.",
-      why: "Weighted highest in the structural block because valuation is the most durable long-horizon fragility signal in the research."
-    },
-    s2: {
-      block: "S",
-      name: "Concentration",
-      plain: "How much does the whole index depend on a handful of AI names?",
-      fire: "The top-10 share of the S&P 500 pushes further above its post-1990 range (~41% in 2025 vs ~27% at the 2000 peak).",
-      why: "Literature-adjacent: a single-point-of-failure risk grounded in the concentration literature, not a fitted timing signal."
-    },
-    s3: {
-      block: "S",
-      name: "Semiconductor run-up",
-      plain: "History says that when one industry doubles relative to the market in two years, it crashes about half the time.",
-      fire: "Semiconductors' two-year gain over the market climbs the crash-frequency curve.",
-      why: "Literature-grounded: Greenwood-Shleifer-You found a 100% two-year net-of-market run-up carries a 53% crash probability, rising to ~80% at 150%."
-    },
-    s4: {
-      block: "S",
-      name: "Explosiveness (GSADF)",
-      plain: "A statistical test for prices growing faster than exponentially — deliberately down-weighted because it can be fooled by a genuine technological revolution.",
-      fire: "The recursive unit-root test flags explosive price dynamics.",
-      why: "CONTESTED and low-weighted: a 2026 study shows it fires 93–100% of the time under real general-purpose-tech fundamentals."
-    },
-    s5: {
-      block: "S",
-      name: "Credit-sentiment fragility",
-      plain: "When lenders are most relaxed, trouble tends to arrive about two years later. Today's spreads are near 25-year tights.",
-      fire: "High-yield spreads are historically tight (measured with a two-year lead).",
-      why: "Literature-grounded on López-Salido-Stein-Zakrajšek's finding that hot credit at t−2 precedes contraction at t."
-    },
-    d1: {
-      block: "D",
-      name: "Breadth",
-      plain: "How many stocks are still participating, versus a shrinking few holding the index up?",
-      fire: "The share of S&P 500 members above their 200-day average drops sharply.",
-      why: "Heaviest weight in the trigger block — breadth deterioration is a classic turn signal (judgmental)."
-    },
-    d2: {
-      block: "D",
-      name: "Margin-debt rollover",
-      plain: "Leverage is at a record, but the signal only counts once it starts unwinding.",
-      fire: "Margin debt turns down year-over-year and a rollover confirmation engages.",
-      why: "Down-weighted, confirmation-only: CXO Advisory found a 0.00 correlation between margin-debt change and next-month returns — the market leads margin debt, not the reverse."
-    },
-    d3: {
-      block: "D",
-      name: "Hyperscaler FCF quality",
-      plain: "Spending a fortune on data centers is only alarming if the revenue stops showing up.",
-      fire: "Cloud revenue growth falls below 15% YoY while trailing free cash flow is negative; otherwise capped low.",
-      why: "Literature-grounded: railroads and fiber both had cash-flow troughs years before any peak — capex is only a bubble signal when it stops converting to revenue."
-    },
-    d4: {
-      block: "D",
-      name: "LPPLS confidence",
-      plain: "A physics-derived model of bubbles as 'critical points' — good at spotting them, prone to crying wolf early.",
-      fire: "Prices show faster-than-exponential growth with accelerating oscillations.",
-      why: "Literature-grounded but caveated: high recall (~90%), low precision (~29%)."
+    const API_BASE = activation.base;
+    const DEMO = activation.demo;
+    const { useState, useMemo, useEffect, useRef } = React;
+    const {
+      LineChart,
+      Line,
+      XAxis,
+      YAxis,
+      CartesianGrid,
+      Tooltip,
+      ReferenceLine,
+      ResponsiveContainer,
+      Area,
+      ComposedChart,
+      ReferenceArea
+    } = Recharts;
+    const C = {
+      bg: "#0E1526",
+      panel: "#141D31",
+      panel2: "#0B111F",
+      text: "#EDE8DC",
+      dim: "#C7CBD6",
+      muted: "#9AA3B5",
+      faint: "#78829a",
+      gold: "#E0B458",
+      line: "rgba(237,232,220,0.09)"
+    };
+    const BS = {
+      serif: { fontFamily: "Georgia, 'Times New Roman', serif" },
+      panel: { background: C.panel, border: "1px solid " + C.line, borderRadius: 10 },
+      eyebrow: { fontSize: 10.5, letterSpacing: "0.18em", textTransform: "uppercase", color: C.muted }
+    };
+    const BAND = {
+      hold: { label: "HOLD", color: "#5B8DEF", zone: "rgba(91,141,239,0.14)" },
+      trim: { label: "TRIM", color: "#E0B458", zone: "rgba(224,180,88,0.16)" },
+      "de-risk": { label: "DE-RISK", color: "#E05252", zone: "rgba(224,82,82,0.16)" },
+      "suppressed (block degraded)": { label: "SUPPRESSED", color: "#9AA3B5", zone: "rgba(154,163,181,0.12)" }
+    };
+    const bandOf = (b) => BAND[b] || BAND.hold;
+    const GROUND = {
+      "literature-grounded": { c: "#7fbf94", t: "Backed by peer-reviewed research." },
+      "literature-adjacent": { c: "#5AA9A3", t: "Motivated by the research, with a reasoned (not directly fitted) mapping." },
+      "judgmental": { c: "#d9b45c", t: "Reasoned expert choice, not a fitted model." },
+      "contested": { c: "#E8853D", t: "Known to misfire — deliberately down-weighted." },
+      "lagging-confirmation": { c: "#9AA3B5", t: "Confirms stress already underway; does not predict." }
+    };
+    const groundOf = (g) => GROUND[g] || { c: C.muted, t: "" };
+    const COPY = {
+      micro: "Regime heuristic — not a probability, not advice.",
+      epiChip: "Heuristic · not a probability · calibrated on n≈4 · see limits",
+      bandOneLiner: {
+        hold: "Hold — structural risk is present but not acute. No action indicated by the trend rule.",
+        trim: "Trim — fragility is elevated. Consider easing risk if the trend rule confirms.",
+        "de-risk": "De-risk — fragility is high or a hard override has fired. The trend rule is now the thing to watch.",
+        "suppressed (block degraded)": "Not scored right now — too many inputs for one block are unavailable, so the action band is withheld rather than guessed."
+      },
+      ladder: {
+        ceiling: "The score sets your ceiling on risk — how much caution is warranted. It does not tell you to sell today.",
+        trigger: "The 10-month trend rule (Faber) is the trigger — historically it reduces drawdowns, and honestly, does not boost returns.",
+        speed: "The fast alarm (VIX / variance premium) reacts faster than a monthly trend, for when things break quickly.",
+        caveat: "Acting early is expensive: missing the 10 best days over 1900–2006 — just 0.03% of trading days — cost ~65% of terminal wealth (Estrada). And any de-risking rule can lose money net of costs (Cederburg et al.). That is exactly why the score is a ceiling, not a button."
+      },
+      redFlagHeader: "What would have to happen — each flag has a specific threshold (encoded in its name). If at least 3 of 4 fire, the score is floored at 70 regardless of everything else (a deliberate non-compensatory override).",
+      falsifyHeader: "This gauge is falsifiable, on purpose. It is WRONG if:",
+      coverageTip: "Coverage = how much of each block's intended weight is actually live right now. When an input is unavailable, we drop it and re-weight the rest, rather than guessing.",
+      changelogTip: "v2 → v3: this step was an aggregation fix — a change in how the sub-scores are combined — NOT the market getting worse. We show it here so you never mistake a methodology change for a market event.",
+      fusionHeader: "Which past crisis does today most resemble? (This is an analogy, not a forecast.)",
+      notProbLong: "This is a 0–100 regime heuristic built from structured expert judgment. It is NOT a probability of a crash. There have been maybe four comparable US equity manias in a century — 1929, 2000, 2007, 2021 — far too few to calibrate a real probability. And today may not be a bubble at all: it could be rational repricing of a genuine general-purpose technology."
+    };
+    const REDFLAG_COPY = {
+      gsadf_explosive_noncontested: "GSADF reads explosive (and not contested-suppressed)",
+      semi_runup_ge_150pp: "Semis' 2-yr net-of-market run-up ≥ 150 pp",
+      hy_oas_widen_gt_100bps: "HY OAS widened > 100 bps",
+      breadth_lt_50_near_ath: "< 50% of S&P 500 above the 200-DMA near an ATH"
+    };
+    const REG = {
+      s1: {
+        block: "S",
+        name: "Valuation extremity",
+        plain: "How expensive are stocks versus their own history, once you account for interest rates?",
+        fire: "CAPE sits at a historic extreme and the Excess CAPE Yield (stocks' edge over bonds) is thin.",
+        why: "Weighted highest in the structural block because valuation is the most durable long-horizon fragility signal in the research."
+      },
+      s2: {
+        block: "S",
+        name: "Concentration",
+        plain: "How much does the whole index depend on a handful of AI names?",
+        fire: "The top-10 share of the S&P 500 pushes further above its post-1990 range (~41% in 2025 vs ~27% at the 2000 peak).",
+        why: "Literature-adjacent: a single-point-of-failure risk grounded in the concentration literature, not a fitted timing signal."
+      },
+      s3: {
+        block: "S",
+        name: "Semiconductor run-up",
+        plain: "History says that when one industry doubles relative to the market in two years, it crashes about half the time.",
+        fire: "Semiconductors' two-year gain over the market climbs the crash-frequency curve.",
+        why: "Literature-grounded: Greenwood-Shleifer-You found a 100% two-year net-of-market run-up carries a 53% crash probability, rising to ~80% at 150%."
+      },
+      s4: {
+        block: "S",
+        name: "Explosiveness (GSADF)",
+        plain: "A statistical test for prices growing faster than exponentially — deliberately down-weighted because it can be fooled by a genuine technological revolution.",
+        fire: "The recursive unit-root test flags explosive price dynamics.",
+        why: "CONTESTED and low-weighted: a 2026 study shows it fires 93–100% of the time under real general-purpose-tech fundamentals."
+      },
+      s5: {
+        block: "S",
+        name: "Credit-sentiment fragility",
+        plain: "When lenders are most relaxed, trouble tends to arrive about two years later. Today's spreads are near 25-year tights.",
+        fire: "High-yield spreads are historically tight (measured with a two-year lead).",
+        why: "Literature-grounded on López-Salido-Stein-Zakrajšek's finding that hot credit at t−2 precedes contraction at t."
+      },
+      d1: {
+        block: "D",
+        name: "Breadth",
+        plain: "How many stocks are still participating, versus a shrinking few holding the index up?",
+        fire: "The share of S&P 500 members above their 200-day average drops sharply.",
+        why: "Heaviest weight in the trigger block — breadth deterioration is a classic turn signal (judgmental)."
+      },
+      d2: {
+        block: "D",
+        name: "Margin-debt rollover",
+        plain: "Leverage is at a record, but the signal only counts once it starts unwinding.",
+        fire: "Margin debt turns down year-over-year and a rollover confirmation engages.",
+        why: "Down-weighted, confirmation-only: CXO Advisory found a 0.00 correlation between margin-debt change and next-month returns — the market leads margin debt, not the reverse."
+      },
+      d3: {
+        block: "D",
+        name: "Hyperscaler FCF quality",
+        plain: "Spending a fortune on data centers is only alarming if the revenue stops showing up.",
+        fire: "Cloud revenue growth falls below 15% YoY while trailing free cash flow is negative; otherwise capped low.",
+        why: "Literature-grounded: railroads and fiber both had cash-flow troughs years before any peak — capex is only a bubble signal when it stops converting to revenue."
+      },
+      d4: {
+        block: "D",
+        name: "LPPLS confidence",
+        plain: "A physics-derived model of bubbles as 'critical points' — good at spotting them, prone to crying wolf early.",
+        fire: "Prices show faster-than-exponential growth with accelerating oscillations.",
+        why: "Literature-grounded but caveated: high recall (~90%), low precision (~29%)."
+      }
+    };
+    const regOf = (id) => REG[id] || { block: "?", name: id, plain: "", fire: "", why: "" };
+    const EPISTEMIC = [
+      "NOT-A-PROBABILITY: 0-100 regime heuristic = structured expert judgment; uncalibrated.",
+      "n≈4 CALIBRATION IMPOSSIBILITY: reference class {1929,2000,2007,2021}.",
+      "REFERENCE-CLASS CAVEAT: may be rational GPT repricing (Chen-Chen-Huang 2026).",
+      "NOMINAL≠EFFECTIVE WEIGHTS: see annual PSS sensitivity script.",
+      "Service never returns 500 on upstream failure: fallback or drop+renormalize."
+    ];
+    const FALSIFY = [
+      "Score < 30 through a > 30% S&P drawdown beginning within 3 months → construct falsified.",
+      "Score > 60 sustained through 24 months of > 10% annualized gains without a > 15% drawdown → falsified.",
+      "Override fires and no > 20% drawdown within 12 months → override falsified."
+    ];
+    const CHANGELOG = [
+      { v: "v1", score: 33, note: "linear-additive, fully compensatory; stale concentration; HY-OAS sign inverted; LPPLS placeholder." },
+      { v: "v2", score: 28, note: "data fixes; still fully compensatory." },
+      { v: "v3", score: 40, note: "AGGREGATION FIX: two-block geometric mean + non-compensatory override + Monte Carlo median. NOT market deterioration." },
+      { v: "v3.0.1", score: null, note: "first-live-run bugfixes (Stooq, FINRA parser, GSADF floor 0.25, LPPLS robustness). Methodology unchanged." },
+      { v: "3.1.0", score: null, note: "price-layer restructure (provider chain + source hardening). Methodology unchanged." }
+    ];
+    function mkS(value, sub, weight, ground, extra) {
+      return Object.assign({
+        value,
+        sub_score: sub,
+        weight,
+        grounding: ground,
+        explanation: regOf(extra && extra.id || "").plain,
+        references: [],
+        data_source: extra && extra.src || "fixture",
+        fallback_used: false,
+        dropped: false,
+        as_of: "2026-07-10",
+        age_days: extra && extra.age || 1,
+        stale: false,
+        timestamp: "2026-07-11T06:00:03+00:00"
+      }, extra || {});
     }
-  };
-  const regOf = (id) => REG[id] || { block: "?", name: id, plain: "", fire: "", why: "" };
-  const EPISTEMIC = [
-    "NOT-A-PROBABILITY: 0-100 regime heuristic = structured expert judgment; uncalibrated.",
-    "n≈4 CALIBRATION IMPOSSIBILITY: reference class {1929,2000,2007,2021}.",
-    "REFERENCE-CLASS CAVEAT: may be rational GPT repricing (Chen-Chen-Huang 2026).",
-    "NOMINAL≠EFFECTIVE WEIGHTS: see annual PSS sensitivity script.",
-    "Service never returns 500 on upstream failure: fallback or drop+renormalize."
-  ];
-  const FALSIFY = [
-    "Score < 30 through a > 30% S&P drawdown beginning within 3 months → construct falsified.",
-    "Score > 60 sustained through 24 months of > 10% annualized gains without a > 15% drawdown → falsified.",
-    "Override fires and no > 20% drawdown within 12 months → override falsified."
-  ];
-  const CHANGELOG = [
-    { v: "v1", score: 33, note: "linear-additive, fully compensatory; stale concentration; HY-OAS sign inverted; LPPLS placeholder." },
-    { v: "v2", score: 28, note: "data fixes; still fully compensatory." },
-    { v: "v3", score: 40, note: "AGGREGATION FIX: two-block geometric mean + non-compensatory override + Monte Carlo median. NOT market deterioration." },
-    { v: "v3.0.1", score: null, note: "first-live-run bugfixes (Stooq, FINRA parser, GSADF floor 0.25, LPPLS robustness). Methodology unchanged." },
-    { v: "3.1.0", score: null, note: "price-layer restructure (provider chain + source hardening). Methodology unchanged." }
-  ];
-  function mkS(value, sub, weight, ground, extra) {
-    return Object.assign({
-      value,
-      sub_score: sub,
-      weight,
-      grounding: ground,
-      explanation: regOf(extra && extra.id || "").plain,
-      references: [],
-      data_source: extra && extra.src || "fixture",
-      fallback_used: false,
-      dropped: false,
-      as_of: "2026-07-10",
-      age_days: extra && extra.age || 1,
-      stale: false,
-      timestamp: "2026-07-11T06:00:03+00:00"
-    }, extra || {});
-  }
-  const SCORE_FIXTURE = {
-    data: {
-      headline_median: 40,
-      iqr: [34, 47],
-      band_5_95: [28, 55],
-      point_score: 40.35,
-      action_band: "hold",
-      override_fired: false,
-      red_flag_count: 0,
-      red_flag_detail: { gsadf_explosive_noncontested: false, semi_runup_ge_150pp: false, hy_oas_widen_gt_100bps: false, breadth_lt_50_near_ath: false },
-      block_S: { value: 0.711, indicators: {
-        s1: mkS(41.6, 0.92, 0.33, "literature-grounded", { id: "s1", src: "shiller" }),
-        s2: mkS(41, 0.78, 0.27, "literature-adjacent", { id: "s2", src: "slickcharts" }),
-        s3: mkS(118, 0.61, 0.2, "literature-grounded", { id: "s3", src: "stooq" }),
-        s4: mkS(0.9, 0.25, 0.07, "contested", { id: "s4", src: "exuber", note: "contested/stale floor" }),
-        s5: mkS(2.9, 0.74, 0.13, "literature-grounded", { id: "s5", src: "fred_BAMLH0A0HYM2" })
-      } },
-      block_D: { value: 0.229, value_raw: 0.229, indicators: {
-        d1: mkS(56, 0.543, 0.35, "judgmental", { id: "d1", src: "stooq", note: "path=B_constituent_compute" }),
-        d2: mkS(-3.1, 0.2, 0.13, "judgmental", { id: "d2", src: "finra" }),
-        d3: mkS(0.22, 0.3, 0.32, "literature-grounded", { id: "d3", src: "sec_edgar" }),
-        d4: mkS(0.41, 0.35, 0.2, "literature-grounded", { id: "d4", src: "lppls" })
-      } },
-      V: { state: "contango", multiplier: 1, label: "lagging confirmation" },
-      trend_states: { SPY: { faber_10mo: "IN", sma200: "IN" }, QQQ: { faber_10mo: "IN", sma200: "IN" } },
-      fast_alarm: { term_structure: "contango", vrp: 12.4, vrp_flag: false, skew: 128, skew_label: "coincident context only" },
-      judgment_call: { text: "Rich valuation (CAPE ~42) is the dominant driver; broad breadth near 56% above the 200-day is the biggest counter-signal.", stale: false, error_class: null }
-    },
-    meta: {
-      computed_at: "2026-07-11T06:00:03+00:00",
-      service_version: "3.1.0",
-      coverage: { S: { coverage: 1, degraded: false }, D: { coverage: 1, degraded: false }, degraded: false },
-      disclaimer: "Research, not advice.",
-      epistemic_caveats: EPISTEMIC.slice()
-    }
-  };
-  const HISTORY_FIXTURE = { data: function() {
-    const out = [], base = (/* @__PURE__ */ new Date("2024-01-01T06:00:00Z")).getTime();
-    const path = [30, 31, 29, 33, 34, 36, 35, 38, 37, 39, 41, 40, 42, 40, 41, 43, 42, 40];
-    for (let i = 0; i < path.length; i++) {
-      const m = path[i];
-      out.push({
-        computed_at: new Date(base + i * 30 * 864e5).toISOString(),
-        median: m,
-        iqr: [m - 6, m + 7],
-        band_5_95: [m - 12, m + 15],
-        action_band: m >= 60 ? "de-risk" : m >= 45 ? "trim" : "hold",
+    const SCORE_FIXTURE = {
+      data: {
+        headline_median: 40,
+        iqr: [34, 47],
+        band_5_95: [28, 55],
+        point_score: 40.35,
+        action_band: "hold",
         override_fired: false,
-        red_flag_count: 0
-      });
-    }
-    return out;
-  }(), meta: { computed_at: "2026-07-11T06:00:03+00:00", service_version: "3.1.0", disclaimer: "Research, not advice.", epistemic_caveats: EPISTEMIC.slice() } };
-  const STATUS_FIXTURE = {
-    service: { name: "bubblegauge", version: "3.1.0" },
-    science_audit: {
-      counts: { error: 0, warn: 2, info: 3 },
-      flags: [
-        { severity: "warn", category: "grounding", title: "S4 GSADF is contested", detail: "Fires 93–100% under genuine GPT fundamentals (Chen-Chen-Huang 2026); permanently down-weighted and floored at 0.25 when input missing.", ref: "arXiv:2604.25826" },
-        { severity: "warn", category: "grounding", title: "D1/D2 are judgmental", detail: "Breadth and margin-debt rollover are reasoned expert mappings, not fitted models; D2 is confirmation-only (CXO: 0.00 next-month correlation).", ref: "CXO Advisory" },
-        { severity: "info", category: "grounding", title: "S2 concentration is literature-adjacent", detail: "Single-point-of-failure risk motivated by the concentration literature; the weight/threshold mapping is a reasoned adaptation.", ref: "RBC WM" },
-        { severity: "info", category: "coverage", title: "All blocks fully live", detail: "Coverage S=100%, D=100%; no dropped or stale indicators this run.", ref: null },
-        { severity: "info", category: "override", title: "Override not fired", detail: "0 of 4 red flags fired; score reflects the geometric composite, no 70-floor applied.", ref: null }
-      ]
-    },
-    falsification_criteria: FALSIFY.slice(),
-    changelog: CHANGELOG.slice(),
-    epistemic_caveats: EPISTEMIC.slice(),
-    disclaimer: "Research, not advice."
-  };
-  function isNum(x) {
-    return typeof x === "number" && isFinite(x);
-  }
-  function pair(x) {
-    return Array.isArray(x) && x.length === 2 && isNum(x[0]) && isNum(x[1]);
-  }
-  function validScore(j) {
-    if (!j || !j.data || !j.meta)
-      return false;
-    const d = j.data;
-    if (!isNum(d.headline_median) || !pair(d.iqr) || !pair(d.band_5_95))
-      return false;
-    if (typeof d.action_band !== "string")
-      return false;
-    if (!d.block_S || !d.block_S.indicators || !d.block_D || !d.block_D.indicators)
-      return false;
-    if (!d.red_flag_detail || typeof d.red_flag_count !== "number")
-      return false;
-    if (!d.trend_states || !d.fast_alarm || !d.V)
-      return false;
-    return true;
-  }
-  const cache = {};
-  const TTL = 25 * 60 * 1e3;
-  function bgFetch(path, opts) {
-    opts = opts || {};
-    const now = Date.now();
-    if (!opts.noCache && cache[path] && now - cache[path].t < (opts.ttl || TTL)) {
-      return Promise.resolve({ status: 200, json: cache[path].json, fromCache: true });
-    }
-    const ctrl = new AbortController();
-    const to = setTimeout(() => ctrl.abort(), opts.timeout || 6e3);
-    return fetch(API_BASE + path, { signal: ctrl.signal, headers: { accept: "application/json" } }).then((r) => {
-      clearTimeout(to);
-      if (r.status === 503)
-        return { status: 503, json: null };
-      if (!r.ok)
-        return { status: r.status, json: null, error: "HTTP " + r.status };
-      return r.json().then((j) => {
-        cache[path] = { t: now, json: j };
-        return { status: 200, json: j };
-      });
-    }).catch((e) => {
-      clearTimeout(to);
-      return { status: 0, json: null, error: String(e && e.message || e) };
-    });
-  }
-  function useEndpoint(path, fixture, validate) {
-    const [st, setSt] = useState({ loading: true, notReady: false, error: null, json: DEMO ? fixture : null });
-    useEffect(function() {
-      let alive = true;
-      if (DEMO) {
-        setSt({ loading: false, notReady: false, error: null, json: fixture });
-        return function() {
-        };
+        red_flag_count: 0,
+        red_flag_detail: { gsadf_explosive_noncontested: false, semi_runup_ge_150pp: false, hy_oas_widen_gt_100bps: false, breadth_lt_50_near_ath: false },
+        block_S: { value: 0.711, indicators: {
+          s1: mkS(41.6, 0.92, 0.33, "literature-grounded", { id: "s1", src: "shiller" }),
+          s2: mkS(41, 0.78, 0.27, "literature-adjacent", { id: "s2", src: "slickcharts" }),
+          s3: mkS(118, 0.61, 0.2, "literature-grounded", { id: "s3", src: "stooq" }),
+          s4: mkS(0.9, 0.25, 0.07, "contested", { id: "s4", src: "exuber", note: "contested/stale floor" }),
+          s5: mkS(2.9, 0.74, 0.13, "literature-grounded", { id: "s5", src: "fred_BAMLH0A0HYM2" })
+        } },
+        block_D: { value: 0.229, value_raw: 0.229, indicators: {
+          d1: mkS(56, 0.543, 0.35, "judgmental", { id: "d1", src: "stooq", note: "path=B_constituent_compute" }),
+          d2: mkS(-3.1, 0.2, 0.13, "judgmental", { id: "d2", src: "finra" }),
+          d3: mkS(0.22, 0.3, 0.32, "literature-grounded", { id: "d3", src: "sec_edgar" }),
+          d4: mkS(0.41, 0.35, 0.2, "literature-grounded", { id: "d4", src: "lppls" })
+        } },
+        V: { state: "contango", multiplier: 1, label: "lagging confirmation" },
+        trend_states: { SPY: { faber_10mo: "IN", sma200: "IN" }, QQQ: { faber_10mo: "IN", sma200: "IN" } },
+        fast_alarm: { term_structure: "contango", vrp: 12.4, vrp_flag: false, skew: 128, skew_label: "coincident context only" },
+        judgment_call: { text: "Rich valuation (CAPE ~42) is the dominant driver; broad breadth near 56% above the 200-day is the biggest counter-signal.", stale: false, error_class: null }
+      },
+      meta: {
+        computed_at: "2026-07-11T06:00:03+00:00",
+        service_version: "3.1.0",
+        coverage: { S: { coverage: 1, degraded: false }, D: { coverage: 1, degraded: false }, degraded: false },
+        disclaimer: "Research, not advice.",
+        epistemic_caveats: EPISTEMIC.slice()
       }
-      setSt(function(s) {
-        return Object.assign({}, s, { loading: true });
-      });
-      bgFetch(path).then(function(r) {
-        if (!alive)
-          return;
+    };
+    const HISTORY_FIXTURE = { data: function() {
+      const out = [], base = (/* @__PURE__ */ new Date("2024-01-01T06:00:00Z")).getTime();
+      const path = [30, 31, 29, 33, 34, 36, 35, 38, 37, 39, 41, 40, 42, 40, 41, 43, 42, 40];
+      for (let i = 0; i < path.length; i++) {
+        const m = path[i];
+        out.push({
+          computed_at: new Date(base + i * 30 * 864e5).toISOString(),
+          median: m,
+          iqr: [m - 6, m + 7],
+          band_5_95: [m - 12, m + 15],
+          action_band: m >= 60 ? "de-risk" : m >= 45 ? "trim" : "hold",
+          override_fired: false,
+          red_flag_count: 0
+        });
+      }
+      return out;
+    }(), meta: { computed_at: "2026-07-11T06:00:03+00:00", service_version: "3.1.0", disclaimer: "Research, not advice.", epistemic_caveats: EPISTEMIC.slice() } };
+    const STATUS_FIXTURE = {
+      service: { name: "bubblegauge", version: "3.1.0" },
+      science_audit: {
+        counts: { error: 0, warn: 2, info: 3 },
+        flags: [
+          { severity: "warn", category: "grounding", title: "S4 GSADF is contested", detail: "Fires 93–100% under genuine GPT fundamentals (Chen-Chen-Huang 2026); permanently down-weighted and floored at 0.25 when input missing.", ref: "arXiv:2604.25826" },
+          { severity: "warn", category: "grounding", title: "D1/D2 are judgmental", detail: "Breadth and margin-debt rollover are reasoned expert mappings, not fitted models; D2 is confirmation-only (CXO: 0.00 next-month correlation).", ref: "CXO Advisory" },
+          { severity: "info", category: "grounding", title: "S2 concentration is literature-adjacent", detail: "Single-point-of-failure risk motivated by the concentration literature; the weight/threshold mapping is a reasoned adaptation.", ref: "RBC WM" },
+          { severity: "info", category: "coverage", title: "All blocks fully live", detail: "Coverage S=100%, D=100%; no dropped or stale indicators this run.", ref: null },
+          { severity: "info", category: "override", title: "Override not fired", detail: "0 of 4 red flags fired; score reflects the geometric composite, no 70-floor applied.", ref: null }
+        ]
+      },
+      falsification_criteria: FALSIFY.slice(),
+      changelog: CHANGELOG.slice(),
+      epistemic_caveats: EPISTEMIC.slice(),
+      disclaimer: "Research, not advice."
+    };
+    function isNum(x) {
+      return typeof x === "number" && isFinite(x);
+    }
+    function pair(x) {
+      return Array.isArray(x) && x.length === 2 && isNum(x[0]) && isNum(x[1]);
+    }
+    function validScore(j) {
+      if (!j || !j.data || !j.meta)
+        return false;
+      const d = j.data;
+      if (!isNum(d.headline_median) || !pair(d.iqr) || !pair(d.band_5_95))
+        return false;
+      if (typeof d.action_band !== "string")
+        return false;
+      if (!d.block_S || !d.block_S.indicators || !d.block_D || !d.block_D.indicators)
+        return false;
+      if (!d.red_flag_detail || typeof d.red_flag_count !== "number")
+        return false;
+      if (!d.trend_states || !d.fast_alarm || !d.V)
+        return false;
+      return true;
+    }
+    const cache = {};
+    const TTL = 25 * 60 * 1e3;
+    function bgFetch(path, opts) {
+      opts = opts || {};
+      const now = Date.now();
+      if (!opts.noCache && cache[path] && now - cache[path].t < (opts.ttl || TTL)) {
+        return Promise.resolve({ status: 200, json: cache[path].json, fromCache: true });
+      }
+      const ctrl = new AbortController();
+      const to = setTimeout(() => ctrl.abort(), opts.timeout || 6e3);
+      return fetch(API_BASE + path, { signal: ctrl.signal, headers: { accept: "application/json" } }).then((r) => {
+        clearTimeout(to);
         if (r.status === 503)
-          return setSt({ loading: false, notReady: true, error: null, json: null });
-        if (r.status !== 200 || !r.json || validate && !validate(r.json)) {
-          return setSt({ loading: false, notReady: false, error: r.error || "bad payload", json: null });
-        }
-        setSt({ loading: false, notReady: false, error: null, json: r.json });
+          return { status: 503, json: null };
+        if (!r.ok)
+          return { status: r.status, json: null, error: "HTTP " + r.status };
+        return r.json().then((j) => {
+          cache[path] = { t: now, json: j };
+          return { status: 200, json: j };
+        });
+      }).catch((e) => {
+        clearTimeout(to);
+        return { status: 0, json: null, error: String(e && e.message || e) };
       });
-      const onFocus = function() {
-        if (alive && !DEMO)
-          bgFetch(path, { noCache: true }).then(function(r) {
-            if (alive && r.status === 200 && r.json && (!validate || validate(r.json)))
-              setSt({ loading: false, notReady: false, error: null, json: r.json });
-          });
-      };
-      window.addEventListener("focus", onFocus);
-      return function() {
-        alive = false;
-        window.removeEventListener("focus", onFocus);
-      };
-    }, [path]);
-    return st;
-  }
-  const useScore = () => useEndpoint("/api/v1/score", SCORE_FIXTURE, validScore);
-  const useHistory = () => useEndpoint("/api/v1/score/history?granularity=daily&limit=1000", HISTORY_FIXTURE, function(j) {
-    return j && Array.isArray(j.data);
-  });
-  const useStatus = () => useEndpoint("/api/v1/status", STATUS_FIXTURE, function(j) {
-    return j && j.science_audit;
-  });
-  const FP_DIMS = [
-    { k: "valuation", label: "Valuation" },
-    { k: "concentration", label: "Concentration" },
-    { k: "industryRunup", label: "Industry run-up" },
-    { k: "creditTightness", label: "Credit tightness" },
-    { k: "leverage", label: "System leverage" }
-  ];
-  const CRISES_FP = [
-    {
-      label: "1929",
-      explorer: "depression",
-      dims: { valuation: 0.8, concentration: 0.5, industryRunup: 0.8, creditTightness: 0.5, leverage: 0.85 },
-      note: "Levered (margin) equity mania — deep macro damage."
-    },
-    {
-      label: "2000",
-      explorer: "dotcom",
-      dims: { valuation: 0.95, concentration: 0.75, industryRunup: 0.9, creditTightness: 0.4, leverage: 0.2 },
-      note: "Unlevered tech/equity bubble — sharp equity drawdown, comparatively benign macro (Jordà-Schularick-Taylor)."
-    },
-    {
-      label: "2007",
-      explorer: "gfc",
-      dims: { valuation: 0.5, concentration: 0.35, industryRunup: 0.3, creditTightness: 0.85, leverage: 0.95 },
-      note: "Credit/housing-leveraged — deepest recession & slowest recovery of the set."
-    },
-    {
-      label: "2021",
-      explorer: "ai2026",
-      dims: { valuation: 0.85, concentration: 0.7, industryRunup: 0.8, creditTightness: 0.7, leverage: 0.5 },
-      note: "Everything-rally; mixed leverage; the most recent reference-class member."
     }
-  ];
-  function todayFingerprint(d) {
-    const g = (id) => {
-      const x = d.block_S.indicators[id] || d.block_D.indicators[id];
-      return x && isNum(x.sub_score) ? x.sub_score : null;
-    };
-    return {
-      valuation: g("s1"),
-      concentration: g("s2"),
-      industryRunup: g("s3"),
-      creditTightness: g("s5"),
-      // No direct block-S leverage indicator; today's episode reads as low-leverage AI equity. Approximate, labeled.
-      leverage: 0.3
-    };
-  }
-  function analogues(today) {
-    const rows = CRISES_FP.map((cr) => {
-      let ss = 0, n = 0;
-      const per = FP_DIMS.map((dim) => {
-        const a = today[dim.k], b = cr.dims[dim.k];
-        const contrib = isNum(a) ? Math.abs(a - b) : null;
-        if (contrib != null) {
-          ss += contrib * contrib;
-          n++;
+    function useEndpoint(path, fixture, validate) {
+      const [st, setSt] = useState({ loading: true, notReady: false, error: null, json: DEMO ? fixture : null });
+      useEffect(function() {
+        let alive = true;
+        if (DEMO) {
+          setSt({ loading: false, notReady: false, error: null, json: fixture });
+          return function() {
+          };
         }
-        return { k: dim.k, label: dim.label, today: a, crisis: b, gap: contrib };
-      });
-      const dist = n ? Math.sqrt(ss / n) : 1;
-      return Object.assign({}, cr, { per, similarity: Math.max(0, 1 - dist) });
-    });
-    rows.sort((a, b) => b.similarity - a.similarity);
-    return rows;
-  }
-  class Boundary extends React.Component {
-    constructor(p) {
-      super(p);
-      this.state = { err: null };
-    }
-    static getDerivedStateFromError(e) {
-      return { err: e };
-    }
-    componentDidCatch() {
-    }
-    render() {
-      return this.state.err ? this.props.fallback || null : this.props.children;
-    }
-  }
-  function Panel(props) {
-    return React.createElement("div", { style: Object.assign({}, BS.panel, { padding: "14px 16px" }, props.style) }, props.children);
-  }
-  function Pill({ color, children, title, outline }) {
-    return /* @__PURE__ */ React.createElement("span", { title, style: {
-      display: "inline-flex",
-      alignItems: "center",
-      gap: 5,
-      padding: "2px 8px",
-      borderRadius: 999,
-      fontSize: 10,
-      fontWeight: 700,
-      whiteSpace: "nowrap",
-      color,
-      border: "1px solid " + color + (outline ? "" : "55"),
-      background: outline ? "transparent" : color + "1a"
-    } }, /* @__PURE__ */ React.createElement("span", { style: { width: 6, height: 6, borderRadius: 99, background: color, flexShrink: 0 } }), children);
-  }
-  function Freshness({ computedAt }) {
-    if (!computedAt)
-      return null;
-    let rel = "";
-    const t = Date.parse(computedAt);
-    if (isFinite(t)) {
-      const h = (Date.now() - t) / 36e5;
-      rel = h < 1 ? "updated <1h ago" : h < 48 ? "updated " + Math.round(h) + "h ago" : "updated " + Math.round(h / 24) + "d ago";
-    }
-    return /* @__PURE__ */ React.createElement("span", { style: { ...BS.eyebrow, color: C.faint } }, rel, DEMO ? " · demo" : "");
-  }
-  function EpiChip() {
-    return /* @__PURE__ */ React.createElement(Pill, { color: C.muted, outline: true, title: COPY.notProbLong }, "Heuristic · not a probability · n≈4");
-  }
-  function GaugeBar({ value, iqr, band, height }) {
-    const b = bandOf(band);
-    const clamp = (x) => Math.max(0, Math.min(100, x));
-    const h = height || 12;
-    const label = "Bubble regime " + Math.round(value) + " of 100" + (pair(iqr) ? ", IQR " + Math.round(iqr[0]) + " to " + Math.round(iqr[1]) : "") + ", action band " + b.label.toLowerCase();
-    return /* @__PURE__ */ React.createElement("div", { role: "img", "aria-label": label, style: {
-      position: "relative",
-      height: h,
-      borderRadius: 99,
-      overflow: "hidden",
-      background: "linear-gradient(90deg, rgba(91,141,239,0.16) 0 45%, rgba(224,180,88,0.18) 45% 60%, rgba(224,82,82,0.18) 60% 100%)",
-      border: "1px solid " + C.line
-    } }, pair(iqr) && /* @__PURE__ */ React.createElement("div", { style: {
-      position: "absolute",
-      top: 0,
-      bottom: 0,
-      left: clamp(iqr[0]) + "%",
-      width: clamp(iqr[1]) - clamp(iqr[0]) + "%",
-      background: b.color,
-      opacity: 0.35
-    } }), /* @__PURE__ */ React.createElement("div", { style: {
-      position: "absolute",
-      top: -2,
-      bottom: -2,
-      left: "calc(" + clamp(value) + "% - 1.5px)",
-      width: 3,
-      background: b.color,
-      borderRadius: 2,
-      boxShadow: "0 0 0 1px rgba(11,17,31,0.6)"
-    } }));
-  }
-  function StripShell({ children, onClick, dim }) {
-    const clickable = !!onClick;
-    return /* @__PURE__ */ React.createElement(
-      "aside",
-      {
-        "aria-label": "AI bubble regime gauge",
-        onClick,
-        onKeyDown: clickable ? (e) => {
-          if (e.key === "Enter" || e.key === " ") {
-            e.preventDefault();
-            onClick();
+        setSt(function(s) {
+          return Object.assign({}, s, { loading: true });
+        });
+        bgFetch(path).then(function(r) {
+          if (!alive)
+            return;
+          if (r.status === 503)
+            return setSt({ loading: false, notReady: true, error: null, json: null });
+          if (r.status !== 200 || !r.json || validate && !validate(r.json)) {
+            return setSt({ loading: false, notReady: false, error: r.error || "bad payload", json: null });
           }
-        } : void 0,
-        role: clickable ? "button" : void 0,
-        tabIndex: clickable ? 0 : void 0,
-        style: {
-          ...BS.panel,
-          padding: "10px 14px",
-          margin: "0 0 14px",
-          cursor: clickable ? "pointer" : "default",
-          opacity: dim ? 0.85 : 1,
-          display: "flex",
-          alignItems: "center",
-          gap: 14,
-          flexWrap: "wrap"
-        }
-      },
-      children
-    );
-  }
-  function StripSkeleton() {
-    return /* @__PURE__ */ React.createElement(StripShell, null, /* @__PURE__ */ React.createElement("span", { style: { ...BS.eyebrow } }, "AI regime gauge"), /* @__PURE__ */ React.createElement("span", { style: { color: C.faint, fontSize: 12 } }, "loading…"));
-  }
-  function StripWarmingUp() {
-    return /* @__PURE__ */ React.createElement(StripShell, { dim: true }, /* @__PURE__ */ React.createElement("span", { style: { ...BS.eyebrow } }, "AI regime gauge"), /* @__PURE__ */ React.createElement("span", { style: { color: C.faint, fontSize: 12 } }, "warming up — no snapshot computed yet"));
-  }
-  function StripUnavailable() {
-    return /* @__PURE__ */ React.createElement(StripShell, { dim: true }, /* @__PURE__ */ React.createElement("span", { style: { ...BS.eyebrow } }, "AI regime gauge"), /* @__PURE__ */ React.createElement("span", { style: { color: C.faint, fontSize: 12 } }, "gauge unavailable"));
-  }
-  function JudgmentInline({ call, max }) {
-    if (!call || !call.text)
-      return null;
-    const t = call.text.length > (max || 220) ? call.text.slice(0, max || 220) + "…" : call.text;
-    const stale = call.stale || call.error_class;
-    return /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11.5, color: C.dim, lineHeight: 1.4, flex: "1 1 220px", minWidth: 0 } }, t, stale ? /* @__PURE__ */ React.createElement("span", { style: { color: C.faint } }, " · stale") : null);
-  }
-  function CoverageChip({ coverage }) {
-    if (!coverage)
-      return null;
-    if (coverage.degraded)
-      return /* @__PURE__ */ React.createElement(Pill, { color: "#E8853D", title: COPY.coverageTip }, "Degraded");
-    const pct = Math.round(100 * Math.min(coverage.S ? coverage.S.coverage : 1, coverage.D ? coverage.D.coverage : 1));
-    return /* @__PURE__ */ React.createElement(Pill, { color: "#7fbf94", title: COPY.coverageTip }, "Coverage ", pct, "%");
-  }
-  function Strip({ goToDetail }) {
-    const s = useScore();
-    if (s.loading)
-      return /* @__PURE__ */ React.createElement(StripSkeleton, null);
-    if (s.notReady)
-      return /* @__PURE__ */ React.createElement(StripWarmingUp, null);
-    if (s.error || !s.json)
-      return /* @__PURE__ */ React.createElement(StripUnavailable, null);
-    const d = s.json.data, meta = s.json.meta, b = bandOf(d.action_band);
-    const trend = d.trend_states;
-    return /* @__PURE__ */ React.createElement(StripShell, { onClick: goToDetail }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 4, flex: "1 1 240px", minWidth: 200 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "baseline", gap: 8, flexWrap: "wrap" } }, /* @__PURE__ */ React.createElement("span", { style: { ...BS.serif, fontSize: 22, fontWeight: 700, color: b.color, fontVariantNumeric: "tabular-nums" } }, Math.round(d.headline_median)), pair(d.iqr) && /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, color: C.muted } }, "IQR ", Math.round(d.iqr[0]), "–", Math.round(d.iqr[1])), /* @__PURE__ */ React.createElement("span", { style: {
-      fontSize: 11,
-      fontWeight: 800,
-      letterSpacing: "0.08em",
-      color: b.color,
-      padding: "1px 7px",
-      borderRadius: 5,
-      background: b.zone
-    } }, b.label), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 9.5, color: C.faint } }, COPY.micro)), /* @__PURE__ */ React.createElement(GaugeBar, { value: d.headline_median, iqr: d.iqr, band: d.action_band })), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" } }, /* @__PURE__ */ React.createElement(
-      Pill,
+          setSt({ loading: false, notReady: false, error: null, json: r.json });
+        });
+        const onFocus = function() {
+          if (alive && !DEMO)
+            bgFetch(path, { noCache: true }).then(function(r) {
+              if (alive && r.status === 200 && r.json && (!validate || validate(r.json)))
+                setSt({ loading: false, notReady: false, error: null, json: r.json });
+            });
+        };
+        window.addEventListener("focus", onFocus);
+        return function() {
+          alive = false;
+          window.removeEventListener("focus", onFocus);
+        };
+      }, [path]);
+      return st;
+    }
+    const useScore = () => useEndpoint("/api/v1/score", SCORE_FIXTURE, validScore);
+    const useHistory = () => useEndpoint("/api/v1/score/history?granularity=daily&limit=1000", HISTORY_FIXTURE, function(j) {
+      return j && Array.isArray(j.data);
+    });
+    const useStatus = () => useEndpoint("/api/v1/status", STATUS_FIXTURE, function(j) {
+      return j && j.science_audit;
+    });
+    const FP_DIMS = [
+      { k: "valuation", label: "Valuation" },
+      { k: "concentration", label: "Concentration" },
+      { k: "industryRunup", label: "Industry run-up" },
+      { k: "creditTightness", label: "Credit tightness" },
+      { k: "leverage", label: "System leverage" }
+    ];
+    const CRISES_FP = [
       {
-        color: d.red_flag_count >= 3 ? "#E05252" : d.red_flag_count > 0 ? "#E0B458" : C.muted,
-        title: Object.keys(d.red_flag_detail).filter((k) => d.red_flag_detail[k]).map((k) => REDFLAG_COPY[k]).join(" · ") || "no override flags fired"
+        label: "1929",
+        explorer: "depression",
+        dims: { valuation: 0.8, concentration: 0.5, industryRunup: 0.8, creditTightness: 0.5, leverage: 0.85 },
+        note: "Levered (margin) equity mania — deep macro damage."
       },
-      d.red_flag_count,
-      "/4 flags"
-    ), trend && /* @__PURE__ */ React.createElement(
-      Pill,
       {
-        color: trend.SPY.faber_10mo === "OUT" ? "#E05252" : "#7fbf94",
-        outline: true,
-        title: "Faber 10-month trend rule (execution trigger)"
+        label: "2000",
+        explorer: "dotcom",
+        dims: { valuation: 0.95, concentration: 0.75, industryRunup: 0.9, creditTightness: 0.4, leverage: 0.2 },
+        note: "Unlevered tech/equity bubble — sharp equity drawdown, comparatively benign macro (Jordà-Schularick-Taylor)."
       },
-      "Trend SPY ",
-      trend.SPY.faber_10mo,
-      " · QQQ ",
-      trend.QQQ.faber_10mo
-    ), /* @__PURE__ */ React.createElement(CoverageChip, { coverage: meta.coverage }), /* @__PURE__ */ React.createElement(Freshness, { computedAt: meta.computed_at })), /* @__PURE__ */ React.createElement(JudgmentInline, { call: d.judgment_call }), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, color: b.color, fontWeight: 700, whiteSpace: "nowrap" } }, "Open ›"));
-  }
-  function H({ children, sub }) {
-    return /* @__PURE__ */ React.createElement("div", { style: { margin: "0 0 8px" } }, /* @__PURE__ */ React.createElement("h3", { style: { ...BS.serif, fontSize: 16, margin: 0, fontWeight: 600, color: C.text } }, children), sub && /* @__PURE__ */ React.createElement("div", { style: { ...BS.eyebrow, marginTop: 3 } }, sub));
-  }
-  function HeadlinePanel({ d, meta }) {
-    const b = bandOf(d.action_band);
-    return /* @__PURE__ */ React.createElement(Panel, null, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", marginBottom: 8 } }, /* @__PURE__ */ React.createElement("h2", { style: { ...BS.serif, fontSize: 22, margin: 0, fontWeight: 600, color: C.text } }, "AI bubble regime — ", Math.round(d.headline_median)), /* @__PURE__ */ React.createElement(EpiChip, null), /* @__PURE__ */ React.createElement(Freshness, { computedAt: meta.computed_at })), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "baseline", gap: 12, flexWrap: "wrap", marginBottom: 8 } }, /* @__PURE__ */ React.createElement("span", { style: { ...BS.serif, fontSize: 40, fontWeight: 700, color: b.color, fontVariantNumeric: "tabular-nums" } }, Math.round(d.headline_median)), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12, color: C.muted, lineHeight: 1.7 } }, /* @__PURE__ */ React.createElement("div", null, "Monte Carlo median · point estimate ", d.point_score), pair(d.iqr) && /* @__PURE__ */ React.createElement("div", null, "IQR (25–75%) ", /* @__PURE__ */ React.createElement("b", { style: { color: C.dim } }, Math.round(d.iqr[0]), "–", Math.round(d.iqr[1])), " · 5–95% band ", Math.round(d.band_5_95[0]), "–", Math.round(d.band_5_95[1]))), /* @__PURE__ */ React.createElement("span", { style: { marginLeft: "auto", fontSize: 12, fontWeight: 800, letterSpacing: "0.08em", color: b.color, padding: "3px 10px", borderRadius: 6, background: b.zone } }, b.label)), /* @__PURE__ */ React.createElement(GaugeBar, { value: d.headline_median, iqr: d.iqr, band: d.action_band, height: 16 }), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", fontSize: 9.5, color: C.faint, marginTop: 4 } }, /* @__PURE__ */ React.createElement("span", null, "0"), /* @__PURE__ */ React.createElement("span", null, "45 · trim"), /* @__PURE__ */ React.createElement("span", null, "60 · de-risk"), /* @__PURE__ */ React.createElement("span", null, "100")), /* @__PURE__ */ React.createElement("p", { style: { fontSize: 12.5, color: C.dim, lineHeight: 1.6, margin: "10px 0 0" } }, COPY.bandOneLiner[d.action_band] || ""), /* @__PURE__ */ React.createElement("p", { style: { fontSize: 11.5, color: C.muted, lineHeight: 1.6, margin: "6px 0 0", fontStyle: "italic" } }, "The spread is the point — this is a distribution over assumptions, not a forecast."));
-  }
-  function IndicatorRow({ id, r }) {
-    const [open, setOpen] = useState(false);
-    const reg = regOf(id), g = groundOf(r.grounding);
-    const live = !r.dropped;
-    return /* @__PURE__ */ React.createElement("div", { style: { borderTop: "1px solid rgba(237,232,220,0.06)", padding: "8px 0" } }, /* @__PURE__ */ React.createElement("div", { onClick: () => setOpen(!open), style: { display: "flex", alignItems: "center", gap: 8, cursor: "pointer", flexWrap: "wrap" } }, /* @__PURE__ */ React.createElement("span", { style: { ...BS.eyebrow, minWidth: 26 } }, id.toUpperCase()), /* @__PURE__ */ React.createElement("span", { style: { color: C.text, fontWeight: 600, fontSize: 12.5, flex: "1 1 140px" } }, reg.name), /* @__PURE__ */ React.createElement(Pill, { color: g.c, title: g.t }, r.grounding), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 10.5, color: C.faint, whiteSpace: "nowrap" } }, "w ", Math.round(r.weight * 100), "%")), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 8, marginTop: 5 } }, /* @__PURE__ */ React.createElement("div", { style: { flex: 1, height: 7, borderRadius: 99, background: "rgba(237,232,220,0.07)" } }, /* @__PURE__ */ React.createElement("div", { style: { width: (live && isNum(r.sub_score) ? Math.round(r.sub_score * 100) : 0) + "%", height: "100%", borderRadius: 99, background: g.c, opacity: 0.8 } })), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 10.5, color: C.muted, fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap", minWidth: 96, textAlign: "right" } }, live ? isNum(r.sub_score) ? r.sub_score.toFixed(2) : "—" : /* @__PURE__ */ React.createElement("span", { style: { color: "#E8853D" } }, "not live"), r.stale ? /* @__PURE__ */ React.createElement("span", { style: { color: "#E8853D" } }, " · stale") : null, r.fallback_used ? /* @__PURE__ */ React.createElement("span", { style: { color: C.faint } }, " · fallback") : null)), open && /* @__PURE__ */ React.createElement("div", { style: { marginTop: 7, padding: "9px 11px", background: "rgba(237,232,220,0.03)", borderRadius: 7, borderLeft: "2px solid " + g.c, fontSize: 11.5, color: C.dim, lineHeight: 1.6 } }, /* @__PURE__ */ React.createElement("div", null, reg.plain), /* @__PURE__ */ React.createElement("div", { style: { marginTop: 5, color: C.muted } }, /* @__PURE__ */ React.createElement("b", { style: { color: C.dim } }, "Fires when:"), " ", reg.fire), /* @__PURE__ */ React.createElement("div", { style: { marginTop: 3, color: C.muted } }, /* @__PURE__ */ React.createElement("b", { style: { color: C.dim } }, "Weighted this way because:"), " ", reg.why), /* @__PURE__ */ React.createElement("div", { style: { marginTop: 5, fontSize: 10, color: C.faint } }, "value ", isNum(r.value) ? r.value : "—", " · source ", r.data_source || "?", r.as_of ? " · as of " + r.as_of : "", r.note ? " · " + r.note : "", !DEMO && /* @__PURE__ */ React.createElement(React.Fragment, null, " · ", /* @__PURE__ */ React.createElement("a", { href: API_BASE + "/api/v1/indicators/" + id, target: "_blank", rel: "noopener noreferrer", style: { color: g.c } }, "full methodology ↗")))));
-  }
-  function BlockColumn({ title, sub, block, order, footer }) {
-    return /* @__PURE__ */ React.createElement(Panel, null, /* @__PURE__ */ React.createElement(H, { sub }, title), order.filter((id) => block.indicators[id]).map((id) => /* @__PURE__ */ React.createElement(IndicatorRow, { key: id, id, r: block.indicators[id] })), footer);
-  }
-  function AnatomyPanel({ d }) {
-    return /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", margin: "0 0 4px" } }, /* @__PURE__ */ React.createElement("h2", { style: { ...BS.serif, fontSize: 18, margin: 0, fontWeight: 600, color: C.text } }, "Two-block anatomy"), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, color: C.muted } }, "combined by ", /* @__PURE__ */ React.createElement("b", null, "multiplication"), " (geometric mean) — one calm reading can't fully cancel an alarming one")), /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 12, marginTop: 8 } }, /* @__PURE__ */ React.createElement(
-      BlockColumn,
       {
-        title: "Block S · structural fragility",
-        sub: "maps to DEPTH · value " + d.block_S.value.toFixed(3),
-        block: d.block_S,
-        order: ["s1", "s2", "s3", "s4", "s5"]
+        label: "2007",
+        explorer: "gfc",
+        dims: { valuation: 0.5, concentration: 0.35, industryRunup: 0.3, creditTightness: 0.85, leverage: 0.95 },
+        note: "Credit/housing-leveraged — deepest recession & slowest recovery of the set."
+      },
+      {
+        label: "2021",
+        explorer: "ai2026",
+        dims: { valuation: 0.85, concentration: 0.7, industryRunup: 0.8, creditTightness: 0.7, leverage: 0.5 },
+        note: "Everything-rally; mixed leverage; the most recent reference-class member."
       }
-    ), /* @__PURE__ */ React.createElement(
-      BlockColumn,
-      {
-        title: "Block D · dynamics / trigger",
-        sub: "maps to TIMING · raw " + (isNum(d.block_D.value_raw) ? d.block_D.value_raw.toFixed(3) : "—") + " → ×V " + d.V.multiplier + " → " + d.block_D.value.toFixed(3),
-        block: d.block_D,
-        order: ["d1", "d2", "d3", "d4"],
-        footer: /* @__PURE__ */ React.createElement("div", { style: { marginTop: 8, paddingTop: 8, borderTop: "1px solid rgba(237,232,220,0.06)", fontSize: 11, color: C.muted } }, /* @__PURE__ */ React.createElement("b", { style: { color: C.dim } }, "V · VIX term-structure multiplier"), " — ", d.V.state, " → ×", d.V.multiplier, " (", d.V.label, "). When near-term fear exceeds long-term fear, stress is already underway; this confirms, it doesn't predict.")
+    ];
+    function todayFingerprint(d) {
+      const g = (id) => {
+        const x = d.block_S.indicators[id] || d.block_D.indicators[id];
+        return x && isNum(x.sub_score) ? x.sub_score : null;
+      };
+      return {
+        valuation: g("s1"),
+        concentration: g("s2"),
+        industryRunup: g("s3"),
+        creditTightness: g("s5"),
+        // No direct block-S leverage indicator; today's episode reads as low-leverage AI equity. Approximate, labeled.
+        leverage: 0.3
+      };
+    }
+    function analogues(today) {
+      const rows = CRISES_FP.map((cr) => {
+        let ss = 0, n = 0;
+        const per = FP_DIMS.map((dim) => {
+          const a = today[dim.k], b = cr.dims[dim.k];
+          const contrib = isNum(a) ? Math.abs(a - b) : null;
+          if (contrib != null) {
+            ss += contrib * contrib;
+            n++;
+          }
+          return { k: dim.k, label: dim.label, today: a, crisis: b, gap: contrib };
+        });
+        const dist = n ? Math.sqrt(ss / n) : 1;
+        return Object.assign({}, cr, { per, similarity: Math.max(0, 1 - dist) });
+      });
+      rows.sort((a, b) => b.similarity - a.similarity);
+      return rows;
+    }
+    class Boundary extends React.Component {
+      constructor(p) {
+        super(p);
+        this.state = { err: null };
       }
-    )), /* @__PURE__ */ React.createElement("div", { style: { ...BS.eyebrow, textAlign: "center", marginTop: 10 } }, "Score = 100 × S", /* @__PURE__ */ React.createElement("sup", null, "α"), " × D", /* @__PURE__ */ React.createElement("sup", null, "β"), " (α=β=0.5) → point ", d.point_score, " → Monte Carlo median ", Math.round(d.headline_median)));
-  }
-  function RedFlagPanel({ d }) {
-    const keys = ["gsadf_explosive_noncontested", "semi_runup_ge_150pp", "hy_oas_widen_gt_100bps", "breadth_lt_50_near_ath"];
-    return /* @__PURE__ */ React.createElement(Panel, null, /* @__PURE__ */ React.createElement(H, { sub: d.override_fired ? "OVERRIDE FIRED — score floored at 70" : d.red_flag_count + " of 4 fired · override not active" }, "Non-compensatory override flags"), /* @__PURE__ */ React.createElement("p", { style: { fontSize: 11.5, color: C.muted, lineHeight: 1.6, margin: "0 0 8px" } }, COPY.redFlagHeader), keys.map((k) => {
-      const on = !!d.red_flag_detail[k];
-      return /* @__PURE__ */ React.createElement("div", { key: k, style: { display: "flex", alignItems: "center", gap: 8, padding: "6px 0", borderTop: "1px solid rgba(237,232,220,0.06)" } }, /* @__PURE__ */ React.createElement("span", { style: {
-        width: 16,
-        height: 16,
-        borderRadius: 4,
+      static getDerivedStateFromError(e) {
+        return { err: e };
+      }
+      componentDidCatch() {
+      }
+      render() {
+        return this.state.err ? this.props.fallback || null : this.props.children;
+      }
+    }
+    function Panel(props) {
+      return React.createElement("div", { style: Object.assign({}, BS.panel, { padding: "14px 16px" }, props.style) }, props.children);
+    }
+    function Pill({ color, children, title, outline }) {
+      return /* @__PURE__ */ React.createElement("span", { title, style: {
         display: "inline-flex",
         alignItems: "center",
-        justifyContent: "center",
-        background: on ? "rgba(224,82,82,0.75)" : "transparent",
-        border: "1px solid " + (on ? "#E05252" : "rgba(237,232,220,0.2)"),
-        color: "#0E1526",
+        gap: 5,
+        padding: "2px 8px",
+        borderRadius: 999,
+        fontSize: 10,
+        fontWeight: 700,
+        whiteSpace: "nowrap",
+        color,
+        border: "1px solid " + color + (outline ? "" : "55"),
+        background: outline ? "transparent" : color + "1a"
+      } }, /* @__PURE__ */ React.createElement("span", { style: { width: 6, height: 6, borderRadius: 99, background: color, flexShrink: 0 } }), children);
+    }
+    function Freshness({ computedAt }) {
+      if (!computedAt)
+        return null;
+      let rel = "";
+      const t = Date.parse(computedAt);
+      if (isFinite(t)) {
+        const h = (Date.now() - t) / 36e5;
+        rel = h < 1 ? "updated <1h ago" : h < 48 ? "updated " + Math.round(h) + "h ago" : "updated " + Math.round(h / 24) + "d ago";
+      }
+      return /* @__PURE__ */ React.createElement("span", { style: { ...BS.eyebrow, color: C.faint } }, rel, DEMO ? " · demo" : "");
+    }
+    function EpiChip() {
+      return /* @__PURE__ */ React.createElement(Pill, { color: C.muted, outline: true, title: COPY.notProbLong }, "Heuristic · not a probability · n≈4");
+    }
+    function GaugeBar({ value, iqr, band, height }) {
+      const b = bandOf(band);
+      const clamp = (x) => Math.max(0, Math.min(100, x));
+      const h = height || 12;
+      const label = "Bubble regime " + Math.round(value) + " of 100" + (pair(iqr) ? ", IQR " + Math.round(iqr[0]) + " to " + Math.round(iqr[1]) : "") + ", action band " + b.label.toLowerCase();
+      return /* @__PURE__ */ React.createElement("div", { role: "img", "aria-label": label, style: {
+        position: "relative",
+        height: h,
+        borderRadius: 99,
+        overflow: "hidden",
+        background: "linear-gradient(90deg, rgba(91,141,239,0.16) 0 45%, rgba(224,180,88,0.18) 45% 60%, rgba(224,82,82,0.18) 60% 100%)",
+        border: "1px solid " + C.line
+      } }, pair(iqr) && /* @__PURE__ */ React.createElement("div", { style: {
+        position: "absolute",
+        top: 0,
+        bottom: 0,
+        left: clamp(iqr[0]) + "%",
+        width: clamp(iqr[1]) - clamp(iqr[0]) + "%",
+        background: b.color,
+        opacity: 0.35
+      } }), /* @__PURE__ */ React.createElement("div", { style: {
+        position: "absolute",
+        top: -2,
+        bottom: -2,
+        left: "calc(" + clamp(value) + "% - 1.5px)",
+        width: 3,
+        background: b.color,
+        borderRadius: 2,
+        boxShadow: "0 0 0 1px rgba(11,17,31,0.6)"
+      } }));
+    }
+    function StripShell({ children, onClick, dim }) {
+      const clickable = !!onClick;
+      return /* @__PURE__ */ React.createElement(
+        "aside",
+        {
+          "aria-label": "AI bubble regime gauge",
+          onClick,
+          onKeyDown: clickable ? (e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              onClick();
+            }
+          } : void 0,
+          role: clickable ? "button" : void 0,
+          tabIndex: clickable ? 0 : void 0,
+          style: {
+            ...BS.panel,
+            padding: "10px 14px",
+            margin: "0 0 14px",
+            cursor: clickable ? "pointer" : "default",
+            opacity: dim ? 0.85 : 1,
+            display: "flex",
+            alignItems: "center",
+            gap: 14,
+            flexWrap: "wrap"
+          }
+        },
+        children
+      );
+    }
+    function StripSkeleton() {
+      return /* @__PURE__ */ React.createElement(StripShell, null, /* @__PURE__ */ React.createElement("span", { style: { ...BS.eyebrow } }, "AI regime gauge"), /* @__PURE__ */ React.createElement("span", { style: { color: C.faint, fontSize: 12 } }, "loading…"));
+    }
+    function StripWarmingUp() {
+      return /* @__PURE__ */ React.createElement(StripShell, { dim: true }, /* @__PURE__ */ React.createElement("span", { style: { ...BS.eyebrow } }, "AI regime gauge"), /* @__PURE__ */ React.createElement("span", { style: { color: C.faint, fontSize: 12 } }, "warming up — no snapshot computed yet"));
+    }
+    function StripUnavailable() {
+      return /* @__PURE__ */ React.createElement(StripShell, { dim: true }, /* @__PURE__ */ React.createElement("span", { style: { ...BS.eyebrow } }, "AI regime gauge"), /* @__PURE__ */ React.createElement("span", { style: { color: C.faint, fontSize: 12 } }, "gauge unavailable"));
+    }
+    function JudgmentInline({ call, max }) {
+      if (!call || !call.text)
+        return null;
+      const t = call.text.length > (max || 220) ? call.text.slice(0, max || 220) + "…" : call.text;
+      const stale = call.stale || call.error_class;
+      return /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11.5, color: C.dim, lineHeight: 1.4, flex: "1 1 220px", minWidth: 0 } }, t, stale ? /* @__PURE__ */ React.createElement("span", { style: { color: C.faint } }, " · stale") : null);
+    }
+    function CoverageChip({ coverage }) {
+      if (!coverage)
+        return null;
+      if (coverage.degraded)
+        return /* @__PURE__ */ React.createElement(Pill, { color: "#E8853D", title: COPY.coverageTip }, "Degraded");
+      const pct = Math.round(100 * Math.min(coverage.S ? coverage.S.coverage : 1, coverage.D ? coverage.D.coverage : 1));
+      return /* @__PURE__ */ React.createElement(Pill, { color: "#7fbf94", title: COPY.coverageTip }, "Coverage ", pct, "%");
+    }
+    function Strip({ goToDetail }) {
+      const s = useScore();
+      if (s.loading)
+        return /* @__PURE__ */ React.createElement(StripSkeleton, null);
+      if (s.notReady)
+        return /* @__PURE__ */ React.createElement(StripWarmingUp, null);
+      if (s.error || !s.json)
+        return /* @__PURE__ */ React.createElement(StripUnavailable, null);
+      const d = s.json.data, meta = s.json.meta, b = bandOf(d.action_band);
+      const trend = d.trend_states;
+      return /* @__PURE__ */ React.createElement(StripShell, { onClick: goToDetail }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 4, flex: "1 1 240px", minWidth: 200 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "baseline", gap: 8, flexWrap: "wrap" } }, /* @__PURE__ */ React.createElement("span", { style: { ...BS.serif, fontSize: 22, fontWeight: 700, color: b.color, fontVariantNumeric: "tabular-nums" } }, Math.round(d.headline_median)), pair(d.iqr) && /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, color: C.muted } }, "IQR ", Math.round(d.iqr[0]), "–", Math.round(d.iqr[1])), /* @__PURE__ */ React.createElement("span", { style: {
+        fontSize: 11,
         fontWeight: 800,
-        fontSize: 11
-      } }, on ? "!" : ""), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 12, color: on ? C.text : C.muted, fontWeight: on ? 600 : 400 } }, REDFLAG_COPY[k]), /* @__PURE__ */ React.createElement("span", { style: { marginLeft: "auto", fontSize: 10, color: on ? "#E05252" : C.faint, fontWeight: 700 } }, on ? "FIRED" : "clear"));
-    }));
-  }
-  function LadderCard({ n, title, state, color, caption }) {
-    return /* @__PURE__ */ React.createElement("div", { style: { borderRadius: 10, background: "rgba(237,232,220,0.03)", border: "1px solid rgba(237,232,220,0.08)", borderTop: "3px solid " + color, padding: "11px 13px" } }, /* @__PURE__ */ React.createElement("div", { style: { ...BS.eyebrow, marginBottom: 4 } }, "Rung ", n), /* @__PURE__ */ React.createElement("div", { style: { ...BS.serif, fontSize: 15, fontWeight: 700, color: C.text } }, title), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13, fontWeight: 700, color, margin: "3px 0 6px" } }, state), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: C.muted, lineHeight: 1.55 } }, caption));
-  }
-  function LadderPanel({ d }) {
-    const b = bandOf(d.action_band), fa = d.fast_alarm, tr = d.trend_states;
-    return /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", margin: "0 0 8px" } }, /* @__PURE__ */ React.createElement("h2", { style: { ...BS.serif, fontSize: 18, margin: 0, fontWeight: 600, color: C.text } }, "The three-leg action ladder"), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, color: C.muted } }, "the score is a ceiling, not a sell button")), /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 10 } }, /* @__PURE__ */ React.createElement(LadderCard, { n: "1", title: "Strategic ceiling", color: b.color, state: "Score " + Math.round(d.headline_median) + " → " + b.label, caption: COPY.ladder.ceiling }), /* @__PURE__ */ React.createElement(
-      LadderCard,
-      {
-        n: "2",
-        title: "Execution trigger",
-        color: tr.SPY.faber_10mo === "OUT" ? "#E05252" : "#7fbf94",
-        state: "Faber SPY " + tr.SPY.faber_10mo + " · QQQ " + tr.QQQ.faber_10mo,
-        caption: COPY.ladder.trigger
-      }
-    ), /* @__PURE__ */ React.createElement(
-      LadderCard,
-      {
-        n: "3",
-        title: "Fast alarm (speed)",
-        color: fa.vrp_flag ? "#E05252" : "#5B8DEF",
-        state: fa.term_structure + " · VRP " + fa.vrp + (fa.vrp_flag ? " (stress)" : ""),
-        caption: COPY.ladder.speed
-      }
-    )), /* @__PURE__ */ React.createElement("p", { style: { fontSize: 11, color: C.faint, lineHeight: 1.6, margin: "8px 2px 0" } }, COPY.ladder.caveat));
-  }
-  const HistTip = ({ active, payload }) => {
-    if (!active || !payload || !payload.length)
-      return null;
-    const r = payload[0] && payload[0].payload;
-    if (!r)
-      return null;
-    return /* @__PURE__ */ React.createElement("div", { style: { background: C.panel2, border: "1px solid rgba(237,232,220,0.15)", borderRadius: 8, padding: "7px 10px", fontSize: 11 } }, /* @__PURE__ */ React.createElement("div", { style: { color: C.muted, marginBottom: 3 } }, (r.computed_at || "").slice(0, 10)), /* @__PURE__ */ React.createElement("div", { style: { color: C.text } }, "median ", Math.round(r.median)), pair(r.iqr) && /* @__PURE__ */ React.createElement("div", { style: { color: C.muted } }, "IQR ", Math.round(r.iqr[0]), "–", Math.round(r.iqr[1])));
-  };
-  function HistoryPanel() {
-    const h = useHistory();
-    const rows = useMemo(() => {
-      const arr = h.json && h.json.data || [];
-      return arr.map((r) => ({
-        computed_at: r.computed_at,
-        median: r.median,
-        iqr: r.iqr,
-        lo: pair(r.iqr) ? r.iqr[0] : r.median,
-        band: pair(r.iqr) ? [r.iqr[0], r.iqr[1]] : [r.median, r.median]
+        letterSpacing: "0.08em",
+        color: b.color,
+        padding: "1px 7px",
+        borderRadius: 5,
+        background: b.zone
+      } }, b.label), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 9.5, color: C.faint } }, COPY.micro)), /* @__PURE__ */ React.createElement(GaugeBar, { value: d.headline_median, iqr: d.iqr, band: d.action_band })), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" } }, /* @__PURE__ */ React.createElement(
+        Pill,
+        {
+          color: d.red_flag_count >= 3 ? "#E05252" : d.red_flag_count > 0 ? "#E0B458" : C.muted,
+          title: Object.keys(d.red_flag_detail).filter((k) => d.red_flag_detail[k]).map((k) => REDFLAG_COPY[k]).join(" · ") || "no override flags fired"
+        },
+        d.red_flag_count,
+        "/4 flags"
+      ), trend && /* @__PURE__ */ React.createElement(
+        Pill,
+        {
+          color: trend.SPY.faber_10mo === "OUT" ? "#E05252" : "#7fbf94",
+          outline: true,
+          title: "Faber 10-month trend rule (execution trigger)"
+        },
+        "Trend SPY ",
+        trend.SPY.faber_10mo,
+        " · QQQ ",
+        trend.QQQ.faber_10mo
+      ), /* @__PURE__ */ React.createElement(CoverageChip, { coverage: meta.coverage }), /* @__PURE__ */ React.createElement(Freshness, { computedAt: meta.computed_at })), /* @__PURE__ */ React.createElement(JudgmentInline, { call: d.judgment_call }), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, color: b.color, fontWeight: 700, whiteSpace: "nowrap" } }, "Open ›"));
+    }
+    function H({ children, sub }) {
+      return /* @__PURE__ */ React.createElement("div", { style: { margin: "0 0 8px" } }, /* @__PURE__ */ React.createElement("h3", { style: { ...BS.serif, fontSize: 16, margin: 0, fontWeight: 600, color: C.text } }, children), sub && /* @__PURE__ */ React.createElement("div", { style: { ...BS.eyebrow, marginTop: 3 } }, sub));
+    }
+    function HeadlinePanel({ d, meta }) {
+      const b = bandOf(d.action_band);
+      return /* @__PURE__ */ React.createElement(Panel, null, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", marginBottom: 8 } }, /* @__PURE__ */ React.createElement("h2", { style: { ...BS.serif, fontSize: 22, margin: 0, fontWeight: 600, color: C.text } }, "AI bubble regime — ", Math.round(d.headline_median)), /* @__PURE__ */ React.createElement(EpiChip, null), /* @__PURE__ */ React.createElement(Freshness, { computedAt: meta.computed_at })), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "baseline", gap: 12, flexWrap: "wrap", marginBottom: 8 } }, /* @__PURE__ */ React.createElement("span", { style: { ...BS.serif, fontSize: 40, fontWeight: 700, color: b.color, fontVariantNumeric: "tabular-nums" } }, Math.round(d.headline_median)), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12, color: C.muted, lineHeight: 1.7 } }, /* @__PURE__ */ React.createElement("div", null, "Monte Carlo median · point estimate ", d.point_score), pair(d.iqr) && /* @__PURE__ */ React.createElement("div", null, "IQR (25–75%) ", /* @__PURE__ */ React.createElement("b", { style: { color: C.dim } }, Math.round(d.iqr[0]), "–", Math.round(d.iqr[1])), " · 5–95% band ", Math.round(d.band_5_95[0]), "–", Math.round(d.band_5_95[1]))), /* @__PURE__ */ React.createElement("span", { style: { marginLeft: "auto", fontSize: 12, fontWeight: 800, letterSpacing: "0.08em", color: b.color, padding: "3px 10px", borderRadius: 6, background: b.zone } }, b.label)), /* @__PURE__ */ React.createElement(GaugeBar, { value: d.headline_median, iqr: d.iqr, band: d.action_band, height: 16 }), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", fontSize: 9.5, color: C.faint, marginTop: 4 } }, /* @__PURE__ */ React.createElement("span", null, "0"), /* @__PURE__ */ React.createElement("span", null, "45 · trim"), /* @__PURE__ */ React.createElement("span", null, "60 · de-risk"), /* @__PURE__ */ React.createElement("span", null, "100")), /* @__PURE__ */ React.createElement("p", { style: { fontSize: 12.5, color: C.dim, lineHeight: 1.6, margin: "10px 0 0" } }, COPY.bandOneLiner[d.action_band] || ""), /* @__PURE__ */ React.createElement("p", { style: { fontSize: 11.5, color: C.muted, lineHeight: 1.6, margin: "6px 0 0", fontStyle: "italic" } }, "The spread is the point — this is a distribution over assumptions, not a forecast."));
+    }
+    function IndicatorRow({ id, r }) {
+      const [open, setOpen] = useState(false);
+      const reg = regOf(id), g = groundOf(r.grounding);
+      const live = !r.dropped;
+      return /* @__PURE__ */ React.createElement("div", { style: { borderTop: "1px solid rgba(237,232,220,0.06)", padding: "8px 0" } }, /* @__PURE__ */ React.createElement("div", { onClick: () => setOpen(!open), style: { display: "flex", alignItems: "center", gap: 8, cursor: "pointer", flexWrap: "wrap" } }, /* @__PURE__ */ React.createElement("span", { style: { ...BS.eyebrow, minWidth: 26 } }, id.toUpperCase()), /* @__PURE__ */ React.createElement("span", { style: { color: C.text, fontWeight: 600, fontSize: 12.5, flex: "1 1 140px" } }, reg.name), /* @__PURE__ */ React.createElement(Pill, { color: g.c, title: g.t }, r.grounding), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 10.5, color: C.faint, whiteSpace: "nowrap" } }, "w ", Math.round(r.weight * 100), "%")), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 8, marginTop: 5 } }, /* @__PURE__ */ React.createElement("div", { style: { flex: 1, height: 7, borderRadius: 99, background: "rgba(237,232,220,0.07)" } }, /* @__PURE__ */ React.createElement("div", { style: { width: (live && isNum(r.sub_score) ? Math.round(r.sub_score * 100) : 0) + "%", height: "100%", borderRadius: 99, background: g.c, opacity: 0.8 } })), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 10.5, color: C.muted, fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap", minWidth: 96, textAlign: "right" } }, live ? isNum(r.sub_score) ? r.sub_score.toFixed(2) : "—" : /* @__PURE__ */ React.createElement("span", { style: { color: "#E8853D" } }, "not live"), r.stale ? /* @__PURE__ */ React.createElement("span", { style: { color: "#E8853D" } }, " · stale") : null, r.fallback_used ? /* @__PURE__ */ React.createElement("span", { style: { color: C.faint } }, " · fallback") : null)), open && /* @__PURE__ */ React.createElement("div", { style: { marginTop: 7, padding: "9px 11px", background: "rgba(237,232,220,0.03)", borderRadius: 7, borderLeft: "2px solid " + g.c, fontSize: 11.5, color: C.dim, lineHeight: 1.6 } }, /* @__PURE__ */ React.createElement("div", null, reg.plain), /* @__PURE__ */ React.createElement("div", { style: { marginTop: 5, color: C.muted } }, /* @__PURE__ */ React.createElement("b", { style: { color: C.dim } }, "Fires when:"), " ", reg.fire), /* @__PURE__ */ React.createElement("div", { style: { marginTop: 3, color: C.muted } }, /* @__PURE__ */ React.createElement("b", { style: { color: C.dim } }, "Weighted this way because:"), " ", reg.why), /* @__PURE__ */ React.createElement("div", { style: { marginTop: 5, fontSize: 10, color: C.faint } }, "value ", isNum(r.value) ? r.value : "—", " · source ", r.data_source || "?", r.as_of ? " · as of " + r.as_of : "", r.note ? " · " + r.note : "", !DEMO && /* @__PURE__ */ React.createElement(React.Fragment, null, " · ", /* @__PURE__ */ React.createElement("a", { href: API_BASE + "/api/v1/indicators/" + id, target: "_blank", rel: "noopener noreferrer", style: { color: g.c } }, "full methodology ↗")))));
+    }
+    function BlockColumn({ title, sub, block, order, footer }) {
+      return /* @__PURE__ */ React.createElement(Panel, null, /* @__PURE__ */ React.createElement(H, { sub }, title), order.filter((id) => block.indicators[id]).map((id) => /* @__PURE__ */ React.createElement(IndicatorRow, { key: id, id, r: block.indicators[id] })), footer);
+    }
+    function AnatomyPanel({ d }) {
+      return /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", margin: "0 0 4px" } }, /* @__PURE__ */ React.createElement("h2", { style: { ...BS.serif, fontSize: 18, margin: 0, fontWeight: 600, color: C.text } }, "Two-block anatomy"), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, color: C.muted } }, "combined by ", /* @__PURE__ */ React.createElement("b", null, "multiplication"), " (geometric mean) — one calm reading can't fully cancel an alarming one")), /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 12, marginTop: 8 } }, /* @__PURE__ */ React.createElement(
+        BlockColumn,
+        {
+          title: "Block S · structural fragility",
+          sub: "maps to DEPTH · value " + d.block_S.value.toFixed(3),
+          block: d.block_S,
+          order: ["s1", "s2", "s3", "s4", "s5"]
+        }
+      ), /* @__PURE__ */ React.createElement(
+        BlockColumn,
+        {
+          title: "Block D · dynamics / trigger",
+          sub: "maps to TIMING · raw " + (isNum(d.block_D.value_raw) ? d.block_D.value_raw.toFixed(3) : "—") + " → ×V " + d.V.multiplier + " → " + d.block_D.value.toFixed(3),
+          block: d.block_D,
+          order: ["d1", "d2", "d3", "d4"],
+          footer: /* @__PURE__ */ React.createElement("div", { style: { marginTop: 8, paddingTop: 8, borderTop: "1px solid rgba(237,232,220,0.06)", fontSize: 11, color: C.muted } }, /* @__PURE__ */ React.createElement("b", { style: { color: C.dim } }, "V · VIX term-structure multiplier"), " — ", d.V.state, " → ×", d.V.multiplier, " (", d.V.label, "). When near-term fear exceeds long-term fear, stress is already underway; this confirms, it doesn't predict.")
+        }
+      )), /* @__PURE__ */ React.createElement("div", { style: { ...BS.eyebrow, textAlign: "center", marginTop: 10 } }, "Score = 100 × S", /* @__PURE__ */ React.createElement("sup", null, "α"), " × D", /* @__PURE__ */ React.createElement("sup", null, "β"), " (α=β=0.5) → point ", d.point_score, " → Monte Carlo median ", Math.round(d.headline_median)));
+    }
+    function RedFlagPanel({ d }) {
+      const keys = ["gsadf_explosive_noncontested", "semi_runup_ge_150pp", "hy_oas_widen_gt_100bps", "breadth_lt_50_near_ath"];
+      return /* @__PURE__ */ React.createElement(Panel, null, /* @__PURE__ */ React.createElement(H, { sub: d.override_fired ? "OVERRIDE FIRED — score floored at 70" : d.red_flag_count + " of 4 fired · override not active" }, "Non-compensatory override flags"), /* @__PURE__ */ React.createElement("p", { style: { fontSize: 11.5, color: C.muted, lineHeight: 1.6, margin: "0 0 8px" } }, COPY.redFlagHeader), keys.map((k) => {
+        const on = !!d.red_flag_detail[k];
+        return /* @__PURE__ */ React.createElement("div", { key: k, style: { display: "flex", alignItems: "center", gap: 8, padding: "6px 0", borderTop: "1px solid rgba(237,232,220,0.06)" } }, /* @__PURE__ */ React.createElement("span", { style: {
+          width: 16,
+          height: 16,
+          borderRadius: 4,
+          display: "inline-flex",
+          alignItems: "center",
+          justifyContent: "center",
+          background: on ? "rgba(224,82,82,0.75)" : "transparent",
+          border: "1px solid " + (on ? "#E05252" : "rgba(237,232,220,0.2)"),
+          color: "#0E1526",
+          fontWeight: 800,
+          fontSize: 11
+        } }, on ? "!" : ""), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 12, color: on ? C.text : C.muted, fontWeight: on ? 600 : 400 } }, REDFLAG_COPY[k]), /* @__PURE__ */ React.createElement("span", { style: { marginLeft: "auto", fontSize: 10, color: on ? "#E05252" : C.faint, fontWeight: 700 } }, on ? "FIRED" : "clear"));
       }));
-    }, [h.json]);
-    return /* @__PURE__ */ React.createElement(Panel, null, /* @__PURE__ */ React.createElement(H, { sub: "headline median with IQR band · action-band thresholds marked" }, "History"), h.loading ? /* @__PURE__ */ React.createElement("div", { style: { color: C.faint, fontSize: 12, padding: "20px 0" } }, "loading…") : rows.length === 0 ? /* @__PURE__ */ React.createElement("div", { style: { color: C.faint, fontSize: 12, padding: "20px 0" } }, "no history available") : /* @__PURE__ */ React.createElement(ResponsiveContainer, { width: "100%", height: 220 }, /* @__PURE__ */ React.createElement(ComposedChart, { data: rows, margin: { top: 6, right: 12, bottom: 4, left: 0 } }, /* @__PURE__ */ React.createElement(CartesianGrid, { stroke: "rgba(237,232,220,0.06)", vertical: false }), /* @__PURE__ */ React.createElement(XAxis, { dataKey: "computed_at", tickFormatter: (x) => (x || "").slice(2, 7), tick: { fill: C.muted, fontSize: 9.5 }, stroke: "rgba(237,232,220,0.18)" }), /* @__PURE__ */ React.createElement(YAxis, { domain: [0, 100], ticks: [0, 45, 60, 100], tick: { fill: C.muted, fontSize: 9.5 }, stroke: "rgba(237,232,220,0.18)", width: 28 }), /* @__PURE__ */ React.createElement(Tooltip, { content: /* @__PURE__ */ React.createElement(HistTip, null) }), /* @__PURE__ */ React.createElement(ReferenceLine, { y: 45, stroke: "#E0B458", strokeOpacity: 0.4, strokeDasharray: "3 3" }), /* @__PURE__ */ React.createElement(ReferenceLine, { y: 60, stroke: "#E05252", strokeOpacity: 0.4, strokeDasharray: "3 3" }), /* @__PURE__ */ React.createElement(Area, { dataKey: "band", stroke: "none", fill: "#5B8DEF", fillOpacity: 0.14, isAnimationActive: false }), /* @__PURE__ */ React.createElement(Line, { dataKey: "median", stroke: "#E0B458", strokeWidth: 2, dot: false, isAnimationActive: false }))), /* @__PURE__ */ React.createElement("div", { style: { marginTop: 8, fontSize: 10.5, color: C.faint, lineHeight: 1.6 } }, /* @__PURE__ */ React.createElement("b", { style: { color: C.muted } }, "Methodology changelog:"), " ", CHANGELOG.map((c) => c.v + (c.score != null ? " (" + c.score + ")" : "")).join(" → "), ". ", COPY.changelogTip));
-  }
-  function EpistemicPanel({ meta }) {
-    const st = useStatus();
-    const caveats = meta && meta.epistemic_caveats && meta.epistemic_caveats.length ? meta.epistemic_caveats : EPISTEMIC;
-    const cov = meta && meta.coverage;
-    const audit = st.json && st.json.science_audit;
-    const sevColor = { error: "#E05252", warn: "#E0B458", info: C.muted };
-    return /* @__PURE__ */ React.createElement(Panel, { style: { borderLeft: "3px solid #5AA9A3" } }, /* @__PURE__ */ React.createElement(H, { sub: "the honesty is the feature, not the fine print" }, "Epistemic status"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 10 } }, caveats.map((c, i) => /* @__PURE__ */ React.createElement("span", { key: i, style: { fontSize: 10.5, color: C.dim, background: "rgba(237,232,220,0.04)", border: "1px solid rgba(237,232,220,0.1)", borderRadius: 6, padding: "4px 8px", lineHeight: 1.4 } }, c))), cov && /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 14, flexWrap: "wrap", marginBottom: 10 } }, ["S", "D"].map((k) => cov[k] && /* @__PURE__ */ React.createElement("div", { key: k, style: { flex: "1 1 160px" } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 10.5, color: C.muted, marginBottom: 3 } }, "Block ", k, " coverage ", Math.round(cov[k].coverage * 100), "%", cov[k].degraded ? " · degraded" : ""), /* @__PURE__ */ React.createElement("div", { style: { height: 6, borderRadius: 99, background: "rgba(237,232,220,0.07)" } }, /* @__PURE__ */ React.createElement("div", { style: { width: Math.round(cov[k].coverage * 100) + "%", height: "100%", borderRadius: 99, background: cov[k].degraded ? "#E8853D" : "#7fbf94" } }))))), /* @__PURE__ */ React.createElement("div", { style: { marginBottom: 10 } }, /* @__PURE__ */ React.createElement("div", { style: { ...BS.eyebrow, marginBottom: 5 } }, "What would prove this wrong"), /* @__PURE__ */ React.createElement("ul", { style: { margin: 0, paddingLeft: 16, fontSize: 11.5, color: C.dim, lineHeight: 1.6 } }, FALSIFY.map((f, i) => /* @__PURE__ */ React.createElement("li", { key: i, style: { marginBottom: 3 } }, f)))), audit && audit.flags && /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { ...BS.eyebrow, marginBottom: 5 } }, "Science audit (", audit.counts ? audit.counts.error + " err · " + audit.counts.warn + " warn · " + audit.counts.info + " info" : audit.flags.length, ")"), audit.flags.map((f, i) => /* @__PURE__ */ React.createElement("div", { key: i, style: { display: "flex", gap: 8, padding: "5px 0", borderTop: "1px solid rgba(237,232,220,0.05)" } }, /* @__PURE__ */ React.createElement(Pill, { color: sevColor[f.severity] || C.muted, outline: true }, f.severity), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: C.dim, lineHeight: 1.5 } }, /* @__PURE__ */ React.createElement("b", { style: { color: C.text } }, f.title), " — ", f.detail, f.ref ? /* @__PURE__ */ React.createElement("span", { style: { color: C.faint } }, " (", f.ref, ")") : null)))), /* @__PURE__ */ React.createElement("p", { style: { fontSize: 11, color: C.muted, lineHeight: 1.65, margin: "10px 0 0" } }, COPY.notProbLong));
-  }
-  function FusionPanel({ d, goToCrisis }) {
-    const rows = useMemo(() => analogues(todayFingerprint(d)), [d]);
-    const top = rows[0];
-    return /* @__PURE__ */ React.createElement(Panel, { style: { borderTop: "2px solid #E0B458" } }, /* @__PURE__ */ React.createElement(H, { sub: "from Block S composition · analogy, not forecast" }, COPY.fusionHeader), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 10 } }, rows.map((r) => /* @__PURE__ */ React.createElement("button", { key: r.label, onClick: () => goToCrisis && goToCrisis(r.explorer), style: {
-      cursor: goToCrisis ? "pointer" : "default",
-      borderRadius: 8,
-      padding: "8px 11px",
-      textAlign: "left",
-      border: "1px solid " + (r === top ? "#E0B458" : "rgba(237,232,220,0.14)"),
-      background: r === top ? "rgba(224,180,88,0.1)" : "transparent",
-      color: C.text,
-      flex: "1 1 150px"
-    } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "baseline" } }, /* @__PURE__ */ React.createElement("span", { style: { ...BS.serif, fontSize: 16, fontWeight: 700 } }, r.label), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 12, fontWeight: 700, color: r === top ? "#E0B458" : C.muted } }, Math.round(r.similarity * 100), "%")), /* @__PURE__ */ React.createElement("div", { style: { height: 5, borderRadius: 99, background: "rgba(237,232,220,0.07)", margin: "5px 0" } }, /* @__PURE__ */ React.createElement("div", { style: { width: Math.round(r.similarity * 100) + "%", height: "100%", borderRadius: 99, background: r === top ? "#E0B458" : C.muted, opacity: 0.8 } })), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 10, color: C.faint, lineHeight: 1.4 } }, r.note)))), top && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11.5, color: C.dim, lineHeight: 1.6 } }, /* @__PURE__ */ React.createElement("b", { style: { color: C.text } }, "Nearest analogue: ", top.label, "."), " Per-dimension gap (smaller = more alike):", /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8, flexWrap: "wrap", marginTop: 6 } }, top.per.map((p) => /* @__PURE__ */ React.createElement("span", { key: p.k, style: { fontSize: 10, color: C.muted, background: "rgba(237,232,220,0.04)", borderRadius: 5, padding: "3px 7px" } }, p.label, ": ", p.gap == null ? "n/a" : "Δ" + p.gap.toFixed(2))))), /* @__PURE__ */ React.createElement("p", { style: { fontSize: 11, color: C.faint, lineHeight: 1.6, margin: "10px 0 0" } }, "This is a weak, stylized similarity across five hand-set dimensions — an analogy, not a forecast. Today may match NO past crisis (rational general-purpose-technology repricing; n≈4 reference class). The leverage dimension is approximate (no direct block-S leverage indicator). Jordà-Schularick-Taylor: ", /* @__PURE__ */ React.createElement("i", null, "unlevered"), " equity bubbles historically produce shallower macro damage than credit-levered ones — use the nearest analogue to weight which havens in the atlas are most relevant, then judge for yourself."), goToCrisis && top.explorer && /* @__PURE__ */ React.createElement("button", { onClick: () => goToCrisis(top.explorer), style: {
-      marginTop: 10,
-      cursor: "pointer",
-      fontSize: 12,
-      fontWeight: 700,
-      color: "#0E1526",
-      background: "#E0B458",
-      border: "none",
-      borderRadius: 7,
-      padding: "7px 12px"
-    } }, "Open the atlas → ", top.label, " ›"));
-  }
-  function DetailInner({ goToCrisis }) {
-    const s = useScore();
-    if (s.loading)
-      return /* @__PURE__ */ React.createElement(Panel, null, /* @__PURE__ */ React.createElement("div", { style: { color: C.faint, fontSize: 13 } }, "loading the regime gauge…"));
-    if (s.notReady)
-      return /* @__PURE__ */ React.createElement(Panel, null, /* @__PURE__ */ React.createElement("div", { style: { color: C.faint, fontSize: 13 } }, "The gauge is warming up — no snapshot has been computed yet. Check back shortly."));
-    if (s.error || !s.json)
-      return /* @__PURE__ */ React.createElement(Panel, null, /* @__PURE__ */ React.createElement("div", { style: { color: C.faint, fontSize: 13 } }, "The regime gauge is unavailable right now. The crisis atlas is unaffected."));
-    const d = s.json.data, meta = s.json.meta;
-    return /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 14 } }, /* @__PURE__ */ React.createElement(HeadlinePanel, { d, meta }), /* @__PURE__ */ React.createElement(AnatomyPanel, { d }), /* @__PURE__ */ React.createElement(RedFlagPanel, { d }), /* @__PURE__ */ React.createElement(LadderPanel, { d }), /* @__PURE__ */ React.createElement(HistoryPanel, null), /* @__PURE__ */ React.createElement(FusionPanel, { d, goToCrisis }), /* @__PURE__ */ React.createElement(EpistemicPanel, { meta }), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 10, color: C.faint, textAlign: "center", lineHeight: 1.6 } }, "bubblegauge ", meta.service_version || "3.1.0", " · ", meta.disclaimer || "Research, not advice.", DEMO ? " · DEMO fixture (offline) — re-verify against the live service" : ""));
-  }
-  function DetailTab(props) {
-    return /* @__PURE__ */ React.createElement(Boundary, { fallback: /* @__PURE__ */ React.createElement(Panel, null, /* @__PURE__ */ React.createElement("div", { style: { color: C.faint, fontSize: 13 } }, "The regime gauge hit an error and was isolated. The crisis atlas is unaffected.")) }, /* @__PURE__ */ React.createElement(DetailInner, { goToCrisis: props.goToCrisis }));
-  }
-  function StripBoundary(props) {
-    return /* @__PURE__ */ React.createElement(Boundary, { fallback: null }, /* @__PURE__ */ React.createElement(Strip, { goToDetail: props.goToDetail }));
-  }
-  const FEED_FIX_SERIES = {
-    qqq: [362.61, 372.58, 382.55, 392.53, 402.5, 388.6, 374.7, 360.8, 346.9, 333, 319.1, 309.77, 300.45, 291.12, 281.8, 272.48, 263.15, 253.83, 272.56, 291.3, 310.03, 328.77, 347.5, 366.24, 374.29, 382.35, 390.41, 398.47, 406.53, 414.58, 422.64, 430.7, 438.76, 455.08, 471.39, 487.71, 504.03, 507.05, 510.07, 513.09, 516.11, 519.14, 522.16, 500.4, 451.45, 402.5, 430.78, 459.06, 487.35, 515.63, 543.91, 557.21, 570.51, 583.8, 577.46, 571.11, 564.77, 558.42, 650.88, 743.35, 711.8],
-    gold: [169, 168.1, 167.2, 166.3, 165.39, 164.49, 163.59, 162.69, 161.79, 160.89, 159.99, 159.09, 158.18, 157.28, 156.38, 155.48, 158.65, 161.82, 164.99, 168.16, 171.32, 174.49, 177.66, 180.83, 183.65, 186.46, 189.28, 192.1, 194.91, 197.73, 200.55, 203.36, 206.18, 210.69, 215.19, 219.7, 224.21, 228.71, 233.22, 237.73, 242.23, 246.74, 258.57, 270.4, 282.23, 294.34, 306.45, 318.56, 330.68, 342.79, 354.9, 378.56, 402.22, 425.88, 475.74, 525.59, 485.59, 445.6, 405.6, 397.15, 388.7],
-    tbill3m_tr: [91.55, 91.58, 91.61, 91.64, 91.67, 91.7, 91.73, 91.76, 91.79, 91.82, 91.86, 91.89, 91.92, 92.12, 92.32, 92.52, 92.72, 92.92, 93.25, 93.58, 93.9, 94.23, 94.56, 94.89, 95.21, 95.76, 96.31, 96.86, 97.41, 97.96, 98.34, 98.72, 99.1, 99.48, 99.87, 100.25, 100.63, 101.01, 101.39, 101.77, 102.15, 102.54, 102.92, 103.3, 103.68, 104.06, 104.44, 104.82, 105.21, 105.59, 105.97, 106.35, 106.73, 107.11, 107.44, 107.77, 108.09, 108.42, 108.75, 109.08, 109.4],
-    ust10y_tr: [118, 117.53, 117.06, 116.58, 116.11, 115.64, 115.17, 114.7, 114.22, 113.75, 113.28, 111.43, 109.57, 107.72, 105.86, 104.01, 102.15, 100.3, 99.95, 99.59, 99.24, 98.88, 98.53, 98.18, 97.82, 97.47, 97.11, 96.76, 99.12, 101.48, 101.68, 101.87, 102.07, 102.27, 102.46, 102.66, 102.86, 103.05, 103.25, 103.45, 103.64, 103.84, 104.33, 104.82, 105.31, 105.81, 106.3, 106.79, 107.28, 107.77, 108.27, 108.76, 109.25, 109.74, 110.08, 110.41, 110.75, 111.09, 111.43, 111.76, 112.1],
-    usdchf: [0.905, 0.9099, 0.9148, 0.9197, 0.9247, 0.9298, 0.9349, 0.9401, 0.9453, 0.9506, 0.956, 0.9614, 0.9669, 0.9724, 0.978, 0.9837, 0.9709, 0.9584, 0.9462, 0.9344, 0.9228, 0.9115, 0.9005, 0.8897, 0.8793, 0.869, 0.859, 0.8492, 0.8396, 0.8303, 0.8354, 0.8406, 0.8458, 0.8511, 0.8565, 0.8619, 0.8674, 0.873, 0.8786, 0.8844, 0.8902, 0.896, 0.8865, 0.8771, 0.8679, 0.8589, 0.8501, 0.8415, 0.8331, 0.8248, 0.8167, 0.8087, 0.8009, 0.7847, 0.7691, 0.7542, 0.7637, 0.7735, 0.7835, 0.7939, 0.8044],
-    usdjpy: [109.8, 111.81, 113.9, 116.07, 118.32, 120.66, 123.09, 125.63, 128.27, 131.03, 133.9, 136.91, 140.05, 143.34, 146.79, 150.41, 150.24, 150.07, 149.9, 149.73, 149.56, 149.39, 149.22, 149.05, 148.88, 148.71, 148.55, 148.38, 149.73, 151.1, 152.5, 153.93, 155.38, 156.86, 158.37, 159.9, 161.47, 160.68, 159.9, 159.13, 158.37, 157.61, 156.86, 156.11, 155.38, 154.65, 153.93, 153.21, 152.5, 153.26, 154.03, 154.81, 155.6, 156.39, 157.19, 158, 158.82, 159.65, 160.49, 161.33, 162.19],
-    usd_broad_index: [112.67, 114.68, 116.7, 118.71, 120.72, 122.73, 124.74, 126.76, 128.77, 130.78, 132.79, 134.8, 136.82, 138.83, 140.84, 139.71, 138.59, 137.46, 136.33, 135.21, 134.08, 132.95, 131.83, 130.7, 129.57, 128.45, 127.32, 126.19, 125.07, 123.94, 124.6, 125.25, 125.91, 126.57, 127.22, 127.88, 128.54, 129.2, 129.85, 130.51, 131.17, 131.83, 129.73, 127.64, 125.55, 123.46, 121.36, 119.27, 117.18, 117.55, 117.93, 118.3, 118.68, 119.06, 119.43, 119.62, 119.81, 120, 120.18, 120.37, 120.56],
-    btc: [35628, 44802, 53976, 63151, 72325, 68049, 63774, 59499, 55223, 50948, 46673, 42397, 38122, 33847, 29571, 25296, 21021, 16745, 18645, 20545, 22446, 24346, 26246, 28146, 32006, 35866, 39725, 43585, 47445, 51304, 55164, 59024, 62883, 66743, 70603, 74463, 78322, 82182, 86042, 89901, 93761, 97621, 101077, 104533, 107988, 111444, 114900, 118356, 121812, 125268, 128724, 132180, 121670, 111159, 102965, 94770, 86576, 78382, 73869, 69356, 64843]
-  };
-  function fixMonth(i) {
-    const y = 2021 + Math.floor((6 + i) / 12), m = (6 + i) % 12 + 1;
-    return y + "-" + (m < 10 ? "0" : "") + m;
-  }
-  const FG_FIX_SERIES = [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, 31, 36, 44, 52, 58, 49, 41, 34, 27, 24, 29, 31, 46];
-  const FEED_FIX_META = {
-    qqq: ["NASDAQ-100 (QQQ ETF proxy, dividend-adjusted)", "total_return", "tiingo:QQQ"],
-    gold: ["Gold (GLD ETF proxy)", "price", "tiingo:GLD"],
-    tbill3m_tr: ["3M T-bills / cash TR (BIL ETF proxy)", "total_return", "tiingo:BIL"],
-    ust10y_tr: ["10Y US Treasuries TR (IEF ETF proxy)", "total_return", "tiingo:IEF"],
-    usdchf: ["USD/CHF (Fed H.10)", "price", "fred:DEXSZUS"],
-    usdjpy: ["USD/JPY (Fed H.10)", "price", "fred:DEXJPUS"],
-    usd_broad_index: ["US dollar (Fed Broad Dollar Index)", "index", "fred:DTWEXBGS"],
-    btc: ["Bitcoin (BTC/USD)", "price", "twelvedata:BTC/USD"]
-  };
-  const FEED_FIXTURE = {
-    data: {
-      anchor_month: "2026-07",
-      anchor_partial: true,
-      series: function() {
-        const out = {};
-        Object.keys(FEED_FIX_SERIES).forEach(function(k) {
-          out[k] = {
-            name: FEED_FIX_META[k][0],
-            kind: FEED_FIX_META[k][1],
-            unit: "USD",
-            points: FEED_FIX_SERIES[k].map(function(v, i) {
+    }
+    function LadderCard({ n, title, state, color, caption }) {
+      return /* @__PURE__ */ React.createElement("div", { style: { borderRadius: 10, background: "rgba(237,232,220,0.03)", border: "1px solid rgba(237,232,220,0.08)", borderTop: "3px solid " + color, padding: "11px 13px" } }, /* @__PURE__ */ React.createElement("div", { style: { ...BS.eyebrow, marginBottom: 4 } }, "Rung ", n), /* @__PURE__ */ React.createElement("div", { style: { ...BS.serif, fontSize: 15, fontWeight: 700, color: C.text } }, title), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13, fontWeight: 700, color, margin: "3px 0 6px" } }, state), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: C.muted, lineHeight: 1.55 } }, caption));
+    }
+    function LadderPanel({ d }) {
+      const b = bandOf(d.action_band), fa = d.fast_alarm, tr = d.trend_states;
+      return /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", margin: "0 0 8px" } }, /* @__PURE__ */ React.createElement("h2", { style: { ...BS.serif, fontSize: 18, margin: 0, fontWeight: 600, color: C.text } }, "The three-leg action ladder"), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, color: C.muted } }, "the score is a ceiling, not a sell button")), /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 10 } }, /* @__PURE__ */ React.createElement(LadderCard, { n: "1", title: "Strategic ceiling", color: b.color, state: "Score " + Math.round(d.headline_median) + " → " + b.label, caption: COPY.ladder.ceiling }), /* @__PURE__ */ React.createElement(
+        LadderCard,
+        {
+          n: "2",
+          title: "Execution trigger",
+          color: tr.SPY.faber_10mo === "OUT" ? "#E05252" : "#7fbf94",
+          state: "Faber SPY " + tr.SPY.faber_10mo + " · QQQ " + tr.QQQ.faber_10mo,
+          caption: COPY.ladder.trigger
+        }
+      ), /* @__PURE__ */ React.createElement(
+        LadderCard,
+        {
+          n: "3",
+          title: "Fast alarm (speed)",
+          color: fa.vrp_flag ? "#E05252" : "#5B8DEF",
+          state: fa.term_structure + " · VRP " + fa.vrp + (fa.vrp_flag ? " (stress)" : ""),
+          caption: COPY.ladder.speed
+        }
+      )), /* @__PURE__ */ React.createElement("p", { style: { fontSize: 11, color: C.faint, lineHeight: 1.6, margin: "8px 2px 0" } }, COPY.ladder.caveat));
+    }
+    const HistTip = ({ active, payload }) => {
+      if (!active || !payload || !payload.length)
+        return null;
+      const r = payload[0] && payload[0].payload;
+      if (!r)
+        return null;
+      return /* @__PURE__ */ React.createElement("div", { style: { background: C.panel2, border: "1px solid rgba(237,232,220,0.15)", borderRadius: 8, padding: "7px 10px", fontSize: 11 } }, /* @__PURE__ */ React.createElement("div", { style: { color: C.muted, marginBottom: 3 } }, (r.computed_at || "").slice(0, 10)), /* @__PURE__ */ React.createElement("div", { style: { color: C.text } }, "median ", Math.round(r.median)), pair(r.iqr) && /* @__PURE__ */ React.createElement("div", { style: { color: C.muted } }, "IQR ", Math.round(r.iqr[0]), "–", Math.round(r.iqr[1])));
+    };
+    function HistoryPanel() {
+      const h = useHistory();
+      const rows = useMemo(() => {
+        const arr = h.json && h.json.data || [];
+        return arr.map((r) => ({
+          computed_at: r.computed_at,
+          median: r.median,
+          iqr: r.iqr,
+          lo: pair(r.iqr) ? r.iqr[0] : r.median,
+          band: pair(r.iqr) ? [r.iqr[0], r.iqr[1]] : [r.median, r.median]
+        }));
+      }, [h.json]);
+      return /* @__PURE__ */ React.createElement(Panel, null, /* @__PURE__ */ React.createElement(H, { sub: "headline median with IQR band · action-band thresholds marked" }, "History"), h.loading ? /* @__PURE__ */ React.createElement("div", { style: { color: C.faint, fontSize: 12, padding: "20px 0" } }, "loading…") : rows.length === 0 ? /* @__PURE__ */ React.createElement("div", { style: { color: C.faint, fontSize: 12, padding: "20px 0" } }, "no history available") : /* @__PURE__ */ React.createElement(ResponsiveContainer, { width: "100%", height: 220 }, /* @__PURE__ */ React.createElement(ComposedChart, { data: rows, margin: { top: 6, right: 12, bottom: 4, left: 0 } }, /* @__PURE__ */ React.createElement(CartesianGrid, { stroke: "rgba(237,232,220,0.06)", vertical: false }), /* @__PURE__ */ React.createElement(XAxis, { dataKey: "computed_at", tickFormatter: (x) => (x || "").slice(2, 7), tick: { fill: C.muted, fontSize: 9.5 }, stroke: "rgba(237,232,220,0.18)" }), /* @__PURE__ */ React.createElement(YAxis, { domain: [0, 100], ticks: [0, 45, 60, 100], tick: { fill: C.muted, fontSize: 9.5 }, stroke: "rgba(237,232,220,0.18)", width: 28 }), /* @__PURE__ */ React.createElement(Tooltip, { content: /* @__PURE__ */ React.createElement(HistTip, null) }), /* @__PURE__ */ React.createElement(ReferenceLine, { y: 45, stroke: "#E0B458", strokeOpacity: 0.4, strokeDasharray: "3 3" }), /* @__PURE__ */ React.createElement(ReferenceLine, { y: 60, stroke: "#E05252", strokeOpacity: 0.4, strokeDasharray: "3 3" }), /* @__PURE__ */ React.createElement(Area, { dataKey: "band", stroke: "none", fill: "#5B8DEF", fillOpacity: 0.14, isAnimationActive: false }), /* @__PURE__ */ React.createElement(Line, { dataKey: "median", stroke: "#E0B458", strokeWidth: 2, dot: false, isAnimationActive: false }))), /* @__PURE__ */ React.createElement("div", { style: { marginTop: 8, fontSize: 10.5, color: C.faint, lineHeight: 1.6 } }, /* @__PURE__ */ React.createElement("b", { style: { color: C.muted } }, "Methodology changelog:"), " ", CHANGELOG.map((c) => c.v + (c.score != null ? " (" + c.score + ")" : "")).join(" → "), ". ", COPY.changelogTip));
+    }
+    function EpistemicPanel({ meta }) {
+      const st = useStatus();
+      const caveats = meta && meta.epistemic_caveats && meta.epistemic_caveats.length ? meta.epistemic_caveats : EPISTEMIC;
+      const cov = meta && meta.coverage;
+      const audit = st.json && st.json.science_audit;
+      const sevColor = { error: "#E05252", warn: "#E0B458", info: C.muted };
+      return /* @__PURE__ */ React.createElement(Panel, { style: { borderLeft: "3px solid #5AA9A3" } }, /* @__PURE__ */ React.createElement(H, { sub: "the honesty is the feature, not the fine print" }, "Epistemic status"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 10 } }, caveats.map((c, i) => /* @__PURE__ */ React.createElement("span", { key: i, style: { fontSize: 10.5, color: C.dim, background: "rgba(237,232,220,0.04)", border: "1px solid rgba(237,232,220,0.1)", borderRadius: 6, padding: "4px 8px", lineHeight: 1.4 } }, c))), cov && /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 14, flexWrap: "wrap", marginBottom: 10 } }, ["S", "D"].map((k) => cov[k] && /* @__PURE__ */ React.createElement("div", { key: k, style: { flex: "1 1 160px" } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 10.5, color: C.muted, marginBottom: 3 } }, "Block ", k, " coverage ", Math.round(cov[k].coverage * 100), "%", cov[k].degraded ? " · degraded" : ""), /* @__PURE__ */ React.createElement("div", { style: { height: 6, borderRadius: 99, background: "rgba(237,232,220,0.07)" } }, /* @__PURE__ */ React.createElement("div", { style: { width: Math.round(cov[k].coverage * 100) + "%", height: "100%", borderRadius: 99, background: cov[k].degraded ? "#E8853D" : "#7fbf94" } }))))), /* @__PURE__ */ React.createElement("div", { style: { marginBottom: 10 } }, /* @__PURE__ */ React.createElement("div", { style: { ...BS.eyebrow, marginBottom: 5 } }, "What would prove this wrong"), /* @__PURE__ */ React.createElement("ul", { style: { margin: 0, paddingLeft: 16, fontSize: 11.5, color: C.dim, lineHeight: 1.6 } }, FALSIFY.map((f, i) => /* @__PURE__ */ React.createElement("li", { key: i, style: { marginBottom: 3 } }, f)))), audit && audit.flags && /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { ...BS.eyebrow, marginBottom: 5 } }, "Science audit (", audit.counts ? audit.counts.error + " err · " + audit.counts.warn + " warn · " + audit.counts.info + " info" : audit.flags.length, ")"), audit.flags.map((f, i) => /* @__PURE__ */ React.createElement("div", { key: i, style: { display: "flex", gap: 8, padding: "5px 0", borderTop: "1px solid rgba(237,232,220,0.05)" } }, /* @__PURE__ */ React.createElement(Pill, { color: sevColor[f.severity] || C.muted, outline: true }, f.severity), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: C.dim, lineHeight: 1.5 } }, /* @__PURE__ */ React.createElement("b", { style: { color: C.text } }, f.title), " — ", f.detail, f.ref ? /* @__PURE__ */ React.createElement("span", { style: { color: C.faint } }, " (", f.ref, ")") : null)))), /* @__PURE__ */ React.createElement("p", { style: { fontSize: 11, color: C.muted, lineHeight: 1.65, margin: "10px 0 0" } }, COPY.notProbLong));
+    }
+    function FusionPanel({ d, goToCrisis }) {
+      const rows = useMemo(() => analogues(todayFingerprint(d)), [d]);
+      const top = rows[0];
+      return /* @__PURE__ */ React.createElement(Panel, { style: { borderTop: "2px solid #E0B458" } }, /* @__PURE__ */ React.createElement(H, { sub: "from Block S composition · analogy, not forecast" }, COPY.fusionHeader), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 10 } }, rows.map((r) => /* @__PURE__ */ React.createElement("button", { key: r.label, onClick: () => goToCrisis && goToCrisis(r.explorer), style: {
+        cursor: goToCrisis ? "pointer" : "default",
+        borderRadius: 8,
+        padding: "8px 11px",
+        textAlign: "left",
+        border: "1px solid " + (r === top ? "#E0B458" : "rgba(237,232,220,0.14)"),
+        background: r === top ? "rgba(224,180,88,0.1)" : "transparent",
+        color: C.text,
+        flex: "1 1 150px"
+      } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "baseline" } }, /* @__PURE__ */ React.createElement("span", { style: { ...BS.serif, fontSize: 16, fontWeight: 700 } }, r.label), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 12, fontWeight: 700, color: r === top ? "#E0B458" : C.muted } }, Math.round(r.similarity * 100), "%")), /* @__PURE__ */ React.createElement("div", { style: { height: 5, borderRadius: 99, background: "rgba(237,232,220,0.07)", margin: "5px 0" } }, /* @__PURE__ */ React.createElement("div", { style: { width: Math.round(r.similarity * 100) + "%", height: "100%", borderRadius: 99, background: r === top ? "#E0B458" : C.muted, opacity: 0.8 } })), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 10, color: C.faint, lineHeight: 1.4 } }, r.note)))), top && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11.5, color: C.dim, lineHeight: 1.6 } }, /* @__PURE__ */ React.createElement("b", { style: { color: C.text } }, "Nearest analogue: ", top.label, "."), " Per-dimension gap (smaller = more alike):", /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8, flexWrap: "wrap", marginTop: 6 } }, top.per.map((p) => /* @__PURE__ */ React.createElement("span", { key: p.k, style: { fontSize: 10, color: C.muted, background: "rgba(237,232,220,0.04)", borderRadius: 5, padding: "3px 7px" } }, p.label, ": ", p.gap == null ? "n/a" : "Δ" + p.gap.toFixed(2))))), /* @__PURE__ */ React.createElement("p", { style: { fontSize: 11, color: C.faint, lineHeight: 1.6, margin: "10px 0 0" } }, "This is a weak, stylized similarity across five hand-set dimensions — an analogy, not a forecast. Today may match NO past crisis (rational general-purpose-technology repricing; n≈4 reference class). The leverage dimension is approximate (no direct block-S leverage indicator). Jordà-Schularick-Taylor: ", /* @__PURE__ */ React.createElement("i", null, "unlevered"), " equity bubbles historically produce shallower macro damage than credit-levered ones — use the nearest analogue to weight which havens in the atlas are most relevant, then judge for yourself."), goToCrisis && top.explorer && /* @__PURE__ */ React.createElement("button", { onClick: () => goToCrisis(top.explorer), style: {
+        marginTop: 10,
+        cursor: "pointer",
+        fontSize: 12,
+        fontWeight: 700,
+        color: "#0E1526",
+        background: "#E0B458",
+        border: "none",
+        borderRadius: 7,
+        padding: "7px 12px"
+      } }, "Open the atlas → ", top.label, " ›"));
+    }
+    function DetailInner({ goToCrisis }) {
+      const s = useScore();
+      if (s.loading)
+        return /* @__PURE__ */ React.createElement(Panel, null, /* @__PURE__ */ React.createElement("div", { style: { color: C.faint, fontSize: 13 } }, "loading the regime gauge…"));
+      if (s.notReady)
+        return /* @__PURE__ */ React.createElement(Panel, null, /* @__PURE__ */ React.createElement("div", { style: { color: C.faint, fontSize: 13 } }, "The gauge is warming up — no snapshot has been computed yet. Check back shortly."));
+      if (s.error || !s.json)
+        return /* @__PURE__ */ React.createElement(Panel, null, /* @__PURE__ */ React.createElement("div", { style: { color: C.faint, fontSize: 13 } }, "The regime gauge is unavailable right now. The crisis atlas is unaffected."));
+      const d = s.json.data, meta = s.json.meta;
+      return /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 14 } }, /* @__PURE__ */ React.createElement(HeadlinePanel, { d, meta }), /* @__PURE__ */ React.createElement(AnatomyPanel, { d }), /* @__PURE__ */ React.createElement(RedFlagPanel, { d }), /* @__PURE__ */ React.createElement(LadderPanel, { d }), /* @__PURE__ */ React.createElement(HistoryPanel, null), /* @__PURE__ */ React.createElement(FusionPanel, { d, goToCrisis }), /* @__PURE__ */ React.createElement(EpistemicPanel, { meta }), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 10, color: C.faint, textAlign: "center", lineHeight: 1.6 } }, "bubblegauge ", meta.service_version || "3.1.0", " · ", meta.disclaimer || "Research, not advice.", DEMO ? " · DEMO fixture (offline) — re-verify against the live service" : ""));
+    }
+    function DetailTab(props) {
+      return /* @__PURE__ */ React.createElement(Boundary, { fallback: /* @__PURE__ */ React.createElement(Panel, null, /* @__PURE__ */ React.createElement("div", { style: { color: C.faint, fontSize: 13 } }, "The regime gauge hit an error and was isolated. The crisis atlas is unaffected.")) }, /* @__PURE__ */ React.createElement(DetailInner, { goToCrisis: props.goToCrisis }));
+    }
+    function StripBoundary(props) {
+      return /* @__PURE__ */ React.createElement(Boundary, { fallback: null }, /* @__PURE__ */ React.createElement(Strip, { goToDetail: props.goToDetail }));
+    }
+    const FEED_FIX_SERIES = {
+      qqq: [362.61, 372.58, 382.55, 392.53, 402.5, 388.6, 374.7, 360.8, 346.9, 333, 319.1, 309.77, 300.45, 291.12, 281.8, 272.48, 263.15, 253.83, 272.56, 291.3, 310.03, 328.77, 347.5, 366.24, 374.29, 382.35, 390.41, 398.47, 406.53, 414.58, 422.64, 430.7, 438.76, 455.08, 471.39, 487.71, 504.03, 507.05, 510.07, 513.09, 516.11, 519.14, 522.16, 500.4, 451.45, 402.5, 430.78, 459.06, 487.35, 515.63, 543.91, 557.21, 570.51, 583.8, 577.46, 571.11, 564.77, 558.42, 650.88, 743.35, 711.8],
+      gold: [169, 168.1, 167.2, 166.3, 165.39, 164.49, 163.59, 162.69, 161.79, 160.89, 159.99, 159.09, 158.18, 157.28, 156.38, 155.48, 158.65, 161.82, 164.99, 168.16, 171.32, 174.49, 177.66, 180.83, 183.65, 186.46, 189.28, 192.1, 194.91, 197.73, 200.55, 203.36, 206.18, 210.69, 215.19, 219.7, 224.21, 228.71, 233.22, 237.73, 242.23, 246.74, 258.57, 270.4, 282.23, 294.34, 306.45, 318.56, 330.68, 342.79, 354.9, 378.56, 402.22, 425.88, 475.74, 525.59, 485.59, 445.6, 405.6, 397.15, 388.7],
+      tbill3m_tr: [91.55, 91.58, 91.61, 91.64, 91.67, 91.7, 91.73, 91.76, 91.79, 91.82, 91.86, 91.89, 91.92, 92.12, 92.32, 92.52, 92.72, 92.92, 93.25, 93.58, 93.9, 94.23, 94.56, 94.89, 95.21, 95.76, 96.31, 96.86, 97.41, 97.96, 98.34, 98.72, 99.1, 99.48, 99.87, 100.25, 100.63, 101.01, 101.39, 101.77, 102.15, 102.54, 102.92, 103.3, 103.68, 104.06, 104.44, 104.82, 105.21, 105.59, 105.97, 106.35, 106.73, 107.11, 107.44, 107.77, 108.09, 108.42, 108.75, 109.08, 109.4],
+      ust10y_tr: [118, 117.53, 117.06, 116.58, 116.11, 115.64, 115.17, 114.7, 114.22, 113.75, 113.28, 111.43, 109.57, 107.72, 105.86, 104.01, 102.15, 100.3, 99.95, 99.59, 99.24, 98.88, 98.53, 98.18, 97.82, 97.47, 97.11, 96.76, 99.12, 101.48, 101.68, 101.87, 102.07, 102.27, 102.46, 102.66, 102.86, 103.05, 103.25, 103.45, 103.64, 103.84, 104.33, 104.82, 105.31, 105.81, 106.3, 106.79, 107.28, 107.77, 108.27, 108.76, 109.25, 109.74, 110.08, 110.41, 110.75, 111.09, 111.43, 111.76, 112.1],
+      usdchf: [0.905, 0.9099, 0.9148, 0.9197, 0.9247, 0.9298, 0.9349, 0.9401, 0.9453, 0.9506, 0.956, 0.9614, 0.9669, 0.9724, 0.978, 0.9837, 0.9709, 0.9584, 0.9462, 0.9344, 0.9228, 0.9115, 0.9005, 0.8897, 0.8793, 0.869, 0.859, 0.8492, 0.8396, 0.8303, 0.8354, 0.8406, 0.8458, 0.8511, 0.8565, 0.8619, 0.8674, 0.873, 0.8786, 0.8844, 0.8902, 0.896, 0.8865, 0.8771, 0.8679, 0.8589, 0.8501, 0.8415, 0.8331, 0.8248, 0.8167, 0.8087, 0.8009, 0.7847, 0.7691, 0.7542, 0.7637, 0.7735, 0.7835, 0.7939, 0.8044],
+      usdjpy: [109.8, 111.81, 113.9, 116.07, 118.32, 120.66, 123.09, 125.63, 128.27, 131.03, 133.9, 136.91, 140.05, 143.34, 146.79, 150.41, 150.24, 150.07, 149.9, 149.73, 149.56, 149.39, 149.22, 149.05, 148.88, 148.71, 148.55, 148.38, 149.73, 151.1, 152.5, 153.93, 155.38, 156.86, 158.37, 159.9, 161.47, 160.68, 159.9, 159.13, 158.37, 157.61, 156.86, 156.11, 155.38, 154.65, 153.93, 153.21, 152.5, 153.26, 154.03, 154.81, 155.6, 156.39, 157.19, 158, 158.82, 159.65, 160.49, 161.33, 162.19],
+      usd_broad_index: [112.67, 114.68, 116.7, 118.71, 120.72, 122.73, 124.74, 126.76, 128.77, 130.78, 132.79, 134.8, 136.82, 138.83, 140.84, 139.71, 138.59, 137.46, 136.33, 135.21, 134.08, 132.95, 131.83, 130.7, 129.57, 128.45, 127.32, 126.19, 125.07, 123.94, 124.6, 125.25, 125.91, 126.57, 127.22, 127.88, 128.54, 129.2, 129.85, 130.51, 131.17, 131.83, 129.73, 127.64, 125.55, 123.46, 121.36, 119.27, 117.18, 117.55, 117.93, 118.3, 118.68, 119.06, 119.43, 119.62, 119.81, 120, 120.18, 120.37, 120.56],
+      btc: [35628, 44802, 53976, 63151, 72325, 68049, 63774, 59499, 55223, 50948, 46673, 42397, 38122, 33847, 29571, 25296, 21021, 16745, 18645, 20545, 22446, 24346, 26246, 28146, 32006, 35866, 39725, 43585, 47445, 51304, 55164, 59024, 62883, 66743, 70603, 74463, 78322, 82182, 86042, 89901, 93761, 97621, 101077, 104533, 107988, 111444, 114900, 118356, 121812, 125268, 128724, 132180, 121670, 111159, 102965, 94770, 86576, 78382, 73869, 69356, 64843]
+    };
+    function fixMonth(i) {
+      const y = 2021 + Math.floor((6 + i) / 12), m = (6 + i) % 12 + 1;
+      return y + "-" + (m < 10 ? "0" : "") + m;
+    }
+    const FG_FIX_SERIES = [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, 31, 36, 44, 52, 58, 49, 41, 34, 27, 24, 29, 31, 46];
+    const FEED_FIX_META = {
+      qqq: ["NASDAQ-100 (QQQ ETF proxy, dividend-adjusted)", "total_return", "tiingo:QQQ"],
+      gold: ["Gold (GLD ETF proxy)", "price", "tiingo:GLD"],
+      tbill3m_tr: ["3M T-bills / cash TR (BIL ETF proxy)", "total_return", "tiingo:BIL"],
+      ust10y_tr: ["10Y US Treasuries TR (IEF ETF proxy)", "total_return", "tiingo:IEF"],
+      usdchf: ["USD/CHF (Fed H.10)", "price", "fred:DEXSZUS"],
+      usdjpy: ["USD/JPY (Fed H.10)", "price", "fred:DEXJPUS"],
+      usd_broad_index: ["US dollar (Fed Broad Dollar Index)", "index", "fred:DTWEXBGS"],
+      btc: ["Bitcoin (BTC/USD)", "price", "twelvedata:BTC/USD"]
+    };
+    const FEED_FIXTURE = {
+      data: {
+        anchor_month: "2026-07",
+        anchor_partial: true,
+        series: function() {
+          const out = {};
+          Object.keys(FEED_FIX_SERIES).forEach(function(k) {
+            out[k] = {
+              name: FEED_FIX_META[k][0],
+              kind: FEED_FIX_META[k][1],
+              unit: "USD",
+              points: FEED_FIX_SERIES[k].map(function(v, i) {
+                return { month: fixMonth(i), value: v };
+              }),
+              as_of: "2026-07-15",
+              source: FEED_FIX_META[k][2],
+              available: true,
+              stale: false
+            };
+          });
+          out.fear_greed = {
+            name: "CNN Fear & Greed Index",
+            kind: "sentiment_index",
+            unit: "index_0_100",
+            points: FG_FIX_SERIES.map(function(v, i) {
               return { month: fixMonth(i), value: v };
             }),
             as_of: "2026-07-15",
-            source: FEED_FIX_META[k][2],
+            source: "cnn:fear_greed",
             available: true,
             stale: false
           };
-        });
-        out.fear_greed = {
-          name: "CNN Fear & Greed Index",
-          kind: "sentiment_index",
-          unit: "index_0_100",
-          points: FG_FIX_SERIES.map(function(v, i) {
-            return { month: fixMonth(i), value: v };
-          }),
-          as_of: "2026-07-15",
-          source: "cnn:fear_greed",
-          available: true,
-          stale: false
-        };
-        return out;
-      }(),
-      // Real capture-#2 scalar values (2026-07-15T23:29:51Z), abbreviated to the ones the card renders.
-      metrics: {
-        cape: { value: 42.18, unit: "ratio", as_of: "2026-07-15", source: "multpl", available: true, stale: false },
-        sp500_top10_weight_pct: { value: 37.54, unit: "pct", as_of: "2026-07-15", source: "ssga_spy_xlsx", available: true, stale: false },
-        hy_oas_bps: { value: 272, unit: "bps", as_of: "2026-07-14", source: "fred:BAMLH0A0HYM2", available: true, stale: false },
-        gold_spot: { value: 4058.69, unit: "USD", as_of: "2026-07-16", source: "twelvedata:XAU/USD", available: true, stale: false },
-        usdjpy: { value: 162.09, unit: "JPY-per-USD", as_of: "2026-07-16", source: "twelvedata:USD/JPY", available: true, stale: false },
-        usdchf: { value: 0.80483, unit: "CHF-per-USD", as_of: "2026-07-16", source: "twelvedata:USD/CHF", available: true, stale: false },
-        btc_spot: { value: 64843.57, unit: "USD", as_of: "2026-07-15", source: "twelvedata:BTC/USD", available: true, stale: false },
-        btc_drawdown_pct: { value: -43.99, unit: "pct", as_of: "2026-07-15", source: "twelvedata:BTC/USD", available: true, stale: false, note: "vs btc_ath (provider monthly closes since 2017-08 + spot - not a curated record)" },
-        gold_ttm_pct: { value: 22.9, unit: "pct", as_of: "2026-07-31", source: "tiingo:GLD", available: true, stale: false, note: "trailing 12 months, GLD basis" },
-        mmf_total_assets_usd: { value: 8289569, unit: "USD_mn", as_of: "2026-01-01", source: "fred:MMMFFAQ027S", available: true, stale: true, note: "quarterly Z.1 - publication lags ~1 quarter" },
-        fear_greed: {
-          value: 46,
-          unit: "index_0_100",
-          as_of: "2026-07-15",
-          source: "cnn:fear_greed",
-          available: true,
-          stale: false,
-          note: "unofficial CNN endpoint; non-scoring context (demo fixture)",
-          detail: { rating: "neutral", timestamp: "2026-07-15T23:19:21+00:00", previous_close: 46, previous_1_week: 44, previous_1_month: 31, previous_1_year: 31 }
+          return out;
+        }(),
+        // Real capture-#2 scalar values (2026-07-15T23:29:51Z), abbreviated to the ones the card renders.
+        metrics: {
+          cape: { value: 42.18, unit: "ratio", as_of: "2026-07-15", source: "multpl", available: true, stale: false },
+          sp500_top10_weight_pct: { value: 37.54, unit: "pct", as_of: "2026-07-15", source: "ssga_spy_xlsx", available: true, stale: false },
+          hy_oas_bps: { value: 272, unit: "bps", as_of: "2026-07-14", source: "fred:BAMLH0A0HYM2", available: true, stale: false },
+          gold_spot: { value: 4058.69, unit: "USD", as_of: "2026-07-16", source: "twelvedata:XAU/USD", available: true, stale: false },
+          usdjpy: { value: 162.09, unit: "JPY-per-USD", as_of: "2026-07-16", source: "twelvedata:USD/JPY", available: true, stale: false },
+          usdchf: { value: 0.80483, unit: "CHF-per-USD", as_of: "2026-07-16", source: "twelvedata:USD/CHF", available: true, stale: false },
+          btc_spot: { value: 64843.57, unit: "USD", as_of: "2026-07-15", source: "twelvedata:BTC/USD", available: true, stale: false },
+          btc_drawdown_pct: { value: -43.99, unit: "pct", as_of: "2026-07-15", source: "twelvedata:BTC/USD", available: true, stale: false, note: "vs btc_ath (provider monthly closes since 2017-08 + spot - not a curated record)" },
+          gold_ttm_pct: { value: 22.9, unit: "pct", as_of: "2026-07-31", source: "tiingo:GLD", available: true, stale: false, note: "trailing 12 months, GLD basis" },
+          mmf_total_assets_usd: { value: 8289569, unit: "USD_mn", as_of: "2026-01-01", source: "fred:MMMFFAQ027S", available: true, stale: true, note: "quarterly Z.1 - publication lags ~1 quarter" },
+          fear_greed: {
+            value: 46,
+            unit: "index_0_100",
+            as_of: "2026-07-15",
+            source: "cnn:fear_greed",
+            available: true,
+            stale: false,
+            note: "unofficial CNN endpoint; non-scoring context (demo fixture)",
+            detail: { rating: "neutral", timestamp: "2026-07-15T23:19:21+00:00", previous_close: 46, previous_1_week: 44, previous_1_month: 31, previous_1_year: 31 }
+          }
         }
-      }
-    },
-    meta: { computed_at: "2026-07-15T23:29:51+00:00", service_version: "3.4.0", disclaimer: "Research, not advice." }
-  };
-  function validFeed(j) {
-    return !!(j && j.data && j.data.series && typeof j.data.series === "object" && j.data.metrics && typeof j.data.metrics === "object" && typeof j.data.anchor_month === "string");
-  }
-  const FG_RATINGS = ["extreme fear", "fear", "neutral", "greed", "extreme greed"];
-  const FG_COLORS = { "extreme fear": "#E05252", "fear": "#C0564A", "neutral": "#C7CBD6", "greed": "#7fbf94", "extreme greed": "#5AA9A3" };
-  const FG_ZONES = [25, 45, 55, 75];
-  function validFearGreed(m) {
-    if (!(m && m.available && isNum(m.value) && m.value >= 0 && m.value <= 100))
-      return false;
-    const rating = m.detail && m.detail.rating;
-    return rating == null || FG_RATINGS.indexOf(rating) !== -1;
-  }
-  const useFeed = () => useEndpoint("/api/v1/dashboard/feed", FEED_FIXTURE, validFeed);
-  const AI_MAP = {
-    mkt: { key: "qqq", inv: false, label: "NASDAQ-100 (QQQ TR proxy) — feared market" },
-    au: { key: "gold", inv: false, label: "Gold (GLD proxy) — lead regime-matched hedge" },
-    cash: { key: "tbill3m_tr", inv: false, label: "3M T-bills / cash TR (BIL proxy) — phase 1" },
-    ust: { key: "ust10y_tr", inv: false, label: "10Y US Treasuries TR (IEF proxy) — challenged" },
-    chf: { key: "usdchf", inv: true, label: "Swiss franc vs USD (inverted USD/CHF)" },
-    usd: { key: "usd_broad_index", inv: false, label: "US dollar (Fed broad index — not DXY)" },
-    jpy: { key: "usdjpy", inv: true, label: "Japanese yen vs USD (inverted USD/JPY)" },
-    btc: { key: "btc", inv: false, label: "Bitcoin (BTC/USD)" }
-  };
-  function buildAiLive(json) {
-    if (!json || !validFeed(json))
-      return null;
-    const d = json.data, out = {
-      a: {},
-      labels: {},
-      live: {},
-      asOf: {},
-      anchorMonth: d.anchor_month,
-      anchorPartial: !!d.anchor_partial,
-      computedAt: json.meta && json.meta.computed_at,
-      serviceVersion: json.meta && json.meta.service_version,
-      metrics: d.metrics,
-      // v1.1: fear_greed rides along RAW — its own 0-100 axis, never through the rebasing below.
-      fgSeries: d.series.fear_greed || null
+      },
+      meta: { computed_at: "2026-07-15T23:29:51+00:00", service_version: "3.4.0", disclaimer: "Research, not advice." }
     };
-    Object.keys(AI_MAP).forEach(function(lineKey) {
-      const m = AI_MAP[lineKey], s = d.series[m.key];
-      if (!s || !s.available || !Array.isArray(s.points)) {
-        out.live[lineKey] = false;
-        return;
-      }
-      const anchors = [];
-      s.points.forEach(function(p, i) {
-        if (p && isNum(p.value) && p.value > 0)
-          anchors.push([i - 60, m.inv ? 1 / p.value : p.value]);
-      });
-      if (anchors.length < 2) {
-        out.live[lineKey] = false;
-        return;
-      }
-      out.a[lineKey] = anchors;
-      out.labels[lineKey] = m.label;
-      out.live[lineKey] = true;
-      out.asOf[lineKey] = s.as_of || null;
-    });
-    return Object.keys(out.a).length ? out : null;
-  }
-  function useAiLive() {
-    const f = useFeed();
-    return useMemo(function() {
-      return f.json ? buildAiLive(f.json) : null;
-    }, [f.json]);
-  }
-  function fmtMetric(mx, id, fmt) {
-    const m = mx && mx[id];
-    if (!m || !m.available || !isNum(m.value))
-      return null;
-    return { text: fmt(m.value), title: (m.as_of ? "as of " + m.as_of : "") + (m.source ? " · " + m.source : "") + (m.note ? " · " + m.note : ""), stale: !!m.stale };
-  }
-  function FearGreedBlock({ live }) {
-    const m = live.metrics && live.metrics.fear_greed;
-    if (!validFearGreed(m))
-      return null;
-    const det = m.detail || {};
-    const rating = det.rating || null;
-    const col = rating && FG_COLORS[rating] || C.dim;
-    const zoneCols = ["#E05252", "#C0564A", "#9AA3B5", "#7fbf94", "#5AA9A3"];
-    const edges = [0].concat(FG_ZONES, [100]);
-    const deltas = [["prev close", det.previous_close], ["1w", det.previous_1_week], ["1m", det.previous_1_month], ["1y", det.previous_1_year]].filter((p) => isNum(p[1]));
-    const s = live.fgSeries;
-    const pts = s && s.available && Array.isArray(s.points) ? s.points : null;
-    let segs = [];
-    if (pts) {
-      let cur = [];
-      pts.forEach(function(p, i) {
-        if (p && isNum(p.value))
-          cur.push(i / 60 * 100 + "," + (100 - p.value));
-        else {
-          if (cur.length > 1)
-            segs.push(cur.join(" "));
-          cur = [];
+    function validFeed(j) {
+      return !!(j && j.data && j.data.series && typeof j.data.series === "object" && j.data.metrics && typeof j.data.metrics === "object" && typeof j.data.anchor_month === "string");
+    }
+    const FG_RATINGS = ["extreme fear", "fear", "neutral", "greed", "extreme greed"];
+    const FG_COLORS = { "extreme fear": "#E05252", "fear": "#C0564A", "neutral": "#C7CBD6", "greed": "#7fbf94", "extreme greed": "#5AA9A3" };
+    const FG_ZONES = [25, 45, 55, 75];
+    function validFearGreed(m) {
+      if (!(m && m.available && isNum(m.value) && m.value >= 0 && m.value <= 100))
+        return false;
+      const rating = m.detail && m.detail.rating;
+      return rating == null || FG_RATINGS.indexOf(rating) !== -1;
+    }
+    const useFeed = () => useEndpoint("/api/v1/dashboard/feed", FEED_FIXTURE, validFeed);
+    const AI_MAP = {
+      mkt: { key: "qqq", inv: false, label: "NASDAQ-100 (QQQ TR proxy) — feared market" },
+      au: { key: "gold", inv: false, label: "Gold (GLD proxy) — lead regime-matched hedge" },
+      cash: { key: "tbill3m_tr", inv: false, label: "3M T-bills / cash TR (BIL proxy) — phase 1" },
+      ust: { key: "ust10y_tr", inv: false, label: "10Y US Treasuries TR (IEF proxy) — challenged" },
+      chf: { key: "usdchf", inv: true, label: "Swiss franc vs USD (inverted USD/CHF)" },
+      usd: { key: "usd_broad_index", inv: false, label: "US dollar (Fed broad index — not DXY)" },
+      jpy: { key: "usdjpy", inv: true, label: "Japanese yen vs USD (inverted USD/JPY)" },
+      btc: { key: "btc", inv: false, label: "Bitcoin (BTC/USD)" }
+    };
+    function buildAiLive(json) {
+      if (!json || !validFeed(json))
+        return null;
+      const d = json.data, out = {
+        a: {},
+        labels: {},
+        live: {},
+        asOf: {},
+        anchorMonth: d.anchor_month,
+        anchorPartial: !!d.anchor_partial,
+        computedAt: json.meta && json.meta.computed_at,
+        serviceVersion: json.meta && json.meta.service_version,
+        metrics: d.metrics,
+        // v1.1: fear_greed rides along RAW — its own 0-100 axis, never through the rebasing below.
+        fgSeries: d.series.fear_greed || null
+      };
+      Object.keys(AI_MAP).forEach(function(lineKey) {
+        const m = AI_MAP[lineKey], s = d.series[m.key];
+        if (!s || !s.available || !Array.isArray(s.points)) {
+          out.live[lineKey] = false;
+          return;
         }
+        const anchors = [];
+        s.points.forEach(function(p, i) {
+          if (p && isNum(p.value) && p.value > 0)
+            anchors.push([i - 60, m.inv ? 1 / p.value : p.value]);
+        });
+        if (anchors.length < 2) {
+          out.live[lineKey] = false;
+          return;
+        }
+        out.a[lineKey] = anchors;
+        out.labels[lineKey] = m.label;
+        out.live[lineKey] = true;
+        out.asOf[lineKey] = s.as_of || null;
       });
-      if (cur.length > 1)
-        segs.push(cur.join(" "));
+      return Object.keys(out.a).length ? out : null;
     }
-    const tip = "as of " + (m.as_of || "?") + (det.timestamp ? " (" + det.timestamp + ")" : "") + " · " + (m.source || "cnn:fear_greed") + " · unofficial CNN endpoint — context only, does not feed the bubble score" + (m.note ? " · " + m.note : "");
-    return /* @__PURE__ */ React.createElement("div", { title: tip, style: { marginTop: 8, marginBottom: 6, maxWidth: 420 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "baseline", gap: 8, flexWrap: "wrap", marginBottom: 4 } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 10.5, color: C.muted } }, "CNN Fear & Greed"), /* @__PURE__ */ React.createElement("b", { style: { fontSize: 13, color: col, fontVariantNumeric: "tabular-nums" } }, m.value.toFixed(1)), rating ? /* @__PURE__ */ React.createElement("span", { style: { fontSize: 10.5, color: col, fontStyle: "italic" } }, rating) : null, m.stale ? /* @__PURE__ */ React.createElement("span", { style: { fontSize: 10, color: "#E8853D" } }, "·stale") : null), /* @__PURE__ */ React.createElement("div", { style: { position: "relative", height: 8, borderRadius: 4, overflow: "hidden", display: "flex" } }, zoneCols.map((zc, i) => /* @__PURE__ */ React.createElement("div", { key: i, style: { width: edges[i + 1] - edges[i] + "%", background: zc, opacity: 0.28 } })), /* @__PURE__ */ React.createElement("div", { style: { position: "absolute", left: "calc(" + m.value + "% - 1.5px)", top: 0, bottom: 0, width: 3, background: col, borderRadius: 1.5 } })), deltas.length > 0 && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 9.5, color: C.faint, marginTop: 3 } }, deltas.map((p, i) => /* @__PURE__ */ React.createElement("span", { key: p[0] }, i > 0 ? " · " : "", p[0], " ", /* @__PURE__ */ React.createElement("span", { style: { color: C.dim, fontVariantNumeric: "tabular-nums" } }, Math.round(p[1]))))), segs.length > 0 && /* @__PURE__ */ React.createElement("svg", { viewBox: "0 0 100 100", preserveAspectRatio: "none", style: { display: "block", width: "100%", height: 34, marginTop: 4 } }, FG_ZONES.map((z) => /* @__PURE__ */ React.createElement("line", { key: z, x1: "0", x2: "100", y1: 100 - z, y2: 100 - z, stroke: "rgba(237,232,220,0.10)", strokeWidth: "0.8", vectorEffect: "non-scaling-stroke" })), segs.map((d, i) => /* @__PURE__ */ React.createElement("polyline", { key: i, points: d, fill: "none", stroke: col, strokeWidth: "1.4", vectorEffect: "non-scaling-stroke" }))), segs.length > 0 && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 8.5, color: C.faint, display: "flex", justifyContent: "space-between" } }, /* @__PURE__ */ React.createElement("span", null, "t−60 · gaps = no observation (CNN history ≈ 13 months)"), /* @__PURE__ */ React.createElement("span", null, live.anchorMonth)));
-  }
-  function AiLiveInner() {
-    const live = useAiLive();
-    if (!live)
-      return null;
-    const mx = live.metrics || {};
-    const pills = [
-      ["CAPE", fmtMetric(mx, "cape", (v) => v.toFixed(1))],
-      ["Gold spot", fmtMetric(mx, "gold_spot", (v) => "$" + Math.round(v).toLocaleString("en-US"))],
-      ["Gold 12m", fmtMetric(mx, "gold_ttm_pct", (v) => (v > 0 ? "+" : "") + v.toFixed(1) + "%")],
-      ["USD/JPY", fmtMetric(mx, "usdjpy", (v) => v.toFixed(1))],
-      ["USD/CHF", fmtMetric(mx, "usdchf", (v) => v.toFixed(3))],
-      ["BTC", fmtMetric(mx, "btc_spot", (v) => "$" + Math.round(v / 1e3) + "k")],
-      ["BTC vs ATH", fmtMetric(mx, "btc_drawdown_pct", (v) => v.toFixed(0) + "%")],
-      ["HY OAS", fmtMetric(mx, "hy_oas_bps", (v) => Math.round(v) + " bp")],
-      ["Top-10 wt", fmtMetric(mx, "sp500_top10_weight_pct", (v) => v.toFixed(1) + "%")],
-      ["MMF assets", fmtMetric(mx, "mmf_total_assets_usd", (v) => "$" + (v / 1e6).toFixed(2) + "tn")]
-    ].filter((p) => p[1]);
-    const staticLines = Object.keys(AI_MAP).filter((k) => !live.live[k]);
-    return /* @__PURE__ */ React.createElement("div", { style: { ...BS.panel, padding: "10px 14px", marginTop: 10, borderLeft: "3px solid #7fbf94" } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 6 } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 10.5, fontWeight: 800, letterSpacing: "0.1em", color: "#7fbf94" } }, "LIVE BACKFILL"), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, color: C.dim } }, "series re-anchored to ", /* @__PURE__ */ React.createElement("b", null, live.anchorMonth), live.anchorPartial ? " (month in progress — t0 is month-to-date)" : "", " via the bubblegauge feed", live.serviceVersion ? " " + live.serviceVersion : "", DEMO ? " · demo fixture" : ""), /* @__PURE__ */ React.createElement(Freshness, { computedAt: live.computedAt })), pills.length > 0 && /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: "4px 10px", flexWrap: "wrap", marginBottom: 6 } }, pills.map((p) => /* @__PURE__ */ React.createElement("span", { key: p[0], title: p[1].title, style: { fontSize: 10.5, color: C.dim, whiteSpace: "nowrap" } }, /* @__PURE__ */ React.createElement("span", { style: { color: C.muted } }, p[0]), " ", /* @__PURE__ */ React.createElement("b", { style: { color: C.text, fontVariantNumeric: "tabular-nums" } }, p[1].text), p[1].stale ? /* @__PURE__ */ React.createElement("span", { style: { color: "#E8853D" } }, " ·stale") : null))), /* @__PURE__ */ React.createElement(FearGreedBlock, { live }), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 9.5, color: C.faint, lineHeight: 1.5 } }, "Chart lines use labeled proxies (QQQ / GLD / IEF / BIL ETFs; Fed broad dollar index, not ICE DXY; FX lines inverted to show the currency vs USD).", staticLines.length ? " Static Jul-2026 snapshot (feed unavailable): " + staticLines.join(", ") + "." : "", " ", "The panel's written analysis remains the Jul 2026 editorial snapshot. Refreshes twice daily."));
-  }
-  function AiLivePanel() {
-    return /* @__PURE__ */ React.createElement(Boundary, { fallback: null }, /* @__PURE__ */ React.createElement(AiLiveInner, null));
-  }
-  function LiveBadgeInner({ keys, label }) {
-    const f = useFeed();
-    const live = useMemo(function() {
-      return f.json ? buildAiLive(f.json) : null;
-    }, [f.json]);
-    if (f.loading)
-      return null;
-    const ks = keys && keys.length ? keys : Object.keys(AI_MAP);
-    const pre = label ? label + ": " : "";
-    if (!live) {
-      return /* @__PURE__ */ React.createElement(Pill, { color: C.muted, outline: true, title: "The bubblegauge feed is unavailable — these 2026 lines use the static Jul 2026 anchors." }, pre, "static · Jul 2026 snapshot");
+    function useAiLive() {
+      const f = useFeed();
+      return useMemo(function() {
+        return f.json ? buildAiLive(f.json) : null;
+      }, [f.json]);
     }
-    const staticKs = ks.filter(function(k) {
-      return !live.live[k];
-    });
-    if (!staticKs.length) {
-      return /* @__PURE__ */ React.createElement(Pill, { color: "#7fbf94", title: "2026 lines re-anchored from the bubblegauge feed" + (live.anchorPartial ? " — " + live.anchorMonth + " is month-to-date" : "") }, pre, "LIVE · ", live.anchorMonth, live.anchorPartial ? " (mtd)" : "");
+    function fmtMetric(mx, id, fmt) {
+      const m = mx && mx[id];
+      if (!m || !m.available || !isNum(m.value))
+        return null;
+      return { text: fmt(m.value), title: (m.as_of ? "as of " + m.as_of : "") + (m.source ? " · " + m.source : "") + (m.note ? " · " + m.note : ""), stale: !!m.stale };
     }
-    return /* @__PURE__ */ React.createElement(Pill, { color: "#d9b45c", title: "Feed partially available — static Jul 2026 snapshot for: " + staticKs.join(", ") }, pre, "PARTLY LIVE · ", live.anchorMonth);
-  }
-  function LiveBadge(props) {
-    return /* @__PURE__ */ React.createElement(Boundary, { fallback: null }, /* @__PURE__ */ React.createElement(LiveBadgeInner, { keys: props.keys, label: props.label }));
-  }
-  window.BubbleGauge = {
-    enabled: true,
-    demo: DEMO,
-    apiBase: API_BASE,
-    tab: { id: "bubblegauge", label: "AI Regime" },
-    Strip: StripBoundary,
-    DetailTab,
-    useAiLive,
-    AiLivePanel,
-    LiveBadge
-  };
+    function FearGreedBlock({ live }) {
+      const m = live.metrics && live.metrics.fear_greed;
+      if (!validFearGreed(m))
+        return null;
+      const det = m.detail || {};
+      const rating = det.rating || null;
+      const col = rating && FG_COLORS[rating] || C.dim;
+      const zoneCols = ["#E05252", "#C0564A", "#9AA3B5", "#7fbf94", "#5AA9A3"];
+      const edges = [0].concat(FG_ZONES, [100]);
+      const deltas = [["prev close", det.previous_close], ["1w", det.previous_1_week], ["1m", det.previous_1_month], ["1y", det.previous_1_year]].filter((p) => isNum(p[1]));
+      const s = live.fgSeries;
+      const pts = s && s.available && Array.isArray(s.points) ? s.points : null;
+      let segs = [];
+      if (pts) {
+        let cur = [];
+        pts.forEach(function(p, i) {
+          if (p && isNum(p.value))
+            cur.push(i / 60 * 100 + "," + (100 - p.value));
+          else {
+            if (cur.length > 1)
+              segs.push(cur.join(" "));
+            cur = [];
+          }
+        });
+        if (cur.length > 1)
+          segs.push(cur.join(" "));
+      }
+      const tip = "as of " + (m.as_of || "?") + (det.timestamp ? " (" + det.timestamp + ")" : "") + " · " + (m.source || "cnn:fear_greed") + " · unofficial CNN endpoint — context only, does not feed the bubble score" + (m.note ? " · " + m.note : "");
+      return /* @__PURE__ */ React.createElement("div", { title: tip, style: { marginTop: 8, marginBottom: 6, maxWidth: 420 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "baseline", gap: 8, flexWrap: "wrap", marginBottom: 4 } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 10.5, color: C.muted } }, "CNN Fear & Greed"), /* @__PURE__ */ React.createElement("b", { style: { fontSize: 13, color: col, fontVariantNumeric: "tabular-nums" } }, m.value.toFixed(1)), rating ? /* @__PURE__ */ React.createElement("span", { style: { fontSize: 10.5, color: col, fontStyle: "italic" } }, rating) : null, m.stale ? /* @__PURE__ */ React.createElement("span", { style: { fontSize: 10, color: "#E8853D" } }, "·stale") : null), /* @__PURE__ */ React.createElement("div", { style: { position: "relative", height: 8, borderRadius: 4, overflow: "hidden", display: "flex" } }, zoneCols.map((zc, i) => /* @__PURE__ */ React.createElement("div", { key: i, style: { width: edges[i + 1] - edges[i] + "%", background: zc, opacity: 0.28 } })), /* @__PURE__ */ React.createElement("div", { style: { position: "absolute", left: "calc(" + m.value + "% - 1.5px)", top: 0, bottom: 0, width: 3, background: col, borderRadius: 1.5 } })), deltas.length > 0 && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 9.5, color: C.faint, marginTop: 3 } }, deltas.map((p, i) => /* @__PURE__ */ React.createElement("span", { key: p[0] }, i > 0 ? " · " : "", p[0], " ", /* @__PURE__ */ React.createElement("span", { style: { color: C.dim, fontVariantNumeric: "tabular-nums" } }, Math.round(p[1]))))), segs.length > 0 && /* @__PURE__ */ React.createElement("svg", { viewBox: "0 0 100 100", preserveAspectRatio: "none", style: { display: "block", width: "100%", height: 34, marginTop: 4 } }, FG_ZONES.map((z) => /* @__PURE__ */ React.createElement("line", { key: z, x1: "0", x2: "100", y1: 100 - z, y2: 100 - z, stroke: "rgba(237,232,220,0.10)", strokeWidth: "0.8", vectorEffect: "non-scaling-stroke" })), segs.map((d, i) => /* @__PURE__ */ React.createElement("polyline", { key: i, points: d, fill: "none", stroke: col, strokeWidth: "1.4", vectorEffect: "non-scaling-stroke" }))), segs.length > 0 && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 8.5, color: C.faint, display: "flex", justifyContent: "space-between" } }, /* @__PURE__ */ React.createElement("span", null, "t−60 · gaps = no observation (CNN history ≈ 13 months)"), /* @__PURE__ */ React.createElement("span", null, live.anchorMonth)));
+    }
+    function AiLiveInner() {
+      const live = useAiLive();
+      if (!live)
+        return null;
+      const mx = live.metrics || {};
+      const pills = [
+        ["CAPE", fmtMetric(mx, "cape", (v) => v.toFixed(1))],
+        ["Gold spot", fmtMetric(mx, "gold_spot", (v) => "$" + Math.round(v).toLocaleString("en-US"))],
+        ["Gold 12m", fmtMetric(mx, "gold_ttm_pct", (v) => (v > 0 ? "+" : "") + v.toFixed(1) + "%")],
+        ["USD/JPY", fmtMetric(mx, "usdjpy", (v) => v.toFixed(1))],
+        ["USD/CHF", fmtMetric(mx, "usdchf", (v) => v.toFixed(3))],
+        ["BTC", fmtMetric(mx, "btc_spot", (v) => "$" + Math.round(v / 1e3) + "k")],
+        ["BTC vs ATH", fmtMetric(mx, "btc_drawdown_pct", (v) => v.toFixed(0) + "%")],
+        ["HY OAS", fmtMetric(mx, "hy_oas_bps", (v) => Math.round(v) + " bp")],
+        ["Top-10 wt", fmtMetric(mx, "sp500_top10_weight_pct", (v) => v.toFixed(1) + "%")],
+        ["MMF assets", fmtMetric(mx, "mmf_total_assets_usd", (v) => "$" + (v / 1e6).toFixed(2) + "tn")]
+      ].filter((p) => p[1]);
+      const staticLines = Object.keys(AI_MAP).filter((k) => !live.live[k]);
+      return /* @__PURE__ */ React.createElement("div", { style: { ...BS.panel, padding: "10px 14px", marginTop: 10, borderLeft: "3px solid #7fbf94" } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 6 } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 10.5, fontWeight: 800, letterSpacing: "0.1em", color: "#7fbf94" } }, "LIVE BACKFILL"), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, color: C.dim } }, "series re-anchored to ", /* @__PURE__ */ React.createElement("b", null, live.anchorMonth), live.anchorPartial ? " (month in progress — t0 is month-to-date)" : "", " via the bubblegauge feed", live.serviceVersion ? " " + live.serviceVersion : "", DEMO ? " · demo fixture" : ""), /* @__PURE__ */ React.createElement(Freshness, { computedAt: live.computedAt })), pills.length > 0 && /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: "4px 10px", flexWrap: "wrap", marginBottom: 6 } }, pills.map((p) => /* @__PURE__ */ React.createElement("span", { key: p[0], title: p[1].title, style: { fontSize: 10.5, color: C.dim, whiteSpace: "nowrap" } }, /* @__PURE__ */ React.createElement("span", { style: { color: C.muted } }, p[0]), " ", /* @__PURE__ */ React.createElement("b", { style: { color: C.text, fontVariantNumeric: "tabular-nums" } }, p[1].text), p[1].stale ? /* @__PURE__ */ React.createElement("span", { style: { color: "#E8853D" } }, " ·stale") : null))), /* @__PURE__ */ React.createElement(FearGreedBlock, { live }), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 9.5, color: C.faint, lineHeight: 1.5 } }, "Chart lines use labeled proxies (QQQ / GLD / IEF / BIL ETFs; Fed broad dollar index, not ICE DXY; FX lines inverted to show the currency vs USD).", staticLines.length ? " Static Jul-2026 snapshot (feed unavailable): " + staticLines.join(", ") + "." : "", " ", "The panel's written analysis remains the Jul 2026 editorial snapshot. Refreshes twice daily."));
+    }
+    function AiLivePanel() {
+      return /* @__PURE__ */ React.createElement(Boundary, { fallback: null }, /* @__PURE__ */ React.createElement(AiLiveInner, null));
+    }
+    function LiveBadgeInner({ keys, label }) {
+      const f = useFeed();
+      const live = useMemo(function() {
+        return f.json ? buildAiLive(f.json) : null;
+      }, [f.json]);
+      if (f.loading)
+        return null;
+      const ks = keys && keys.length ? keys : Object.keys(AI_MAP);
+      const pre = label ? label + ": " : "";
+      if (!live) {
+        return /* @__PURE__ */ React.createElement(Pill, { color: C.muted, outline: true, title: "The bubblegauge feed is unavailable — these 2026 lines use the static Jul 2026 anchors." }, pre, "static · Jul 2026 snapshot");
+      }
+      const staticKs = ks.filter(function(k) {
+        return !live.live[k];
+      });
+      if (!staticKs.length) {
+        return /* @__PURE__ */ React.createElement(Pill, { color: "#7fbf94", title: "2026 lines re-anchored from the bubblegauge feed" + (live.anchorPartial ? " — " + live.anchorMonth + " is month-to-date" : "") }, pre, "LIVE · ", live.anchorMonth, live.anchorPartial ? " (mtd)" : "");
+      }
+      return /* @__PURE__ */ React.createElement(Pill, { color: "#d9b45c", title: "Feed partially available — static Jul 2026 snapshot for: " + staticKs.join(", ") }, pre, "PARTLY LIVE · ", live.anchorMonth);
+    }
+    function LiveBadge(props) {
+      return /* @__PURE__ */ React.createElement(Boundary, { fallback: null }, /* @__PURE__ */ React.createElement(LiveBadgeInner, { keys: props.keys, label: props.label }));
+    }
+    window.BubbleGauge = {
+      enabled: true,
+      demo: DEMO,
+      apiBase: API_BASE,
+      tab: { id: "bubblegauge", label: "AI Regime" },
+      Strip: StripBoundary,
+      DetailTab,
+      useAiLive,
+      AiLivePanel,
+      LiveBadge
+    };
+  })();
 })();

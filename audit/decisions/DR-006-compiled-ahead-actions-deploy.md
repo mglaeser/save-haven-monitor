@@ -76,3 +76,45 @@ Controls retargeted (each re-catching its calibration seed before counting):
 
 Still not moved (later phases): data/math extraction to typed modules, componentization,
 TypeScript. `production_eligible` stays computed `false`.
+
+## Addendum 2 — module migration: data → JSON, esbuild bundle, TypeScript layout (phase 6 landed)
+
+Sources moved under `src/`, again proven behind the **unchanged** frozen acceptance suite (35/0) and
+the **unchanged golden data hash** (`5c0c3a20…`):
+
+- **Data → typed JSON:** the 6 golden-hashed constants (CRISES/MATRIX/MX_CRISES/CLASSIFICATION/CAT/
+  CLS) extracted from the former `dashboard.jsx` literals into `src/data/atlas.json` (byte-preserved —
+  the round-trip hash equals the golden, proven), loaded via typed `src/data.ts`.
+- **Module bundle:** `dashboard.jsx`/`bubblegauge.jsx` → `src/dashboard.tsx`/`src/bubblegauge.tsx`
+  (TSX). `build.js` switched to esbuild **bundle mode** (resolves the JSON import + module graph →
+  two IIFE bundles that run against the global self-hosted vendors). Deterministic; `66-compiled-fresh`
+  guards `bundle == src`. `tsconfig.json` + `src/global.d.ts` added as the TypeScript project marker.
+- **Substrate retargeted (interface preserved):** `verify/lib/load.js` now loads from `src/` (injects
+  the atlas data as scope globals, keeps the exact returned interface), so `10-data-invariants`,
+  `20-golden-content`, `mutation.js` (still 13/13) and the acceptance `adapter.js` are unchanged.
+  `30`/`62`/`63`/`70` scan `src/*.tsx`; `61-provenance` re-attested (served bundles + `src/` sources +
+  `./vendor/*`); `66` stages `src/`. Corpus/D12 clarified (dead-code edits are tree-shaken and are not
+  drift; a used-code edit without rebuild is). The old `.jsx` files are removed.
+
+Still deferred, honestly (each an incremental follow-up per the plan's "one tab per gated commit"):
+strict `tsc --noEmit` typing of the verbatim code, splitting the pure math into `src/lib/*` and each
+tab into its own module. `production_eligible` stays computed `false`.
+
+## Addendum 3 — pure math extracted + typed with a strict tsc gate (phase 7 landed)
+
+Again behind the unchanged frozen acceptance suite (35/0), unchanged golden hash, and mutation 13/13:
+
+- **Math → `src/lib/math.ts`:** the 12 pure functions (interp/rebase/fmtM/logPath/ser/zArr/corrArr/
+  xcorrRow/mulberry32/runFan/subFamily/buildAggregate) extracted byte-preserving from the view; the
+  mutation harness now targets this module (all 13 find-strings intact, 13/13).
+- **Typed + strict gate:** signatures typed (bodies unchanged); `typescript 5.9.3` pinned as a verify
+  devDependency; `tsconfig.strict.json` type-checks the typed core (src/lib + src/data) with
+  `noImplicitAny` — enforced by the new `verify/tests/67-typecheck` (tsc via the gate) and watched by
+  calibration seed **D14** (a planted type error is caught). Corpus 13/13 → **14/14**; ratchet gains
+  `typed_core_tsc_strict = 0 errors`.
+- **Substrate:** `verify/lib/load.js` loads the functions from `src/lib/math.ts` (data injected) and
+  reads `TABS` from the view; the returned interface is unchanged, so `10`/`20`/`mutation`/`adapter`
+  are untouched. `61-provenance` re-attested (adds src/lib/math.ts).
+
+Deferred, honest (incremental): strict typing + `strictNullChecks` for the two large view modules,
+and splitting each tab into its own component file. `production_eligible` stays computed `false`.

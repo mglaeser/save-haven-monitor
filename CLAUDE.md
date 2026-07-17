@@ -58,13 +58,14 @@ COMPLETE while any blocker is open. Do not read "both volumes audited" as "clear
   then the compiled `./bubblegauge.js`, then `./dashboard.js` (order matters — bubblegauge
   defines the `window.BubbleGauge` global that dashboard reads). The compiled `.js` are the
   esbuild output of the `.jsx` sources (`build.js`); no in-browser Babel, no unpkg.
-- `dashboard.jsx` — the source of truth for the crisis atlas's content, data, and
+- `src/dashboard.tsx` — the source of truth for the crisis atlas view (the pure math is in src/lib/math.ts, typed + tsc-strict + mutation-tested; the frozen crisis
+  DATA now lives in `src/data/atlas.json`, loaded via `src/data.ts`; the golden hash is unchanged).
   calculations. **Do not touch any crisis data constant, string, number, or
   calculation, and do not reformat (no Prettier).** If you believe you've found a
   logic bug, report it — do not silently fix behavior. (The only sanctioned edits
   are the small, clearly-marked bubblegauge integration hooks near the top and in
   the app shell; the frozen-content rule above still governs everything else.)
-- `bubblegauge.jsx` — OPTIONAL, self-contained AI-regime-gauge integration. It
+- `src/bubblegauge.tsx` — OPTIONAL, self-contained AI-regime-gauge integration. It
   no-ops entirely (defines/mounts/fetches nothing) unless `?status-api=<key>` is
   present, so with no query param the site renders identically to the original atlas
   (no strip, no extra tab, no network calls; the inert bubblegauge.jsx is still loaded).
