@@ -1016,7 +1016,7 @@
     const det = m.detail || {};
     const rating = det.rating || null;
     const col = (rating && FG_COLORS[rating]) || C.dim;
-    const zoneCols = ["#E05252", "#C0564A", "#9AA3B5", "#7fbf94", "#5AA9A3"];
+    const zoneCols = ["#5AA9A3", "#7fbf94", "#9AA3B5", "#C0564A", "#E05252"]; // flipped: red on the right (matches the regime gauge)
     const edges = [0].concat(FG_ZONES, [100]);
     const deltas = [["prev close", det.previous_close], ["1w", det.previous_1_week], ["1m", det.previous_1_month], ["1y", det.previous_1_year]]
       .filter((p) => isNum(p[1])); // null ≠ zero: a null comparison is skipped, never shown as 0
@@ -1046,7 +1046,7 @@
           {zoneCols.map((zc, i) => (
             <div key={i} style={{ width: (edges[i + 1] - edges[i]) + "%", background: zc, opacity: 0.28 }} />
           ))}
-          <div style={{ position: "absolute", left: "calc(" + m.value + "% - 1.5px)", top: 0, bottom: 0, width: 3, background: col, borderRadius: 1.5 }} />
+          <div style={{ position: "absolute", left: "calc(" + (100 - m.value) + "% - 1.5px)", top: 0, bottom: 0, width: 3, background: col, borderRadius: 1.5 }} />
         </div>
         {deltas.length > 0 && (
           <div style={{ fontSize: 9.5, color: C.faint, marginTop: 3 }}>
@@ -1136,7 +1136,7 @@
     const det = m.detail || {};
     const rating = det.rating || null;
     const col = (rating && FG_COLORS[rating]) || C.dim;
-    const zoneCols = ["#E05252", "#C0564A", "#9AA3B5", "#7fbf94", "#5AA9A3"];
+    const zoneCols = ["#5AA9A3", "#7fbf94", "#9AA3B5", "#C0564A", "#E05252"]; // flipped: red on the right (matches the regime gauge)
     const edges = [0].concat(FG_ZONES, [100]);
     // "the last three values": the three most recent CNN reference readings. null is skipped, never a 0.
     const recent = [["prev close", det.previous_close], ["1w", det.previous_1_week], ["1m", det.previous_1_month]]
@@ -1157,7 +1157,7 @@
           {zoneCols.map((zc, i) => (
             <div key={i} style={{ width: (edges[i + 1] - edges[i]) + "%", background: zc, opacity: 0.28 }} />
           ))}
-          <div style={{ position: "absolute", left: "calc(" + m.value + "% - 1.5px)", top: 0, bottom: 0, width: 3, background: col, borderRadius: 1.5 }} />
+          <div style={{ position: "absolute", left: "calc(" + (100 - m.value) + "% - 1.5px)", top: 0, bottom: 0, width: 3, background: col, borderRadius: 1.5 }} />
         </div>
         {recent.length > 0 && (
           <div style={{ fontSize: 10.5, color: C.faint, whiteSpace: "nowrap" }}>
@@ -1342,8 +1342,8 @@
                 <div style={{ ...BS.eyebrow }}>CNN Fear &amp; Greed</div>
                 <div style={{ ...BS.serif, fontSize: 15, color: fgCol, fontVariantNumeric: "tabular-nums" }}>{fg.value.toFixed(1)}{fg.detail && fg.detail.rating ? " · " + fg.detail.rating : ""}</div>
               </div>
-              <div style={{ position: "relative", height: 6, borderRadius: 999, marginTop: 9, background: "linear-gradient(90deg,#E05252,#C0564A,#9AA3B5,#7fbf94,#5AA9A3)" }}>
-                <div style={{ position: "absolute", top: -3, left: fg.value + "%", transform: "translateX(-50%)", width: 2, height: 12, borderRadius: 2, background: C.text, boxShadow: "0 0 0 2px " + C.bg }} />
+              <div style={{ position: "relative", height: 6, borderRadius: 999, marginTop: 9, background: "linear-gradient(90deg,#5AA9A3,#7fbf94,#9AA3B5,#C0564A,#E05252)" }}>
+                <div style={{ position: "absolute", top: -3, left: (100 - fg.value) + "%", transform: "translateX(-50%)", width: 2, height: 12, borderRadius: 2, background: C.text, boxShadow: "0 0 0 2px " + C.bg }} />
               </div>
               <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: C.faint, marginTop: 6, fontVariantNumeric: "tabular-nums" }}>
                 <span>{fgRecent}</span><span>0 — 100</span>

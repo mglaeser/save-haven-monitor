@@ -25,7 +25,7 @@
     },
     {
       "file": "bubblegauge.js",
-      "sha256": "3e2193d27b027a69e54b2cd21ba47b08302e4d1b8dcad0141f1a05bcf7494ffe",
+      "sha256": "17ab75b850a52c4b5733e37c32570a2b97d39e9ba1d75c9877d93d250a070305",
       "role": "served compiled gated integration (esbuild transpile of bubblegauge.jsx)",
       "derives_from_spec": "rewrite/00-recommendation.md + DR-006 (compiled-ahead)",
       "test_evidence": "verify/tests/66-compiled-fresh (bundle==src) + 30/62/63",
@@ -43,7 +43,7 @@
     },
     {
       "file": "src/bubblegauge.tsx",
-      "sha256": "8ea771d6c375327919e4087c7eba01125891c1e4cb65d1fe037240578b3db82a",
+      "sha256": "80cef9aa425dcc1a107bd19f44f8e13cf0905e175b24cdda1150c0e885896966",
       "role": "SOURCE of bubblegauge.js (gated integration)",
       "derives_from_spec": "rewrite/00-recommendation.md + DR-006 (module migration)",
       "test_evidence": "verify/tests/*",
