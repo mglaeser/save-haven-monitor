@@ -13,7 +13,7 @@
 const { raw } = require("../lib/load.js");
 const { ok } = require("../lib/assert.js");
 
-const SERVED = ["index.html", "src/dashboard.tsx", "src/bubblegauge.tsx"];
+const SERVED = ["index.html", "src/dashboard.tsx", "src/bubblegauge.tsx", "widget.html"];
 // The complete declared egress + rendered-link allowlist for the served site.
 //  (unpkg.com removed — vendors are now self-hosted under ./vendor/, no third-party runtime egress)
 //  www.etoro.com    — a frozen outbound link in the crisis atlas content (dashboard.jsx)
@@ -39,6 +39,12 @@ module.exports = function register(t) {
     ok(!/\bfetch\s*\(/.test(dash), "dashboard.jsx must make no network call (it renders frozen data)");
     ok(!/\bfetch\s*\(/.test(html), "index.html must make no network call beyond its pinned <script> tags");
     ok(/fetch\(\s*API_BASE\b/.test(bg), "bubblegauge.jsx's single fetch must target the constructed, gated API_BASE");
+    // The served JsWidget (widget.html) is STATELESS and its only network calls must be to the SAME
+    // gated, constructed API_BASE (subdomain-of-parent, KEY_RE-whitelisted) — never a literal host.
+    const widget = raw("widget.html");
+    for (const fc of widget.match(/\bfetch\s*\([^)]*/g) || [])
+      ok(/fetch\(\s*API_BASE\b/.test(fc), `widget.html fetch must target the gated API_BASE, got: ${fc.slice(0, 40)}`);
+    ok(/const\s+KEY_RE\s*=\s*\/\^\[a-z0-9-\]\{1,32\}\$\//.test(widget), "widget.html gates its status-api key with the same KEY_RE whitelist");
     for (const f of SERVED) {
       const src = raw(f);
       ok(!/\bnew\s+WebSocket\b|\bEventSource\b|navigator\.sendBeacon/.test(src), `unexpected persistent/exfil channel in ${f}`);

@@ -32,7 +32,7 @@ function build() {
   esbuild.buildSync({ ...COMMON, entryPoints: [path.join(__dirname, "src", "dashboard.tsx")], outfile: path.join(OUT, "dashboard.js") });
   if (OUT !== __dirname) {
     // --dist: assemble the exact published set (served-file allowlist) — no src/, no repo internals.
-    for (const f of ["index.html", ".nojekyll", "CNAME"]) fs.copyFileSync(path.join(__dirname, f), path.join(OUT, f));
+    for (const f of ["index.html", "widget.html", ".nojekyll", "CNAME"]) fs.copyFileSync(path.join(__dirname, f), path.join(OUT, f));
     fs.mkdirSync(path.join(OUT, "vendor"), { recursive: true });
     for (const f of fs.readdirSync(path.join(__dirname, "vendor"))) fs.copyFileSync(path.join(__dirname, "vendor", f), path.join(OUT, "vendor", f));
   }
