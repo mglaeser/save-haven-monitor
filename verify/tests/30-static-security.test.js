@@ -12,13 +12,12 @@ module.exports = function register(t) {
   const bg = raw("bubblegauge.jsx");
   const dash = raw("dashboard.jsx");
 
-  t("all 5 CDN <script src> tags carry sha384 integrity + crossorigin", () => {
-    const tags = html.match(/<script\s+src="https:\/\/[^"]+"[^>]*>/g) || [];
-    ok(tags.length === 5, `expected 5 CDN script tags, got ${tags.length}`);
-    for (const tag of tags) {
-      ok(/integrity="sha384-[A-Za-z0-9+/=]+"/.test(tag), `integrity present: ${tag.slice(0, 60)}`);
-      ok(/crossorigin="anonymous"/.test(tag), `crossorigin present: ${tag.slice(0, 60)}`);
-    }
+  t("all 4 self-hosted vendor <script src> tags carry sha384 integrity", () => {
+    // Compiled-ahead (DR-006): vendors are same-origin under ./vendor/ (no unpkg, so no crossorigin
+    // needed — SRI is enforced on same-origin without it). No in-browser Babel script remains.
+    const tags = html.match(/<script\s+src="\.\/vendor\/[^"]+"[^>]*>/g) || [];
+    ok(tags.length === 4, `expected 4 vendor script tags, got ${tags.length}`);
+    for (const tag of tags) ok(/integrity="sha384-[A-Za-z0-9+/=]+"/.test(tag), `integrity present: ${tag.slice(0, 60)}`);
   });
 
   t("no plausible secrets/credentials or auth-secret idioms in served source", () => {
@@ -71,7 +70,7 @@ module.exports = function register(t) {
     const httpMatches = (html + bg + dash).match(/http:\/\/[^"'\s)]+/g) || [];
     for (const m of httpMatches)
       ok(/localhost|127\.0\.0\.1|www\.w3\.org/.test(m), `http only for localhost or w3 SVG namespace: ${m}`);
-    ok(/src="\.\/bubblegauge\.jsx"/.test(html) && /src="\.\/dashboard\.jsx"/.test(html), "app scripts loaded via relative ./ paths");
+    ok(/src="\.\/bubblegauge\.js"/.test(html) && /src="\.\/dashboard\.js"/.test(html), "compiled app scripts loaded via relative ./ paths");
   });
 
   t("external navigation links are hardened (noopener noreferrer, target _blank)", () => {

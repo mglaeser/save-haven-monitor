@@ -15,13 +15,13 @@ const { ok } = require("../lib/assert.js");
 
 const SERVED = ["index.html", "dashboard.jsx", "bubblegauge.jsx"];
 // The complete declared egress + rendered-link allowlist for the served site.
-//  unpkg.com        — the 5 SRI-pinned CDN scripts (C-26)
+//  (unpkg.com removed — vendors are now self-hosted under ./vendor/, no third-party runtime egress)
 //  www.etoro.com    — a frozen outbound link in the crisis atlas content (dashboard.jsx)
 //  www.w3.org       — SVG namespace in the inline favicon (NOT a network call)
 //  localhost        — the dev-only status-API fallback (bubblegauge.jsx)
 // The live status-API host is CONSTRUCTED from a KEY_RE-whitelisted key (30-static-security),
 // never a literal, so it needs no allowlist entry here.
-const EGRESS_ALLOW = new Set(["unpkg.com", "www.etoro.com", "www.w3.org", "localhost"]);
+const EGRESS_ALLOW = new Set(["www.etoro.com", "www.w3.org", "localhost"]);
 
 module.exports = function register(t) {
   t("C-08/C-28: no undeclared egress or rendered-link destination in served source", () => {

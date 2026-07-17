@@ -1,6 +1,6 @@
 {
-  "note": "The standing calibration corpus (mandate S12 / \u00a79.3). Seeded defect classes the pipeline must catch. The heartbeat re-injects these on a schedule; a class the pipeline stops catching is a FAILED GATE and freezes releases. Corpus grows with every real defect found and every incident (\u00a79.9). Track C seeds (D7-D9) added at catalogue v2.0 per Part 2 Phase 2': an exfiltration path, an unattested shipped-component change, and a personal-data/telemetry sink. | v2.0+: D10 (lockfile/registry drift) added with the C-03 harness-pinning close.",
-  "baseline_catch_rate": "10/10",
+  "note": "The standing calibration corpus (mandate S12 / \u00a79.3). Seeded defect classes the pipeline must catch. The heartbeat re-injects these on a schedule; a class the pipeline stops catching is a FAILED GATE and freezes releases. Corpus grows with every real defect found and every incident (\u00a79.9). Track C seeds (D7-D9) added at catalogue v2.0 per Part 2 Phase 2': an exfiltration path, an unattested shipped-component change, and a personal-data/telemetry sink. | v2.0+: D10 (lockfile/registry drift) added with the C-03 harness-pinning close. | compiled-ahead: D11 (vendor drift), D12 (compiled stale), D13 (unpkg/Babel reintroduced).",
+  "baseline_catch_rate": "13/13",
   "recorded": "2026-07-16",
   "catalogue_version": "2.0",
   "defects": [
@@ -66,6 +66,27 @@
       "kind": "supply-chain-registry-swap",
       "inject": "point a verify/package-lock.json dependency at a non-registry URL, drop its integrity, or range-pin a devDependency (^/~)",
       "caught_by": "verify/tests/65-lockfile (C-03)",
+      "track": "C"
+    },
+    {
+      "id": "D11",
+      "kind": "vendor-byte-drift",
+      "inject": "tamper a byte of a ./vendor/*.js file (swapped/poisoned library)",
+      "caught_by": "verify/tests/40-sri-recompute (offline sha384) + 35",
+      "track": "C"
+    },
+    {
+      "id": "D12",
+      "kind": "compiled-stale-drift",
+      "inject": "edit dashboard.jsx (or hand-edit dashboard.js) without rebuilding \u2014 served .js no longer matches source",
+      "caught_by": "verify/tests/66-compiled-fresh",
+      "track": "C"
+    },
+    {
+      "id": "D13",
+      "kind": "reintroduced-thirdparty-runtime",
+      "inject": "add an unpkg <script> or a type=text/babel tag back into index.html",
+      "caught_by": "verify/tests/35-supply-chain (no-third-party-egress)",
       "track": "C"
     }
   ]

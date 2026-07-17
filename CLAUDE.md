@@ -8,10 +8,14 @@ setup guide `rewrite/03-pages-setup-guide.md`). Still forbidden for the **served
 runtime backend, service workers, analytics/trackers, CSS frameworks, and any runtime dependency the
 browser must fetch from a third party. Migration order and controls: `rewrite/00-recommendation.md`.
 
-**Current served state (until the code-migration phases land):** the served files
-(`index.html`, `dashboard.jsx`, `bubblegauge.jsx`) are still browser-transpiled by Babel — the
-compiled-ahead pipeline is being introduced deploy-first (workflows + lockfile) before any served
-code moves. Do not assume the site is bundled yet.
+**Current served state (compiled-ahead — vendors self-hosted, no in-browser Babel).** The browser
+loads self-hosted, SRI-pinned vendors from `./vendor/*` (byte-identical to the former unpkg bytes)
+plus the CI-compiled `./bubblegauge.js` + `./dashboard.js` (esbuild transpile of the `.jsx` SOURCES
+via `build.js`, pinned esbuild 0.19.12). No unpkg, no `@babel/standalone`, no runtime third-party
+fetch. `verify/tests/66-compiled-fresh` proves the committed `.js` is byte-identical to a fresh build
+of the `.jsx`, so source and served are provably the same program; `40-sri-recompute` verifies the
+vendor bytes offline. Build for preview: `node build.js` then `python3 -m http.server 8000`. The
+`.jsx` files remain the source of truth (golden data hash, mutation, claims run on them).
 
 **The verification harness (`verify/`) + the frozen acceptance suite (`acceptance/`) are CI-only.**
 They have a committed lockfile (`verify/package-lock.json`, exact-pinned, installed via
@@ -50,10 +54,10 @@ COMPLETE while any blocker is open. Do not read "both volumes audited" as "clear
 
 ## Architecture (do not change)
 
-- `index.html` — the only page. Loads pinned UMD CDN scripts (unpkg), then
-  `bubblegauge.jsx`, then `dashboard.jsx`, each via
-  `<script type="text/babel" data-presets="react">` (order matters — bubblegauge
-  defines the `window.BubbleGauge` global that dashboard reads).
+- `index.html` — the only page. Loads self-hosted SRI-pinned vendor UMDs from `./vendor/*`,
+  then the compiled `./bubblegauge.js`, then `./dashboard.js` (order matters — bubblegauge
+  defines the `window.BubbleGauge` global that dashboard reads). The compiled `.js` are the
+  esbuild output of the `.jsx` sources (`build.js`); no in-browser Babel, no unpkg.
 - `dashboard.jsx` — the source of truth for the crisis atlas's content, data, and
   calculations. **Do not touch any crisis data constant, string, number, or
   calculation, and do not reformat (no Prettier).** If you believe you've found a

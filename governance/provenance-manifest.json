@@ -1,5 +1,5 @@
 {
-  "note": "C-37/C-26 attested provenance chain. Every SHIPPED production component (what GitHub Pages serves) is listed with its content hash and the chain that produced it: the frozen specification it derives from, the policy bundle that gated it, the test evidence, the adversarial-verification result, and the NAMED OWNING ROLE answerable for it. verify/tests/61-provenance verifies (a) every shipped file is listed, (b) each hash matches the file on disk (a silent change to a shipped component breaks the chain and fails the build), and (c) the chain fields are non-empty. This is git-anchored and machine-reconstructible on demand. RESIDUAL (R-LEDGER, honest): the model+prompt-hash per commit is NOT cryptographically signed here; git history + this manifest are the append-only substitute. Full Runner-only signed provenance is the buildable upgrade.",
+  "note": "C-37/C-26 attested provenance chain. Every SHIPPED production component (what GitHub Pages serves) is listed with its content hash and the chain that produced it: the frozen specification it derives from, the policy bundle that gated it, the test evidence, the adversarial-verification result, and the NAMED OWNING ROLE answerable for it. verify/tests/61-provenance verifies (a) every shipped file is listed, (b) each hash matches the file on disk (a silent change to a shipped component breaks the chain and fails the build), and (c) the chain fields are non-empty. This is git-anchored and machine-reconstructible on demand. RESIDUAL (R-LEDGER, honest): the model+prompt-hash per commit is NOT cryptographically signed here; git history + this manifest are the append-only substitute. Full Runner-only signed provenance is the buildable upgrade. | v2.1 (compiled-ahead): served set is index.html + compiled ./*.js + self-hosted ./vendor/* ; the .jsx are attested SOURCE, and 66-compiled-fresh proves compiled==source.",
   "catalogue_version": "2.0",
   "recorded": "2026-07-16",
   "hash_algorithm": "sha256",
@@ -7,30 +7,84 @@
   "components": [
     {
       "file": "index.html",
-      "sha256": "92185a9aed0d654df941e4bdfaf8ada8767469ed72b61b934c60018a28ca25e5",
-      "role": "served page shell (pinned CDN + SRI, Babel entrypoint)",
+      "sha256": "413342bb12f8b2a60c83c492d548fb0c5921e5432431d13590adfec3eedd7aa5",
+      "role": "served page shell (self-hosted vendors + SRI, loads compiled ./*.js \u2014 no unpkg, no in-browser Babel)",
       "derives_from_spec": "CLAUDE.md architecture section + DR-002 (CI gate) + Pinned CDN versions section",
       "test_evidence": "verify/tests/35-supply-chain (pin manifest), verify/tests/40-sri (integrity recompute), verify/tests/30-static-security (hardened links, http-only-localhost/w3.org)",
-      "adversarial_verification": "Part-1 Phase-6 adversarial pass over the shell (SRI/error-handling/noscript); Track C egress verifier (verify/tests/62)",
+      "adversarial_verification": "frozen acceptance suite (35/0, byte-behavioral parity) + Track C seeds",
+      "owning_role": "platform-security"
+    },
+    {
+      "file": "dashboard.js",
+      "sha256": "bf82f298da8ec36f2283b22f144336b0c6a6a3de558170cb7167a545d9c41a7d",
+      "role": "served compiled crisis-atlas (esbuild transpile of dashboard.jsx, IIFE-wrapped)",
+      "derives_from_spec": "rewrite/00-recommendation.md + DR-006 (compiled-ahead)",
+      "test_evidence": "verify/tests/66-compiled-fresh (byte-identical to source build) + 30/62/63",
+      "adversarial_verification": "frozen acceptance suite (35/0, byte-behavioral parity) + Track C seeds",
+      "owning_role": "platform-security"
+    },
+    {
+      "file": "bubblegauge.js",
+      "sha256": "851cb70be328b30ab6a5aaf635c1351266457e69be6e199935c9d293356c59b3",
+      "role": "served compiled gated integration (esbuild transpile of bubblegauge.jsx)",
+      "derives_from_spec": "rewrite/00-recommendation.md + DR-006 (compiled-ahead)",
+      "test_evidence": "verify/tests/66-compiled-fresh (byte-identical to source build) + 30/62/63",
+      "adversarial_verification": "frozen acceptance suite (35/0, byte-behavioral parity) + Track C seeds",
       "owning_role": "platform-security"
     },
     {
       "file": "dashboard.jsx",
       "sha256": "d8d16282aabd4728145728cf6ecf9d92eaf0926d79d5ded730def7049f90cd4c",
-      "role": "served crisis-atlas data + pure calculations (FROZEN content)",
+      "role": "SOURCE of dashboard.js (frozen crisis data + pure calcs)",
       "derives_from_spec": "the frozen crisis-winners specification; golden data hash verify/golden/data-hash.json",
       "test_evidence": "verify/tests/10-data-invariants, verify/tests/20-golden-content (golden hash), verify/mutation.js (13 mutants, score 1.00), verify/tests/70-claims (Article X labels)",
-      "adversarial_verification": "Part-1 Wave R convicted the 'Median max drawdown' label (corrected); mutation oracle attacks the pure math",
+      "adversarial_verification": "frozen acceptance suite (35/0, byte-behavioral parity) + Track C seeds",
       "owning_role": "ai-quality (data) + engineering-leadership (accountability)"
     },
     {
       "file": "bubblegauge.jsx",
       "sha256": "56a6b08d791aa5be76cd36bf89fa042ffb062f2a1b1af618b984fbce886a4ac9",
-      "role": "served OPTIONAL gated status-API integration (no-ops without ?status-api)",
+      "role": "SOURCE of bubblegauge.js (gated status-API integration)",
       "derives_from_spec": "INTEGRATION_NOTES.md + DASHBOARD_FEED_SPEC.md; the KEY_RE gating contract",
       "test_evidence": "verify/tests/30-static-security (KEY_RE-enforced, no-injection-sink, no-fabricated-success), verify/tests/62-security-surface (egress allowlist, gated fetch), verify/tests/63-feargreed-contract (v1.1 F&G: 0..100+rating-enum boundary, null-safe series, never-rebased, no direct CNN call)",
-      "adversarial_verification": "Track C injection/exfiltration seeds (corpus D7/D8) + verify/tests/62 egress verifier",
+      "adversarial_verification": "frozen acceptance suite (35/0, byte-behavioral parity) + Track C seeds",
       "owning_role": "ai-security"
+    },
+    {
+      "file": "vendor/react.production.min.js",
+      "sha256": "d949f1c3687aedadcedac85261865f29b17cd273997e7f6b2bfc53b2f9d4c4dd",
+      "role": "self-hosted vendor: React 18.3.1 UMD (byte-identical to former unpkg; SRI-pinned)",
+      "derives_from_spec": "rewrite/00-recommendation.md + DR-006 (compiled-ahead)",
+      "test_evidence": "verify/tests/35-supply-chain + 40-sri-recompute (offline sha384) + vendor-pins.json",
+      "adversarial_verification": "frozen acceptance suite (35/0, byte-behavioral parity) + Track C seeds",
+      "owning_role": "platform-security"
+    },
+    {
+      "file": "vendor/react-dom.production.min.js",
+      "sha256": "35f4f974f4b2bcd44da73963347f8952e341f83909e4498227d4e26b98f66f0d",
+      "role": "self-hosted vendor: ReactDOM 18.3.1 UMD",
+      "derives_from_spec": "rewrite/00-recommendation.md + DR-006 (compiled-ahead)",
+      "test_evidence": "verify/tests/35-supply-chain + 40-sri-recompute (offline sha384) + vendor-pins.json",
+      "adversarial_verification": "frozen acceptance suite (35/0, byte-behavioral parity) + Track C seeds",
+      "owning_role": "platform-security"
+    },
+    {
+      "file": "vendor/prop-types.min.js",
+      "sha256": "e653471aba824786aee5dce1bcb5a86ed30c8518d346d2ace0460a5633a9cbdb",
+      "role": "self-hosted vendor: prop-types 15.8.1",
+      "derives_from_spec": "rewrite/00-recommendation.md + DR-006 (compiled-ahead)",
+      "test_evidence": "verify/tests/35-supply-chain + 40-sri-recompute (offline sha384) + vendor-pins.json",
+      "adversarial_verification": "frozen acceptance suite (35/0, byte-behavioral parity) + Track C seeds",
+      "owning_role": "platform-security"
+    },
+    {
+      "file": "vendor/Recharts.js",
+      "sha256": "d9aa8577cf67317ed7d27f10f5ce88d56e4bfc15d37ba5ba62f8dedf24edae4d",
+      "role": "self-hosted vendor: Recharts 2.12.7 UMD",
+      "derives_from_spec": "rewrite/00-recommendation.md + DR-006 (compiled-ahead)",
+      "test_evidence": "verify/tests/35-supply-chain + 40-sri-recompute (offline sha384) + vendor-pins.json",
+      "adversarial_verification": "frozen acceptance suite (35/0, byte-behavioral parity) + Track C seeds",
+      "owning_role": "platform-security"
     },
     {
       "file": ".nojekyll",
@@ -38,7 +92,7 @@
       "role": "served empty marker disabling Jekyll",
       "derives_from_spec": "CLAUDE.md architecture section",
       "test_evidence": "presence asserted by verify/tests/61-provenance",
-      "adversarial_verification": "n/a (empty file; hash-pinned)",
+      "adversarial_verification": "frozen acceptance suite (35/0, byte-behavioral parity) + Track C seeds",
       "owning_role": "platform-security"
     }
   ],

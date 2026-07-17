@@ -47,3 +47,32 @@ deploy step has nowhere to publish (expected). Full steps: `rewrite/03-pages-set
 ## Not in this phase (later migration phases, each behind the frozen `acceptance/` suite)
 Self-hosting vendors byte-identical, killing in-browser Babel, data/math extraction to typed modules,
 componentization, retargeting the path-coupled `verify/` controls (each re-catching its seed).
+
+## Addendum — vendor self-hosting + in-browser Babel removed (phases 4–5 landed)
+
+The two visible migration phases are now done, each proven behind the **unchanged** frozen
+acceptance suite (35/0, byte-behavioral parity, egress ledger clean):
+
+- **Self-hosted vendors:** the 4 runtime UMDs (react, react-dom, prop-types, recharts) are committed
+  under `./vendor/`, **byte-identical** to the former unpkg bytes (each sha384 == the integrity that
+  was in index.html — proven). `index.html` loads `./vendor/*` with SRI; the unpkg preconnect and all
+  5 unpkg tags are gone. **unpkg leaves the egress allowlist entirely** (test 62 tightened).
+- **In-browser Babel removed:** `build.js` transpiles the `.jsx` sources with pinned esbuild 0.19.12
+  (transpile-only, classic runtime, no bundling/minify/rename; dashboard IIFE-wrapped to preserve its
+  per-script eval scope). `index.html` loads the compiled `./bubblegauge.js` + `./dashboard.js`.
+  Viewers no longer download ~661 KB gz of Babel or pay ~1–3 s of transpile CPU per load.
+
+Controls retargeted (each re-catching its calibration seed before counting):
+- `35-supply-chain` → self-hosted vendor manifest + no-unpkg/Babel guard (seed **D13**).
+- `40-sri-recompute` → **offline** sha384 of `./vendor/*` vs index.html + vendor-pins (seed **D11**);
+  the suite now runs with **0 offline** — no network dependency.
+- `66-compiled-fresh` (new) → committed `.js` is a byte-identical fresh build of the `.jsx` (seed
+  **D12**), the bridge that lets every other control keep reasoning about the source.
+- `30-static-security` (vendor tags + `.js` app scripts), `61-provenance` (served set re-attested:
+  index.html + compiled `.js` + `.jsx` sources + `./vendor/*`), `sbom.json`/`pinned-deps.json`
+  (repointed to `./vendor/`, Babel dropped). Corpus 10/10 → **13/13**; mutation 13/13.
+- `deploy.yml` build job now runs `node build.js --dist` (fresh compile) and publishes the allowlist
+  (index.html, compiled `.js`, `./vendor/*`, .nojekyll, CNAME) — never the `.jsx` sources.
+
+Still not moved (later phases): data/math extraction to typed modules, componentization,
+TypeScript. `production_eligible` stays computed `false`.

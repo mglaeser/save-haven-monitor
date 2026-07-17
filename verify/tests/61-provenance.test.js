@@ -15,7 +15,9 @@ const crypto = require("crypto");
 const { REPO, raw } = require("../lib/load.js");
 const { ok } = require("../lib/assert.js");
 
-const SHIPPED = ["index.html", "dashboard.jsx", "bubblegauge.jsx", ".nojekyll"];
+const SHIPPED = ["index.html", "dashboard.js", "bubblegauge.js", "dashboard.jsx", "bubblegauge.jsx",
+  "vendor/react.production.min.js", "vendor/react-dom.production.min.js", "vendor/prop-types.min.js",
+  "vendor/Recharts.js", ".nojekyll"];
 const sha256 = (s) => crypto.createHash("sha256").update(s).digest("hex");
 
 module.exports = function register(t) {

@@ -1,0 +1,30 @@
+{
+  "note": "Self-hosted vendor runtime pins (offline-deterministic). Byte-identical to the former unpkg bytes; sha384 == the integrity in index.html. verify/tests/35 (existence+manifest) and 40 (offline SRI recompute) enforce this; a byte drift or a reintroduced unpkg/Babel tag fails the build. Replaces the online unpkg fetch \u2014 no runtime third-party egress.",
+  "recorded": "2026-07-16",
+  "components": [
+    {
+      "name": "react",
+      "version": "18.3.1",
+      "file": "vendor/react.production.min.js",
+      "integrity": "sha384-DGyLxAyjq0f9SPpVevD6IgztCFlnMF6oW/XQGmfe+IsZ8TqEiDrcHkMLKI6fiB/Z"
+    },
+    {
+      "name": "react-dom",
+      "version": "18.3.1",
+      "file": "vendor/react-dom.production.min.js",
+      "integrity": "sha384-gTGxhz21lVGYNMcdJOyq01Edg0jhn/c22nsx0kyqP0TxaV5WVdsSH1fSDUf5YJj1"
+    },
+    {
+      "name": "prop-types",
+      "version": "15.8.1",
+      "file": "vendor/prop-types.min.js",
+      "integrity": "sha384-/AfDwVDXNopzPvhxMPQ11y1OCpR6mVkWx47qzSwIiquvxkcMkZddEzDNtIOtfCpk"
+    },
+    {
+      "name": "recharts",
+      "version": "2.12.7",
+      "file": "vendor/Recharts.js",
+      "integrity": "sha384-d1XH4LhwLW8j0l6VXMP8yJabdGY9ZqtZk7k7PaPk5NoUCcZ/hDkL5aaKioKQbcZg"
+    }
+  ]
+}
