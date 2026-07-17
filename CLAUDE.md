@@ -68,24 +68,41 @@ COMPLETE while any blocker is open. Do not read "both volumes audited" as "clear
 - `src/bubblegauge.tsx` — OPTIONAL, self-contained AI-regime-gauge integration. It
   no-ops entirely (defines/mounts/fetches nothing) unless `?status-api=<key>` is
   present, so with no query param the site renders identically to the original atlas
-  (no strip, no extra tab, no network calls; the inert bubblegauge.jsx is still loaded).
-  See `INTEGRATION_NOTES.md` for the contract, gating, and offline `demo` mode.
+  (no strip, no extra tab, no splash, no network calls; the inert compiled `bubblegauge.js`
+  is still loaded). See `INTEGRATION_NOTES.md` for the contract, gating, and offline `demo` mode.
 - `.nojekyll` — empty, disables Jekyll processing.
-- All URLs relative (`./dashboard.jsx`) — the site must work at any base path.
+- All URLs relative (`./dashboard.js`) — the site must work at any base path.
 
-## Pinned CDN versions
+## Pinned vendor versions (self-hosted, SRI-pinned)
 
 react/react-dom 18.3.1 UMD · prop-types 15.8.1 · recharts 2.12.7 UMD
-(`umd/Recharts.js` — 2.12.x ships no `.min.js`) · @babel/standalone 7.29.7
-(exact pin — required for SRI). Every script tag carries an `integrity`
-hash that must be recomputed on any version change (see README). No React
-19 / Recharts 3.x — verify UMD named exports before any version change.
+(`umd/Recharts.js` — 2.12.x ships no `.min.js`). Served from `./vendor/*`,
+byte-identical to the former unpkg bytes; every vendor `<script>` carries an
+`integrity` hash recomputed offline by `verify/tests/40-sri-recompute` on any
+change (see README). No React 19 / Recharts 3.x — verify UMD named exports
+before any version change. **`@babel/standalone` is gone** — there is no
+in-browser transpiler; the `.tsx`/`.ts`/`.json` sources are compiled ahead of
+time by pinned esbuild (`build.js`), and `35-supply-chain` / `62-security-surface`
+fail the build if Babel or an unpkg runtime tag returns.
 
 ## Notes
 
-- The Babel "precompile for production" console notice is accepted by design;
-  do not "fix" it by adding a build step.
-- Local preview: `python3 -m http.server 8000` (file:// is blocked by CORS).
-- GitHub Pages: Settings → Pages → Source "Deploy from a branch" → `main` / root.
-- Plan B (pre-compiling with esbuild) is allowed ONLY if the repo owner
-  explicitly asks for it.
+- Compiled-ahead is the sanctioned architecture (DR-006): esbuild runs in CI,
+  never in the browser. There is no "add a build step" prohibition any more, and
+  no in-browser-Babel console notice to accept — that path is deprecated (DR-007).
+- Local preview: `node build.js` then `python3 -m http.server 8000` (file:// is
+  blocked by CORS). Preview the gated integration with `?status-api=demo`.
+- GitHub Pages: **Settings → Pages → Source "GitHub Actions"** — deploy is
+  gate-blocked and served from `.github/workflows/deploy.yml`, not from a branch
+  (see `rewrite/03-pages-setup-guide.md`).
+
+## Deprecated (do not maintain, do not reintroduce)
+
+The original **zero-build / in-browser-`@babel/standalone`** front end (browser-side
+transpile of `.jsx`, unpkg runtime tags) is **deprecated and unmaintained**
+(owner-authorized; DR-007). The `.jsx` sources were removed in the module
+migration. Standing guards keep it from returning: `35-supply-chain` (no
+unpkg/Babel/`text/babel` in `index.html`), `62-security-surface` (no third-party
+runtime egress), `66-compiled-fresh` (committed `.js` is a fresh build of `src/`).
+Its history is preserved in `rewrite/` and `audit/decisions/DR-006*` — those are
+records, not live guidance.

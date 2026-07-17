@@ -1435,6 +1435,8 @@ function CrisisWinnersDashboard() {
           </Expl>
         </div>
 
+        {/* bubblegauge integration seam: mobile portrait opening splash (gated; small-portrait + API-connected + once/session) */}
+        {BG.enabled && BG.Splash && <BG.Splash />}
         {BG.enabled && <BG.Strip goToDetail={() => setTab("bubblegauge")} />}
         {/* bubblegauge integration seam: compact CNN Fear & Greed status + last 3 readings (feed-sourced, gated) */}
         {BG.enabled && BG.FearGreedStrip && <BG.FearGreedStrip />}

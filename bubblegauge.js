@@ -1026,6 +1026,177 @@
     function FearGreedStrip() {
       return /* @__PURE__ */ React.createElement(Boundary, { fallback: null }, /* @__PURE__ */ React.createElement(FearGreedStripInner, null));
     }
+    const SPL = { cx: 195, cy: 150, r: 118, a0: 135, sweep: 270 };
+    function splPol(r, deg) {
+      const a = deg * Math.PI / 180;
+      return [SPL.cx + r * Math.cos(a), SPL.cy + r * Math.sin(a)];
+    }
+    function splArc(t0, t1, r) {
+      r = r || SPL.r;
+      const p0 = splPol(r, SPL.a0 + t0 * SPL.sweep), p1 = splPol(r, SPL.a0 + t1 * SPL.sweep);
+      const large = (t1 - t0) * SPL.sweep > 180 ? 1 : 0;
+      return "M" + p0[0].toFixed(1) + " " + p0[1].toFixed(1) + " A" + r + " " + r + " 0 " + large + " 1 " + p1[0].toFixed(1) + " " + p1[1].toFixed(1);
+    }
+    function splIsSmallPortrait() {
+      try {
+        return !!(window.matchMedia && window.matchMedia("(max-width: 640px) and (orientation: portrait)").matches);
+      } catch (e) {
+        return false;
+      }
+    }
+    function splSeen() {
+      try {
+        return sessionStorage.getItem("bubblegauge:splash-seen") === "1";
+      } catch (e) {
+        return false;
+      }
+    }
+    function splRel(iso) {
+      if (!iso)
+        return "";
+      const t = Date.parse(iso);
+      if (!isFinite(t))
+        return "";
+      const h = (Date.now() - t) / 36e5;
+      return h < 1 ? "updated <1h ago" : h < 48 ? "updated " + Math.round(h) + "h ago" : "updated " + Math.round(h / 24) + "d ago";
+    }
+    function SplashInner() {
+      const score = useScore();
+      const live = useAiLive();
+      const [open, setOpen] = useState(function() {
+        return !splSeen() && splIsSmallPortrait();
+      });
+      if (!open)
+        return null;
+      if (score.loading || score.notReady || score.error || !score.json)
+        return null;
+      const d = score.json.data, meta = score.json.meta || {};
+      const band = bandOf(d.action_band);
+      const s = Math.max(0, Math.min(100, +d.headline_median));
+      const t = s / 100, ang = SPL.a0 + t * SPL.sweep;
+      const mk = splPol(SPL.r, ang), mkIn = splPol(SPL.r - 14, ang), mkOut = splPol(SPL.r + 16, ang);
+      const mx = live && live.metrics || null;
+      const fg = mx && mx.fear_greed, fgOk = validFearGreed(fg);
+      const fgCol = fgOk ? fg.detail && FG_COLORS[fg.detail.rating] || C.dim : C.dim;
+      const fgRecent = fgOk ? [["prev", fg.detail && fg.detail.previous_close], ["1w", fg.detail && fg.detail.previous_1_week], ["1m", fg.detail && fg.detail.previous_1_month]].filter((p) => isNum(p[1])).map((p) => p[0] + " " + Math.round(p[1])).join(" · ") : "";
+      const trend = d.trend_states;
+      const bandBlurb = { hold: "Structural risk present, not acute.", trim: "Fragility elevated — the trend rule is the trigger.", "de-risk": "Fragility high, or a hard override fired." }[d.action_band] || "Not scored — inputs degraded.";
+      const chips = [
+        ["CAPE", fmtMetric(mx, "cape", (v) => v.toFixed(1)), "#E05252"],
+        ["Top-10", fmtMetric(mx, "sp500_top10_weight_pct", (v) => v.toFixed(1) + "%"), "#E0B458"],
+        ["HY OAS", fmtMetric(mx, "hy_oas_bps", (v) => Math.round(v) + " bp"), "#7fbf94"],
+        ["Gold", fmtMetric(mx, "gold_spot", (v) => "$" + Math.round(v).toLocaleString("en-US")), "#E0B458"],
+        ["BTC", fmtMetric(mx, "btc_spot", (v) => "$" + Math.round(v / 1e3) + "k"), "#E05252"]
+      ].filter((c) => c[1]);
+      const goldTtm = fmtMetric(mx, "gold_ttm_pct", (v) => (v > 0 ? "+" : "") + v.toFixed(1) + "%");
+      const btcDd = fmtMetric(mx, "btc_drawdown_pct", (v) => v.toFixed(0) + "%");
+      function close() {
+        try {
+          sessionStorage.setItem("bubblegauge:splash-seen", "1");
+        } catch (e) {
+        }
+        setOpen(false);
+      }
+      return /* @__PURE__ */ React.createElement(
+        "div",
+        {
+          role: "dialog",
+          "aria-modal": "true",
+          "aria-label": "AI bubble monitor — opening",
+          style: {
+            position: "fixed",
+            inset: 0,
+            zIndex: 1e3,
+            background: C.bg,
+            color: C.text,
+            overflowY: "auto",
+            WebkitOverflowScrolling: "touch",
+            fontFamily: "-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif"
+          }
+        },
+        /* @__PURE__ */ React.createElement("div", { style: {
+          minHeight: "100dvh",
+          display: "flex",
+          flexDirection: "column",
+          position: "relative",
+          padding: "calc(env(safe-area-inset-top,0px) + 8px) 0 calc(env(safe-area-inset-bottom,0px) + 18px)"
+        } }, /* @__PURE__ */ React.createElement("div", { "aria-hidden": "true", style: {
+          position: "absolute",
+          top: 70,
+          left: 0,
+          right: 0,
+          height: 340,
+          pointerEvents: "none",
+          background: "radial-gradient(circle at 50% 42%,rgba(224,180,88,0.13),rgba(224,180,88,0.04) 42%,transparent 66%)"
+        } }), /* @__PURE__ */ React.createElement(
+          "div",
+          {
+            role: "button",
+            "aria-label": "Close",
+            tabIndex: 0,
+            onClick: close,
+            onKeyDown: (e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                close();
+              }
+            },
+            style: {
+              position: "absolute",
+              top: "calc(env(safe-area-inset-top,0px) + 10px)",
+              right: 12,
+              width: 44,
+              height: 44,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              cursor: "pointer",
+              zIndex: 5
+            }
+          },
+          /* @__PURE__ */ React.createElement("div", { style: {
+            width: 32,
+            height: 32,
+            borderRadius: 999,
+            border: "1px solid rgba(237,232,220,0.14)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            background: "rgba(11,17,31,0.5)"
+          } }, /* @__PURE__ */ React.createElement("svg", { width: "12", height: "12", viewBox: "0 0 12 12", "aria-hidden": "true" }, /* @__PURE__ */ React.createElement("path", { d: "M1 1 L11 11 M11 1 L1 11", stroke: C.muted, strokeWidth: "1.4", strokeLinecap: "round" })))
+        ), /* @__PURE__ */ React.createElement("div", { style: { padding: "22px 26px 0" } }, /* @__PURE__ */ React.createElement("div", { style: { ...BS.eyebrow } }, "AI Bubble Monitor", live && live.anchorMonth ? " · " + live.anchorMonth : ""), /* @__PURE__ */ React.createElement("div", { style: { ...BS.serif, fontSize: 27, lineHeight: 1.14, color: C.text, marginTop: 9, letterSpacing: "0.01em" } }, "Where we stand", /* @__PURE__ */ React.createElement("br", null), /* @__PURE__ */ React.createElement("span", { style: { color: C.dim } }, "on the AI bubble")), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: C.faint, marginTop: 8, display: "flex", alignItems: "center", gap: 7, flexWrap: "wrap" } }, /* @__PURE__ */ React.createElement("span", { style: { width: 5, height: 5, borderRadius: 999, background: "#7fbf94", display: "inline-block" } }), (live && live.anchorPartial ? "Month-to-date · " : "") + (splRel(meta.computed_at) || "live"), DEMO ? /* @__PURE__ */ React.createElement("span", { style: { border: "1px solid rgba(237,232,220,0.14)", borderRadius: 999, padding: "1px 6px", fontSize: 9, letterSpacing: "0.08em", color: C.muted, textTransform: "uppercase" } }, "demo") : null)), /* @__PURE__ */ React.createElement("div", { style: { position: "relative", marginTop: 4, display: "flex", justifyContent: "center" } }, /* @__PURE__ */ React.createElement(
+          "svg",
+          {
+            viewBox: "0 0 390 258",
+            width: "100%",
+            style: { maxWidth: 390, height: "auto", display: "block" },
+            "aria-label": "Regime score " + Math.round(s) + " of 100, action band " + band.label.toLowerCase()
+          },
+          /* @__PURE__ */ React.createElement("defs", null, /* @__PURE__ */ React.createElement("filter", { id: "splSoft", x: "-40%", y: "-40%", width: "180%", height: "180%" }, /* @__PURE__ */ React.createElement("feGaussianBlur", { stdDeviation: "2.4" }))),
+          /* @__PURE__ */ React.createElement("circle", { cx: "195", cy: "150", r: "140", fill: "none", stroke: "rgba(237,232,220,0.05)", strokeWidth: "1" }),
+          /* @__PURE__ */ React.createElement("circle", { cx: "195", cy: "150", r: "96", fill: "none", stroke: "rgba(237,232,220,0.045)", strokeWidth: "1" }),
+          /* @__PURE__ */ React.createElement("path", { d: splArc(0, 1), fill: "none", stroke: "rgba(237,232,220,0.07)", strokeWidth: "11", strokeLinecap: "round" }),
+          /* @__PURE__ */ React.createElement("path", { d: splArc(0, 0.45), fill: "none", stroke: "#5B8DEF", strokeOpacity: "0.28", strokeWidth: "11", strokeLinecap: "round" }),
+          /* @__PURE__ */ React.createElement("path", { d: splArc(0.45, 0.6), fill: "none", stroke: "#E0B458", strokeOpacity: "0.3", strokeWidth: "11" }),
+          /* @__PURE__ */ React.createElement("path", { d: splArc(0.6, 1), fill: "none", stroke: "#E05252", strokeOpacity: "0.28", strokeWidth: "11", strokeLinecap: "round" }),
+          /* @__PURE__ */ React.createElement("path", { d: splArc(0, t), fill: "none", stroke: band.color, strokeOpacity: "0.22", strokeWidth: "11", strokeLinecap: "round", filter: "url(#splSoft)" }),
+          /* @__PURE__ */ React.createElement("path", { d: splArc(0, t), fill: "none", stroke: band.color, strokeWidth: "4.5", strokeLinecap: "round" }),
+          /* @__PURE__ */ React.createElement("line", { x1: mkIn[0].toFixed(1), y1: mkIn[1].toFixed(1), x2: mkOut[0].toFixed(1), y2: mkOut[1].toFixed(1), stroke: C.bg, strokeWidth: "4" }),
+          /* @__PURE__ */ React.createElement("line", { x1: mkIn[0].toFixed(1), y1: mkIn[1].toFixed(1), x2: mkOut[0].toFixed(1), y2: mkOut[1].toFixed(1), stroke: band.color, strokeWidth: "2" }),
+          /* @__PURE__ */ React.createElement("circle", { cx: mk[0].toFixed(1), cy: mk[1].toFixed(1), r: "7", fill: C.bg, stroke: band.color, strokeWidth: "2" }),
+          /* @__PURE__ */ React.createElement("circle", { cx: mk[0].toFixed(1), cy: mk[1].toFixed(1), r: "2.4", fill: band.color }),
+          /* @__PURE__ */ React.createElement("text", { x: "104", y: "252", textAnchor: "middle", fontFamily: "Georgia,serif", fontSize: "11", fill: C.faint, style: { fontVariantNumeric: "tabular-nums" } }, "0"),
+          /* @__PURE__ */ React.createElement("text", { x: "286", y: "252", textAnchor: "middle", fontFamily: "Georgia,serif", fontSize: "11", fill: C.faint, style: { fontVariantNumeric: "tabular-nums" } }, "100"),
+          /* @__PURE__ */ React.createElement("text", { x: "195", y: "94", textAnchor: "middle", fontSize: "9.5", letterSpacing: "3.4", fill: C.muted }, "REGIME SCORE"),
+          /* @__PURE__ */ React.createElement("text", { x: "195", y: "164", textAnchor: "middle", fontFamily: "Georgia,'Times New Roman',serif", fontSize: "76", fill: band.color, style: { fontVariantNumeric: "tabular-nums" }, letterSpacing: "0.01em" }, Math.round(s)),
+          /* @__PURE__ */ React.createElement("text", { x: "195", y: "188", textAnchor: "middle", fontSize: "12.5", letterSpacing: "4.6", fill: band.color }, band.label),
+          /* @__PURE__ */ React.createElement("text", { x: "195", y: "208", textAnchor: "middle", fontSize: "10.5", fill: C.faint, style: { fontVariantNumeric: "tabular-nums" } }, "point est. " + d.point_score + (pair(d.iqr) ? " · IQR " + Math.round(d.iqr[0]) + "–" + Math.round(d.iqr[1]) : ""))
+        )), /* @__PURE__ */ React.createElement("div", { style: { margin: "2px 26px 0", paddingTop: 14, borderTop: "1px solid " + C.line, display: "flex", justifyContent: "space-between", alignItems: "flex-start" } }, /* @__PURE__ */ React.createElement("div", { style: { maxWidth: 210 } }, /* @__PURE__ */ React.createElement("div", { style: { ...BS.eyebrow } }, "Action band"), /* @__PURE__ */ React.createElement("div", { style: { ...BS.serif, fontSize: 16, color: band.color, marginTop: 4 } }, band.label), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: C.faint, marginTop: 3, lineHeight: 1.45 } }, bandBlurb)), pair(d.band_5_95) && /* @__PURE__ */ React.createElement("div", { style: { textAlign: "right" } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 10, letterSpacing: "0.1em", textTransform: "uppercase", color: C.faint } }, "90% band"), /* @__PURE__ */ React.createElement("div", { style: { ...BS.serif, fontSize: 16, color: C.dim, marginTop: 3, fontVariantNumeric: "tabular-nums" } }, Math.round(d.band_5_95[0]) + "–" + Math.round(d.band_5_95[1])))), /* @__PURE__ */ React.createElement("div", { style: { margin: "12px 26px 0", display: "flex", alignItems: "center", gap: 14, fontSize: 11, color: C.muted, flexWrap: "wrap" } }, /* @__PURE__ */ React.createElement("span", { style: { display: "inline-flex", alignItems: "center", gap: 6 } }, /* @__PURE__ */ React.createElement("span", { style: { width: 6, height: 6, borderRadius: 999, background: d.red_flag_count > 0 ? "#E0B458" : "#7fbf94" } }), "Red-flags ", /* @__PURE__ */ React.createElement("span", { style: { color: C.text, fontVariantNumeric: "tabular-nums" } }, d.red_flag_count, " / 4")), trend && /* @__PURE__ */ React.createElement("span", { style: { display: "inline-flex", alignItems: "center", gap: 14 } }, /* @__PURE__ */ React.createElement("span", { style: { color: "rgba(237,232,220,0.14)" } }, "|"), /* @__PURE__ */ React.createElement("span", null, "Faber trend", " ", /* @__PURE__ */ React.createElement("span", { style: { color: trend.SPY.faber_10mo === "IN" ? "#7fbf94" : "#E05252" } }, "SPY ", trend.SPY.faber_10mo), " · ", /* @__PURE__ */ React.createElement("span", { style: { color: trend.QQQ.faber_10mo === "IN" ? "#7fbf94" : "#E05252" } }, "QQQ ", trend.QQQ.faber_10mo)))), fgOk && /* @__PURE__ */ React.createElement("div", { style: { margin: "18px 26px 0" } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "baseline" } }, /* @__PURE__ */ React.createElement("div", { style: { ...BS.eyebrow } }, "CNN Fear & Greed"), /* @__PURE__ */ React.createElement("div", { style: { ...BS.serif, fontSize: 15, color: fgCol, fontVariantNumeric: "tabular-nums" } }, fg.value.toFixed(1), fg.detail && fg.detail.rating ? " · " + fg.detail.rating : "")), /* @__PURE__ */ React.createElement("div", { style: { position: "relative", height: 6, borderRadius: 999, marginTop: 9, background: "linear-gradient(90deg,#E05252,#C0564A,#9AA3B5,#7fbf94,#5AA9A3)" } }, /* @__PURE__ */ React.createElement("div", { style: { position: "absolute", top: -3, left: fg.value + "%", transform: "translateX(-50%)", width: 2, height: 12, borderRadius: 2, background: C.text, boxShadow: "0 0 0 2px " + C.bg } })), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", fontSize: 10, color: C.faint, marginTop: 6, fontVariantNumeric: "tabular-nums" } }, /* @__PURE__ */ React.createElement("span", null, fgRecent), /* @__PURE__ */ React.createElement("span", null, "0 — 100"))), chips.length > 0 && /* @__PURE__ */ React.createElement("div", { style: { margin: "18px 26px 0", display: "flex", flexWrap: "wrap", gap: 7 } }, chips.map((c) => /* @__PURE__ */ React.createElement("div", { key: c[0], title: c[1].title, style: { display: "inline-flex", alignItems: "center", gap: 7, border: "1px solid " + C.line, borderRadius: 999, padding: "6px 11px" } }, /* @__PURE__ */ React.createElement("span", { style: { width: 6, height: 6, borderRadius: 999, background: c[2] } }), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, color: C.muted } }, c[0]), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 12, color: C.text, fontVariantNumeric: "tabular-nums" } }, c[1].text, c[0] === "Gold" && goldTtm ? /* @__PURE__ */ React.createElement("span", { style: { color: "#7fbf94" } }, " ", goldTtm.text) : null, c[0] === "BTC" && btcDd ? /* @__PURE__ */ React.createElement("span", { style: { color: "#E05252" } }, " ", btcDd.text) : null)))), d.judgment_call && d.judgment_call.text && /* @__PURE__ */ React.createElement("div", { style: { margin: "18px 26px 0", ...BS.serif, fontStyle: "italic", fontSize: 13, lineHeight: 1.5, color: C.dim } }, d.judgment_call.text), /* @__PURE__ */ React.createElement("div", { style: { marginTop: "auto", padding: "18px 26px 0", fontSize: 9.5, lineHeight: 1.5, color: C.faint } }, "Heuristic regime read — a rules-based score, not a probability. Research, not advice or a recommendation."))
+      );
+    }
+    function Splash() {
+      return /* @__PURE__ */ React.createElement(Boundary, { fallback: null }, /* @__PURE__ */ React.createElement(SplashInner, null));
+    }
     function LiveBadgeInner({ keys, label }) {
       const f = useFeed();
       const live = useMemo(function() {
@@ -1056,6 +1227,7 @@
       tab: { id: "bubblegauge", label: "AI Regime" },
       Strip: StripBoundary,
       FearGreedStrip,
+      Splash,
       DetailTab,
       useAiLive,
       AiLivePanel,
