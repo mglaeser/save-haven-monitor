@@ -42,7 +42,10 @@ golden data hash:
   dedicated title, the regime score + action band on a 0–100 gauge, the CNN Fear & Greed status, a few
   live stats, an on-brand SVG bubble illustration, a plain-language read, the standing "heuristic, not a
   probability, research not advice" disclaimer, and a small top-right **X close** (≥40px hit area,
-  `aria-label="Close"`).
+  `aria-label="Close"`). After the splash is shown and closed, a small **re-open icon** (gold gauge
+  glyph, `aria-label="Open AI bubble monitor"`) persists top-right **in portrait only** (reactive to
+  rotation via `matchMedia`) so the reading can be reopened; it too is gated (portrait + dismissed +
+  API-connected) and absent with no `?status-api`, on desktop, and before the first close.
 - **Triple-gated, opening-only:** renders only when (a) the `?status-api` gate is on **and** the API is
   connected (score data present — not loading/warming/error), (b) the viewport is a **small screen in
   portrait** (`matchMedia("(max-width: 640px) and (orientation: portrait)")`), and (c) it has not been

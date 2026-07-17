@@ -1066,10 +1066,77 @@
       const [open, setOpen] = useState(function() {
         return !splSeen() && splIsSmallPortrait();
       });
-      if (!open)
-        return null;
+      const [portrait, setPortrait] = useState(splIsSmallPortrait);
+      const [dismissed, setDismissed] = useState(splSeen);
+      useEffect(function() {
+        let mq;
+        try {
+          mq = window.matchMedia("(max-width: 640px) and (orientation: portrait)");
+        } catch (e) {
+          return void 0;
+        }
+        const on = function() {
+          setPortrait(mq.matches);
+        };
+        on();
+        if (mq.addEventListener)
+          mq.addEventListener("change", on);
+        else if (mq.addListener)
+          mq.addListener(on);
+        return function() {
+          if (mq.removeEventListener)
+            mq.removeEventListener("change", on);
+          else if (mq.removeListener)
+            mq.removeListener(on);
+        };
+      }, []);
       if (score.loading || score.notReady || score.error || !score.json)
         return null;
+      function reopen() {
+        setOpen(true);
+      }
+      if (!open) {
+        if (!(portrait && dismissed))
+          return null;
+        return /* @__PURE__ */ React.createElement(
+          "div",
+          {
+            role: "button",
+            "aria-label": "Open AI bubble monitor",
+            tabIndex: 0,
+            onClick: reopen,
+            onKeyDown: (e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                reopen();
+              }
+            },
+            style: {
+              position: "fixed",
+              top: "calc(env(safe-area-inset-top,0px) + 10px)",
+              right: 12,
+              zIndex: 900,
+              width: 40,
+              height: 40,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              cursor: "pointer"
+            }
+          },
+          /* @__PURE__ */ React.createElement("div", { style: {
+            width: 36,
+            height: 36,
+            borderRadius: 999,
+            border: "1px solid rgba(224,180,88,0.5)",
+            background: "rgba(11,17,31,0.72)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            boxShadow: "0 2px 10px rgba(0,0,0,0.35)"
+          } }, /* @__PURE__ */ React.createElement("svg", { width: "20", height: "20", viewBox: "0 0 24 24", "aria-hidden": "true" }, /* @__PURE__ */ React.createElement("path", { d: "M6.34 18.16 A8 8 0 1 1 17.66 18.16", fill: "none", stroke: "rgba(224,180,88,0.3)", strokeWidth: "2", strokeLinecap: "round" }), /* @__PURE__ */ React.createElement("path", { d: "M6.34 18.16 A8 8 0 0 1 8.37 5.37", fill: "none", stroke: "#E0B458", strokeWidth: "2", strokeLinecap: "round" }), /* @__PURE__ */ React.createElement("circle", { cx: "8.37", cy: "5.37", r: "1.9", fill: "#E0B458" })))
+        );
+      }
       const d = score.json.data, meta = score.json.meta || {};
       const band = bandOf(d.action_band);
       const s = Math.max(0, Math.min(100, +d.headline_median));
@@ -1095,6 +1162,7 @@
           sessionStorage.setItem("bubblegauge:splash-seen", "1");
         } catch (e) {
         }
+        setDismissed(true);
         setOpen(false);
       }
       return /* @__PURE__ */ React.createElement(
