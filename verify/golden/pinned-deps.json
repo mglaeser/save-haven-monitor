@@ -1,11 +1,10 @@
 {
   "recorded": "2026-07-16",
-  "note": "The exact pinned CDN script URLs. A change to any version/path is a supply-chain event that must be an intentional, hash-recomputed edit. This is the offline-deterministic sibling of the online SRI recompute (40-sri-recompute).",
+  "note": "The served runtime dependency set, now SELF-HOSTED under ./vendor/ (no unpkg at runtime). A change to any file/version is a supply-chain event (verify/tests/35 + 40). Babel is gone (compiled-ahead).",
   "urls": [
-    "https://unpkg.com/react@18.3.1/umd/react.production.min.js",
-    "https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js",
-    "https://unpkg.com/prop-types@15.8.1/prop-types.min.js",
-    "https://unpkg.com/recharts@2.12.7/umd/Recharts.js",
-    "https://unpkg.com/@babel/standalone@7.29.7/babel.min.js"
+    "./vendor/react.production.min.js",
+    "./vendor/react-dom.production.min.js",
+    "./vendor/prop-types.min.js",
+    "./vendor/Recharts.js"
   ]
 }

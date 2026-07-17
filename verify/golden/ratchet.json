@@ -3,7 +3,7 @@
   "recorded": "2026-07-16 (v2.0)",
   "metrics": {
     "pipeline_catch_rate": {
-      "baseline": "10/10",
+      "baseline": "13/13",
       "direction": "up",
       "gate": "verify/calibration + node run.js",
       "blocks": "release on any seeded-defect escape"
@@ -63,6 +63,18 @@
       "direction": "flat-zero",
       "gate": "verify/tests/65-lockfile",
       "blocks": "any non-registry/unpinned/no-integrity CI dependency (C-03)"
+    },
+    "compiled_source_parity": {
+      "baseline": "byte-identical",
+      "direction": "flat",
+      "gate": "verify/tests/66-compiled-fresh",
+      "blocks": "served .js drifting from its .jsx source"
+    },
+    "third_party_runtime_egress": {
+      "baseline": 0,
+      "direction": "flat-zero",
+      "gate": "verify/tests/35 + 62",
+      "blocks": "any unpkg/Babel/third-party runtime fetch in the served site"
     }
   }
 }
