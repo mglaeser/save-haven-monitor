@@ -16,7 +16,7 @@
     },
     {
       "file": "dashboard.js",
-      "sha256": "61589f109e0d3952d7a5ed2ca6250e7f88e49093b0889497b1bbb35d5eda3690",
+      "sha256": "68169d96fc7b71e915fe56f80705fa2f15b269cbcb3e26bd5311dea91c7edb17",
       "role": "served compiled crisis-atlas (esbuild transpile of dashboard.jsx, IIFE-wrapped)",
       "derives_from_spec": "rewrite/00-recommendation.md + DR-006 (compiled-ahead)",
       "test_evidence": "verify/tests/66-compiled-fresh (bundle==src) + 30/62/63",
@@ -25,7 +25,7 @@
     },
     {
       "file": "bubblegauge.js",
-      "sha256": "5fd955dd1551990fa4ecb0ceca5def9f6aa4366103155a396a178369abeef346",
+      "sha256": "3e2193d27b027a69e54b2cd21ba47b08302e4d1b8dcad0141f1a05bcf7494ffe",
       "role": "served compiled gated integration (esbuild transpile of bubblegauge.jsx)",
       "derives_from_spec": "rewrite/00-recommendation.md + DR-006 (compiled-ahead)",
       "test_evidence": "verify/tests/66-compiled-fresh (bundle==src) + 30/62/63",
@@ -34,7 +34,7 @@
     },
     {
       "file": "src/dashboard.tsx",
-      "sha256": "a98f089ee65d03ceac708fe4ceceb9dfb52307f8dcbb586ef40db0b7fe7f43e5",
+      "sha256": "7ea655bdc6392a66ad4c44ed113cc9927a3982f599a24c1923fc3079e7dcd897",
       "role": "SOURCE of dashboard.js (view + math; imports ./data)",
       "derives_from_spec": "rewrite/00-recommendation.md + DR-006 (module migration)",
       "test_evidence": "verify/tests/*",
@@ -43,7 +43,7 @@
     },
     {
       "file": "src/bubblegauge.tsx",
-      "sha256": "ce6de5c0fce46aec14e5b98028e43d9f1ee23b1b516efb0a18bdf6a25ea3f32f",
+      "sha256": "8ea771d6c375327919e4087c7eba01125891c1e4cb65d1fe037240578b3db82a",
       "role": "SOURCE of bubblegauge.js (gated integration)",
       "derives_from_spec": "rewrite/00-recommendation.md + DR-006 (module migration)",
       "test_evidence": "verify/tests/*",
