@@ -9,8 +9,8 @@ const { ok, eq } = require("../lib/assert.js");
 
 module.exports = function register(t) {
   const html = raw("index.html");
-  const bg = raw("bubblegauge.jsx");
-  const dash = raw("dashboard.jsx");
+  const bg = raw("src/bubblegauge.tsx");
+  const dash = raw("src/dashboard.tsx");
 
   t("all 4 self-hosted vendor <script src> tags carry sha384 integrity", () => {
     // Compiled-ahead (DR-006): vendors are same-origin under ./vendor/ (no unpkg, so no crossorigin
@@ -21,7 +21,7 @@ module.exports = function register(t) {
   });
 
   t("no plausible secrets/credentials or auth-secret idioms in served source", () => {
-    const files = { "index.html": html, "bubblegauge.jsx": bg, "dashboard.jsx": dash };
+    const files = { "index.html": html, "src/bubblegauge.tsx": bg, "src/dashboard.tsx": dash };
     // The site legitimately holds NO secrets: the bubblegauge feed is a public GET, no auth
     // header. So both leaked-key shapes AND the idioms that would carry one are forbidden.
     const patterns = [

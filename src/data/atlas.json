@@ -1,0 +1,3682 @@
+{
+ "CRISES": [
+  {
+   "id": "ai2026",
+   "name": "AI Investment Bubble",
+   "years": "2026 · POTENTIAL",
+   "cat": "A",
+   "weight": 1,
+   "potential": true,
+   "peak": "Jul 2026 (= today, by construction)",
+   "cause": "Hyperscaler AI capex (~$1tn 2025–26) outpacing free cash flow, record concentration (Mag-7 ≈ 35% of the S&P 500) and CAPE ≈ 41 — the BIS (28 Jun 2026), ECB FSR (27 May 2026), Fed FSR (8 May 2026) and Bank of England all warn of a possible sharp correction; econometric bubble tests are split (Cowles/Yale GSADF finds explosiveness; a 2026 counter-paper finds none once tech fundamentals are modeled).",
+   "highlight": "Institutional + algorithmic verdict: GOLD is elevated to lead regime-matched hedge — 2026 hedge score 0.85, a statistical co-lead with phase-1 cash (0.88), decisively above 'challenged' Treasuries (0.42). Basis: 27% of global reserves vs 22% UST (ECB, 2 Jun 2026), regime-match r 0.96–0.98 with monetary-crisis scripts, worst-quintile beta ≈ 0, and gold Granger-LEADS the market this cycle. Caveat: a +130% run-up means part of the hedge is pre-paid. CHF secondary; the yen (~¥162) and Bitcoin (−51% from ATH) look falsified this cycle.",
+   "sources": "BIS Annual Economic Report 2026; ECB FSR May 2026 & Int'l Role of the Euro Jun 2026; Fed FSR May 2026; BoE FSR 2026; WGC Jun 2026; Duffie (2020)",
+   "series": [
+    {
+     "key": "mkt",
+     "label": "NASDAQ-100 (feared market)",
+     "cls": "market",
+     "color": "#E05252",
+     "end": 0,
+     "a": [
+      [
+       -60,
+       100
+      ],
+      [
+       -56,
+       111
+      ],
+      [
+       -50,
+       88
+      ],
+      [
+       -43,
+       70
+      ],
+      [
+       -37,
+       101
+      ],
+      [
+       -28,
+       121
+      ],
+      [
+       -24,
+       139
+      ],
+      [
+       -18,
+       144
+      ],
+      [
+       -17,
+       138
+      ],
+      [
+       -15,
+       111
+      ],
+      [
+       -10,
+       150
+      ],
+      [
+       -7,
+       161
+      ],
+      [
+       -3,
+       154
+      ],
+      [
+       -1,
+       205
+      ],
+      [
+       0,
+       196
+      ]
+     ]
+    },
+    {
+     "key": "au",
+     "label": "Gold — lead regime-matched hedge",
+     "cls": "category",
+     "color": "#E0B458",
+     "dashed": true,
+     "end": 0,
+     "w": 2.5,
+     "a": [
+      [
+       -60,
+       100
+      ],
+      [
+       -45,
+       92
+      ],
+      [
+       -37,
+       107
+      ],
+      [
+       -28,
+       122
+      ],
+      [
+       -19,
+       146
+      ],
+      [
+       -16,
+       167
+      ],
+      [
+       -10,
+       210
+      ],
+      [
+       -7,
+       252
+      ],
+      [
+       -5,
+       311
+      ],
+      [
+       -2,
+       240
+      ],
+      [
+       0,
+       230
+      ]
+     ]
+    },
+    {
+     "key": "cash",
+     "label": "3M T-bills / cash (TR) — phase 1",
+     "cls": "universal",
+     "color": "#BBCF6A",
+     "dashed": true,
+     "end": 0,
+     "a": [
+      [
+       -60,
+       100
+      ],
+      [
+       -48,
+       100.4
+      ],
+      [
+       -43,
+       101.5
+      ],
+      [
+       -36,
+       104
+      ],
+      [
+       -31,
+       107
+      ],
+      [
+       -19,
+       112
+      ],
+      [
+       -7,
+       117
+      ],
+      [
+       0,
+       119.5
+      ]
+     ]
+    },
+    {
+     "key": "ust",
+     "label": "10Y US Treasuries (TR) — challenged",
+     "cls": "universal",
+     "color": "#5B8DEF",
+     "dashed": true,
+     "end": 0,
+     "a": [
+      [
+       -60,
+       100
+      ],
+      [
+       -50,
+       96
+      ],
+      [
+       -43,
+       85
+      ],
+      [
+       -33,
+       82
+      ],
+      [
+       -31,
+       86
+      ],
+      [
+       -19,
+       88
+      ],
+      [
+       -7,
+       93
+      ],
+      [
+       0,
+       95
+      ]
+     ]
+    },
+    {
+     "key": "chf",
+     "label": "Swiss franc (vs USD)",
+     "cls": "category",
+     "color": "#7EC8E3",
+     "dashed": true,
+     "end": 0,
+     "a": [
+      [
+       -60,
+       100
+      ],
+      [
+       -45,
+       92
+      ],
+      [
+       -31,
+       109
+      ],
+      [
+       -19,
+       101
+      ],
+      [
+       -8,
+       113
+      ],
+      [
+       -5,
+       120
+      ],
+      [
+       0,
+       113
+      ]
+     ]
+    },
+    {
+     "key": "usd",
+     "label": "US dollar (DXY)",
+     "cls": "category",
+     "color": "#8FAE5D",
+     "dashed": true,
+     "end": 0,
+     "a": [
+      [
+       -60,
+       100
+      ],
+      [
+       -46,
+       125
+      ],
+      [
+       -31,
+       110
+      ],
+      [
+       -19,
+       117
+      ],
+      [
+       -12,
+       104
+      ],
+      [
+       -6,
+       106
+      ],
+      [
+       0,
+       110
+      ]
+     ]
+    },
+    {
+     "key": "jpy",
+     "label": "Japanese yen (failed this cycle)",
+     "cls": "falsified",
+     "color": "#5AA9A3",
+     "dashed": true,
+     "end": 0,
+     "a": [
+      [
+       -60,
+       100
+      ],
+      [
+       -45,
+       73
+      ],
+      [
+       -33,
+       74
+      ],
+      [
+       -24,
+       68
+      ],
+      [
+       -12,
+       72
+      ],
+      [
+       0,
+       68
+      ]
+     ]
+    },
+    {
+     "key": "btc",
+     "label": "Bitcoin (risk asset)",
+     "cls": "falsified",
+     "color": "#E8853D",
+     "dashed": true,
+     "end": 0,
+     "a": [
+      [
+       -60,
+       100
+      ],
+      [
+       -56,
+       203
+      ],
+      [
+       -43,
+       47
+      ],
+      [
+       -37,
+       79
+      ],
+      [
+       -19,
+       274
+      ],
+      [
+       -9,
+       371
+      ],
+      [
+       -7,
+       312
+      ],
+      [
+       -3,
+       220
+      ],
+      [
+       0,
+       182
+      ]
+     ]
+    }
+   ]
+  },
+  {
+   "id": "depression",
+   "name": "Great Depression",
+   "years": "1929–34",
+   "cat": "A",
+   "weight": 1,
+   "peak": "Sep 1929",
+   "cause": "Equity bubble, banking collapse and deflation. Dow −89% peak-to-trough (Jul 1932).",
+   "highlight": "Homestake Mining +474–580% while the Dow lost 89% — the archetypal crisis-unique winner under the fixed gold price.",
+   "sources": "Brunnermeier & Oehmke (2013); Jordà et al. (2019) QJE; economic-history literature on gold-standard mining shares",
+   "series": [
+    {
+     "key": "mkt",
+     "label": "Dow Jones Industrial",
+     "cls": "market",
+     "color": "#E05252",
+     "a": [
+      [
+       -60,
+       100
+      ],
+      [
+       -48,
+       112
+      ],
+      [
+       -36,
+       130
+      ],
+      [
+       -24,
+       160
+      ],
+      [
+       -12,
+       220
+      ],
+      [
+       -6,
+       255
+      ],
+      [
+       0,
+       300
+      ],
+      [
+       1,
+       285
+      ],
+      [
+       2,
+       156
+      ],
+      [
+       7,
+       231
+      ],
+      [
+       12,
+       190
+      ],
+      [
+       20,
+       130
+      ],
+      [
+       26,
+       90
+      ],
+      [
+       34,
+       32
+      ],
+      [
+       40,
+       52
+      ],
+      [
+       46,
+       70
+      ],
+      [
+       54,
+       78
+      ],
+      [
+       60,
+       73
+      ]
+     ]
+    },
+    {
+     "key": "hm",
+     "label": "Homestake Mining (gold shares)",
+     "cls": "unique",
+     "color": "#E0B458",
+     "a": [
+      [
+       -60,
+       100
+      ],
+      [
+       -24,
+       102
+      ],
+      [
+       0,
+       105
+      ],
+      [
+       6,
+       118
+      ],
+      [
+       12,
+       140
+      ],
+      [
+       24,
+       220
+      ],
+      [
+       34,
+       360
+      ],
+      [
+       40,
+       600
+      ],
+      [
+       48,
+       625
+      ],
+      [
+       60,
+       660
+      ]
+     ]
+    },
+    {
+     "key": "gb",
+     "label": "Long-term US govt bonds",
+     "cls": "universal",
+     "color": "#5B8DEF",
+     "a": [
+      [
+       -60,
+       100
+      ],
+      [
+       0,
+       104
+      ],
+      [
+       12,
+       110
+      ],
+      [
+       20,
+       116
+      ],
+      [
+       26,
+       109
+      ],
+      [
+       34,
+       122
+      ],
+      [
+       48,
+       130
+      ],
+      [
+       60,
+       135
+      ]
+     ]
+    },
+    {
+     "key": "cash",
+     "label": "Cash (real purchasing power) — phase 1",
+     "cls": "universal",
+     "color": "#BBCF6A",
+     "a": [
+      [
+       -60,
+       100
+      ],
+      [
+       0,
+       100
+      ],
+      [
+       12,
+       107
+      ],
+      [
+       24,
+       118
+      ],
+      [
+       34,
+       131
+      ],
+      [
+       40,
+       135
+      ],
+      [
+       60,
+       129
+      ]
+     ]
+    }
+   ]
+  },
+  {
+   "id": "stagflation",
+   "name": "Stagflation / Nifty Fifty",
+   "years": "1973–74",
+   "cat": "A",
+   "weight": 1,
+   "peak": "Jan 1973",
+   "cause": "Growth-stock overvaluation meets oil shock and inflation. S&P 500 −48%; Nifty Fifty names fell 70–90%.",
+   "highlight": "Gold ≈ +385% within the window (post-Bretton-Woods repricing); crude roughly QUADRUPLED after the Oct 1973 embargo ($2.90 → $11.65/bbl — the highest-magnitude crisis-unique winner, Alpanda & Peralta-Alva 2010); collateralized commodity futures roughly doubled (Gorton & Rouwenhorst 2006).",
+   "sources": "Gorton & Rouwenhorst (2006) FAJ; Alpanda & Peralta-Alva (2010) Rev. Econ. Dynamics; Erb & Harvey (2013); Siegel (1998); Fesenmaier & Smith (2002)",
+   "series": [
+    {
+     "key": "mkt",
+     "label": "S&P 500",
+     "cls": "market",
+     "color": "#E05252",
+     "a": [
+      [
+       -60,
+       100
+      ],
+      [
+       -48,
+       108
+      ],
+      [
+       -36,
+       86
+      ],
+      [
+       -32,
+       78
+      ],
+      [
+       -24,
+       96
+      ],
+      [
+       -12,
+       110
+      ],
+      [
+       0,
+       125
+      ],
+      [
+       6,
+       112
+      ],
+      [
+       12,
+       101
+      ],
+      [
+       18,
+       80
+      ],
+      [
+       21,
+       65
+      ],
+      [
+       27,
+       84
+      ],
+      [
+       36,
+       94
+      ],
+      [
+       48,
+       98
+      ],
+      [
+       60,
+       93
+      ]
+     ]
+    },
+    {
+     "key": "au",
+     "label": "Gold",
+     "cls": "category",
+     "color": "#E0B458",
+     "a": [
+      [
+       -60,
+       100
+      ],
+      [
+       -36,
+       92
+      ],
+      [
+       -24,
+       105
+      ],
+      [
+       -12,
+       126
+      ],
+      [
+       0,
+       171
+      ],
+      [
+       6,
+       240
+      ],
+      [
+       12,
+       350
+      ],
+      [
+       23,
+       487
+      ],
+      [
+       30,
+       430
+      ],
+      [
+       43,
+       271
+      ],
+      [
+       52,
+       380
+      ],
+      [
+       60,
+       460
+      ]
+     ]
+    },
+    {
+     "key": "oil",
+     "label": "Crude oil / energy (unique)",
+     "cls": "unique",
+     "color": "#C05A32",
+     "a": [
+      [
+       -60,
+       100
+      ],
+      [
+       -24,
+       101
+      ],
+      [
+       -12,
+       103
+      ],
+      [
+       0,
+       120
+      ],
+      [
+       8,
+       160
+      ],
+      [
+       9,
+       290
+      ],
+      [
+       12,
+       402
+      ],
+      [
+       24,
+       410
+      ],
+      [
+       48,
+       430
+      ],
+      [
+       60,
+       450
+      ]
+     ]
+    },
+    {
+     "key": "cmd",
+     "label": "Commodity futures (GSCI-type)",
+     "cls": "category",
+     "color": "#C98A4F",
+     "a": [
+      [
+       -60,
+       100
+      ],
+      [
+       -24,
+       102
+      ],
+      [
+       -12,
+       108
+      ],
+      [
+       0,
+       125
+      ],
+      [
+       8,
+       175
+      ],
+      [
+       12,
+       210
+      ],
+      [
+       24,
+       235
+      ],
+      [
+       36,
+       240
+      ],
+      [
+       48,
+       262
+      ],
+      [
+       60,
+       280
+      ]
+     ]
+    },
+    {
+     "key": "val",
+     "label": "Value / dividend stocks",
+     "cls": "category",
+     "color": "#74B06F",
+     "a": [
+      [
+       -60,
+       100
+      ],
+      [
+       -24,
+       98
+      ],
+      [
+       0,
+       115
+      ],
+      [
+       12,
+       100
+      ],
+      [
+       21,
+       86
+      ],
+      [
+       36,
+       118
+      ],
+      [
+       60,
+       138
+      ]
+     ]
+    },
+    {
+     "key": "cta",
+     "label": "Trend-following / CTA (stylized)",
+     "cls": "universal",
+     "color": "#4F79C9",
+     "a": [
+      [
+       -60,
+       100
+      ],
+      [
+       -36,
+       108
+      ],
+      [
+       -24,
+       114
+      ],
+      [
+       0,
+       130
+      ],
+      [
+       9,
+       150
+      ],
+      [
+       12,
+       162
+      ],
+      [
+       21,
+       180
+      ],
+      [
+       24,
+       185
+      ],
+      [
+       48,
+       212
+      ],
+      [
+       60,
+       232
+      ]
+     ]
+    }
+   ]
+  },
+  {
+   "id": "japan",
+   "name": "Japan Asset Bubble",
+   "years": "1989–2003",
+   "cat": "A",
+   "weight": 1,
+   "peak": "Dec 1989",
+   "cause": "Monetary over-expansion, land + equity bubble. Nikkei −80% by 2003 (decline continues beyond this window).",
+   "highlight": "Deflation made JGBs and the yen the standout winners; rolling Nikkei puts are the stylized crisis-unique convexity trade.",
+   "sources": "Ranaldo & Söderlind (2010) Rev. Finance; Brunnermeier & Oehmke (2013)",
+   "series": [
+    {
+     "key": "mkt",
+     "label": "Nikkei 225",
+     "cls": "market",
+     "color": "#E05252",
+     "a": [
+      [
+       -60,
+       100
+      ],
+      [
+       -48,
+       115
+      ],
+      [
+       -36,
+       160
+      ],
+      [
+       -24,
+       187
+      ],
+      [
+       -12,
+       261
+      ],
+      [
+       0,
+       337
+      ],
+      [
+       3,
+       290
+      ],
+      [
+       6,
+       278
+      ],
+      [
+       9,
+       208
+      ],
+      [
+       12,
+       205
+      ],
+      [
+       18,
+       196
+      ],
+      [
+       24,
+       200
+      ],
+      [
+       30,
+       137
+      ],
+      [
+       36,
+       148
+      ],
+      [
+       42,
+       175
+      ],
+      [
+       48,
+       167
+      ],
+      [
+       54,
+       178
+      ],
+      [
+       60,
+       171
+      ]
+     ]
+    },
+    {
+     "key": "jgb",
+     "label": "JGBs 10Y (total return)",
+     "cls": "universal",
+     "color": "#5B8DEF",
+     "a": [
+      [
+       -60,
+       100
+      ],
+      [
+       -24,
+       112
+      ],
+      [
+       0,
+       118
+      ],
+      [
+       6,
+       112
+      ],
+      [
+       9,
+       110
+      ],
+      [
+       12,
+       116
+      ],
+      [
+       24,
+       128
+      ],
+      [
+       36,
+       140
+      ],
+      [
+       48,
+       152
+      ],
+      [
+       60,
+       165
+      ]
+     ]
+    },
+    {
+     "key": "jpy",
+     "label": "Japanese yen (vs USD)",
+     "cls": "category",
+     "color": "#5AA9A3",
+     "a": [
+      [
+       -60,
+       100
+      ],
+      [
+       -36,
+       152
+      ],
+      [
+       -24,
+       158
+      ],
+      [
+       -12,
+       175
+      ],
+      [
+       0,
+       174
+      ],
+      [
+       12,
+       180
+      ],
+      [
+       24,
+       190
+      ],
+      [
+       30,
+       198
+      ],
+      [
+       48,
+       225
+      ],
+      [
+       60,
+       252
+      ]
+     ]
+    },
+    {
+     "key": "cash",
+     "label": "Yen cash / call rate (TR) — phase 1",
+     "cls": "universal",
+     "color": "#BBCF6A",
+     "a": [
+      [
+       -60,
+       100
+      ],
+      [
+       -24,
+       112
+      ],
+      [
+       0,
+       124
+      ],
+      [
+       12,
+       133
+      ],
+      [
+       18,
+       137
+      ],
+      [
+       30,
+       142
+      ],
+      [
+       48,
+       148
+      ],
+      [
+       60,
+       151
+      ]
+     ]
+    },
+    {
+     "key": "puts",
+     "label": "Rolling Nikkei puts (stylized)",
+     "cls": "unique",
+     "color": "#B48CE0",
+     "a": [
+      [
+       -60,
+       100
+      ],
+      [
+       -36,
+       84
+      ],
+      [
+       -12,
+       68
+      ],
+      [
+       0,
+       60
+      ],
+      [
+       6,
+       120
+      ],
+      [
+       9,
+       205
+      ],
+      [
+       12,
+       235
+      ],
+      [
+       24,
+       290
+      ],
+      [
+       30,
+       420
+      ],
+      [
+       42,
+       395
+      ],
+      [
+       60,
+       350
+      ]
+     ]
+    }
+   ]
+  },
+  {
+   "id": "blackmonday",
+   "name": "Black Monday",
+   "years": "1987",
+   "cat": "E",
+   "weight": 0.7,
+   "peak": "Aug 1987",
+   "cause": "Portfolio insurance and market microstructure. Dow −22.6% in a single day; ≈ −33% intra-quarter.",
+   "highlight": "Gold was a weak-to-strong safe haven for the US and Canada (Baur & McDermott 2010); Treasuries and the yen rallied.",
+   "sources": "Baur & McDermott (2010) J. Banking & Finance; Ranaldo & Söderlind (2010)",
+   "series": [
+    {
+     "key": "mkt",
+     "label": "S&P 500",
+     "cls": "market",
+     "color": "#E05252",
+     "a": [
+      [
+       -60,
+       100
+      ],
+      [
+       -48,
+       130
+      ],
+      [
+       -36,
+       155
+      ],
+      [
+       -24,
+       180
+      ],
+      [
+       -12,
+       245
+      ],
+      [
+       -2,
+       318
+      ],
+      [
+       0,
+       325
+      ],
+      [
+       1,
+       318
+      ],
+      [
+       2,
+       215
+      ],
+      [
+       4,
+       225
+      ],
+      [
+       8,
+       236
+      ],
+      [
+       14,
+       262
+      ],
+      [
+       23,
+       345
+      ],
+      [
+       36,
+       330
+      ],
+      [
+       48,
+       378
+      ],
+      [
+       60,
+       405
+      ]
+     ]
+    },
+    {
+     "key": "au",
+     "label": "Gold",
+     "cls": "category",
+     "color": "#E0B458",
+     "a": [
+      [
+       -60,
+       100
+      ],
+      [
+       -36,
+       90
+      ],
+      [
+       -24,
+       88
+      ],
+      [
+       -12,
+       113
+      ],
+      [
+       0,
+       131
+      ],
+      [
+       2,
+       136
+      ],
+      [
+       4,
+       143
+      ],
+      [
+       10,
+       128
+      ],
+      [
+       24,
+       105
+      ],
+      [
+       40,
+       102
+      ],
+      [
+       60,
+       97
+      ]
+     ]
+    },
+    {
+     "key": "ust",
+     "label": "Long US Treasuries (TR)",
+     "cls": "universal",
+     "color": "#5B8DEF",
+     "a": [
+      [
+       -60,
+       100
+      ],
+      [
+       -24,
+       148
+      ],
+      [
+       -12,
+       158
+      ],
+      [
+       -2,
+       148
+      ],
+      [
+       0,
+       150
+      ],
+      [
+       2,
+       160
+      ],
+      [
+       3,
+       163
+      ],
+      [
+       12,
+       168
+      ],
+      [
+       24,
+       178
+      ],
+      [
+       48,
+       205
+      ],
+      [
+       60,
+       220
+      ]
+     ]
+    },
+    {
+     "key": "jpy",
+     "label": "Japanese yen (vs USD)",
+     "cls": "category",
+     "color": "#5AA9A3",
+     "a": [
+      [
+       -60,
+       100
+      ],
+      [
+       -36,
+       118
+      ],
+      [
+       -24,
+       136
+      ],
+      [
+       -12,
+       166
+      ],
+      [
+       0,
+       177
+      ],
+      [
+       2,
+       190
+      ],
+      [
+       4,
+       211
+      ],
+      [
+       12,
+       205
+      ],
+      [
+       36,
+       196
+      ],
+      [
+       60,
+       206
+      ]
+     ]
+    },
+    {
+     "key": "cash",
+     "label": "3M T-bills / cash (TR) — phase 1",
+     "cls": "universal",
+     "color": "#BBCF6A",
+     "a": [
+      [
+       -60,
+       100
+      ],
+      [
+       -24,
+       124
+      ],
+      [
+       -12,
+       134
+      ],
+      [
+       0,
+       145
+      ],
+      [
+       6,
+       149
+      ],
+      [
+       12,
+       155
+      ],
+      [
+       24,
+       168
+      ],
+      [
+       48,
+       196
+      ],
+      [
+       60,
+       208
+      ]
+     ]
+    },
+    {
+     "key": "puts",
+     "label": "Index puts / long volatility (stylized)",
+     "cls": "universal",
+     "color": "#9A7BD6",
+     "a": [
+      [
+       -60,
+       100
+      ],
+      [
+       -24,
+       80
+      ],
+      [
+       -12,
+       70
+      ],
+      [
+       0,
+       64
+      ],
+      [
+       1,
+       66
+      ],
+      [
+       2,
+       175
+      ],
+      [
+       4,
+       160
+      ],
+      [
+       12,
+       120
+      ],
+      [
+       24,
+       100
+      ],
+      [
+       60,
+       80
+      ]
+     ]
+    }
+   ]
+  },
+  {
+   "id": "asia",
+   "name": "Asian Financial Crisis",
+   "years": "1997–98",
+   "cat": "D",
+   "weight": 0.8,
+   "peak": "Jun 1997",
+   "cause": "USD-pegged EM currency and credit bust. Thai equities ≈ −80% in USD terms; Indonesian GNP −84% in USD.",
+   "highlight": "The US dollar was the classic EM-crisis winner (+~115% vs THB at the extreme); gold rose in local-currency terms.",
+   "sources": "Reinhart & Rogoff (2009); safe-haven currency literature (Ranaldo & Söderlind 2010)",
+   "series": [
+    {
+     "key": "mkt",
+     "label": "Thai equities (USD terms)",
+     "cls": "market",
+     "color": "#E05252",
+     "a": [
+      [
+       -60,
+       100
+      ],
+      [
+       -42,
+       195
+      ],
+      [
+       -30,
+       175
+      ],
+      [
+       -24,
+       160
+      ],
+      [
+       -12,
+       138
+      ],
+      [
+       -3,
+       120
+      ],
+      [
+       0,
+       110
+      ],
+      [
+       3,
+       72
+      ],
+      [
+       6,
+       38
+      ],
+      [
+       10,
+       28
+      ],
+      [
+       14,
+       22
+      ],
+      [
+       24,
+       40
+      ],
+      [
+       30,
+       46
+      ],
+      [
+       48,
+       44
+      ],
+      [
+       60,
+       50
+      ]
+     ]
+    },
+    {
+     "key": "usd",
+     "label": "US dollar (vs THB)",
+     "cls": "category",
+     "color": "#8FAE5D",
+     "a": [
+      [
+       -60,
+       100
+      ],
+      [
+       -12,
+       100
+      ],
+      [
+       0,
+       101
+      ],
+      [
+       1,
+       113
+      ],
+      [
+       3,
+       135
+      ],
+      [
+       5,
+       165
+      ],
+      [
+       7,
+       215
+      ],
+      [
+       10,
+       180
+      ],
+      [
+       14,
+       163
+      ],
+      [
+       24,
+       150
+      ],
+      [
+       36,
+       155
+      ],
+      [
+       48,
+       168
+      ],
+      [
+       60,
+       172
+      ]
+     ]
+    },
+    {
+     "key": "aul",
+     "label": "Gold in local currency (THB)",
+     "cls": "category",
+     "color": "#E0B458",
+     "a": [
+      [
+       -60,
+       100
+      ],
+      [
+       -12,
+       92
+      ],
+      [
+       0,
+       88
+      ],
+      [
+       3,
+       108
+      ],
+      [
+       7,
+       150
+      ],
+      [
+       14,
+       132
+      ],
+      [
+       30,
+       118
+      ],
+      [
+       60,
+       112
+      ]
+     ]
+    },
+    {
+     "key": "ust",
+     "label": "US Treasuries (TR)",
+     "cls": "universal",
+     "color": "#5B8DEF",
+     "a": [
+      [
+       -60,
+       100
+      ],
+      [
+       -12,
+       124
+      ],
+      [
+       0,
+       130
+      ],
+      [
+       7,
+       138
+      ],
+      [
+       14,
+       148
+      ],
+      [
+       24,
+       150
+      ],
+      [
+       48,
+       165
+      ],
+      [
+       60,
+       175
+      ]
+     ]
+    }
+   ]
+  },
+  {
+   "id": "dotcom",
+   "name": "Dot-com Bust",
+   "years": "2000–02",
+   "cat": "A",
+   "weight": 1,
+   "peak": "Mar 2000",
+   "cause": "TMT equity bubble (GSADF-dated explosive episode). NASDAQ −78% peak-to-trough (Oct 2002).",
+   "highlight": "Value's revenge: Fama-French small-value ≈ +16.2%/yr 2000–07 vs S&P +1.7%/yr. Gold FELL — the key exception that demotes it from universal status.",
+   "sources": "Phillips, Wu & Yu (2011); Fama-French portfolio evidence; Baur & McDermott (2010)",
+   "series": [
+    {
+     "key": "mkt",
+     "label": "NASDAQ Composite",
+     "cls": "market",
+     "color": "#E05252",
+     "a": [
+      [
+       -60,
+       100
+      ],
+      [
+       -48,
+       148
+      ],
+      [
+       -36,
+       170
+      ],
+      [
+       -24,
+       222
+      ],
+      [
+       -12,
+       300
+      ],
+      [
+       -6,
+       350
+      ],
+      [
+       -4,
+       408
+      ],
+      [
+       -1,
+       575
+      ],
+      [
+       0,
+       618
+      ],
+      [
+       3,
+       490
+      ],
+      [
+       6,
+       455
+      ],
+      [
+       9,
+       320
+      ],
+      [
+       12,
+       225
+      ],
+      [
+       18,
+       205
+      ],
+      [
+       24,
+       180
+      ],
+      [
+       31,
+       135
+      ],
+      [
+       36,
+       175
+      ],
+      [
+       48,
+       244
+      ],
+      [
+       60,
+       250
+      ]
+     ]
+    },
+    {
+     "key": "val",
+     "label": "Small-cap value stocks",
+     "cls": "category",
+     "color": "#74B06F",
+     "a": [
+      [
+       -60,
+       100
+      ],
+      [
+       -36,
+       132
+      ],
+      [
+       -24,
+       145
+      ],
+      [
+       -12,
+       138
+      ],
+      [
+       0,
+       150
+      ],
+      [
+       6,
+       168
+      ],
+      [
+       12,
+       185
+      ],
+      [
+       24,
+       192
+      ],
+      [
+       28,
+       178
+      ],
+      [
+       31,
+       195
+      ],
+      [
+       36,
+       225
+      ],
+      [
+       48,
+       290
+      ],
+      [
+       60,
+       335
+      ]
+     ]
+    },
+    {
+     "key": "ust",
+     "label": "10Y US Treasuries (TR)",
+     "cls": "universal",
+     "color": "#5B8DEF",
+     "a": [
+      [
+       -60,
+       100
+      ],
+      [
+       -24,
+       118
+      ],
+      [
+       0,
+       135
+      ],
+      [
+       12,
+       152
+      ],
+      [
+       24,
+       165
+      ],
+      [
+       31,
+       175
+      ],
+      [
+       48,
+       185
+      ],
+      [
+       60,
+       195
+      ]
+     ]
+    },
+    {
+     "key": "cash",
+     "label": "3M T-bills / cash (TR) — phase 1",
+     "cls": "universal",
+     "color": "#BBCF6A",
+     "a": [
+      [
+       -60,
+       100
+      ],
+      [
+       -24,
+       117
+      ],
+      [
+       0,
+       129
+      ],
+      [
+       12,
+       137
+      ],
+      [
+       24,
+       140
+      ],
+      [
+       31,
+       141
+      ],
+      [
+       48,
+       143
+      ],
+      [
+       60,
+       146
+      ]
+     ]
+    },
+    {
+     "key": "reit",
+     "label": "REITs",
+     "cls": "category",
+     "color": "#C98A4F",
+     "a": [
+      [
+       -60,
+       100
+      ],
+      [
+       -24,
+       104
+      ],
+      [
+       -12,
+       94
+      ],
+      [
+       0,
+       98
+      ],
+      [
+       12,
+       118
+      ],
+      [
+       24,
+       138
+      ],
+      [
+       31,
+       150
+      ],
+      [
+       48,
+       195
+      ],
+      [
+       60,
+       230
+      ]
+     ]
+    },
+    {
+     "key": "au",
+     "label": "Gold (fell — the exception)",
+     "cls": "category",
+     "color": "#E0B458",
+     "a": [
+      [
+       -60,
+       100
+      ],
+      [
+       -24,
+       78
+      ],
+      [
+       -12,
+       74
+      ],
+      [
+       0,
+       73
+      ],
+      [
+       12,
+       68
+      ],
+      [
+       24,
+       80
+      ],
+      [
+       31,
+       83
+      ],
+      [
+       48,
+       105
+      ],
+      [
+       60,
+       112
+      ]
+     ]
+    }
+   ]
+  },
+  {
+   "id": "gfc",
+   "name": "Global Financial Crisis",
+   "years": "2007–09",
+   "cat": "B",
+   "weight": 1,
+   "peak": "Oct 2007",
+   "cause": "US housing / credit bubble and securitization. S&P 500 −57%; real house prices −35% over ~6 years.",
+   "highlight": "The full safe-haven set fired at once: gold strong safe haven at the peak (Baur & McDermott), Treasuries rallied hard, yen appreciated, trend-following delivered crisis alpha, long volatility paid out.",
+   "sources": "Baur & McDermott (2010); Baele et al. (2020) RFS; Moskowitz, Ooi & Pedersen (2012) JFE; St. Louis Fed",
+   "series": [
+    {
+     "key": "mkt",
+     "label": "S&P 500",
+     "cls": "market",
+     "color": "#E05252",
+     "a": [
+      [
+       -60,
+       100
+      ],
+      [
+       -48,
+       124
+      ],
+      [
+       -36,
+       135
+      ],
+      [
+       -24,
+       152
+      ],
+      [
+       -12,
+       172
+      ],
+      [
+       0,
+       190
+      ],
+      [
+       5,
+       160
+      ],
+      [
+       8,
+       168
+      ],
+      [
+       11,
+       145
+      ],
+      [
+       13,
+       105
+      ],
+      [
+       15,
+       96
+      ],
+      [
+       17,
+       83
+      ],
+      [
+       21,
+       110
+      ],
+      [
+       29,
+       140
+      ],
+      [
+       36,
+       142
+      ],
+      [
+       42,
+       130
+      ],
+      [
+       48,
+       158
+      ],
+      [
+       60,
+       172
+      ]
+     ]
+    },
+    {
+     "key": "au",
+     "label": "Gold",
+     "cls": "category",
+     "color": "#E0B458",
+     "a": [
+      [
+       -60,
+       100
+      ],
+      [
+       -36,
+       140
+      ],
+      [
+       -24,
+       185
+      ],
+      [
+       -12,
+       208
+      ],
+      [
+       0,
+       236
+      ],
+      [
+       5,
+       300
+      ],
+      [
+       8,
+       262
+      ],
+      [
+       13,
+       240
+      ],
+      [
+       17,
+       296
+      ],
+      [
+       24,
+       330
+      ],
+      [
+       36,
+       425
+      ],
+      [
+       47,
+       598
+      ],
+      [
+       54,
+       555
+      ],
+      [
+       60,
+       540
+      ]
+     ]
+    },
+    {
+     "key": "ust",
+     "label": "Long US Treasuries (TR)",
+     "cls": "universal",
+     "color": "#5B8DEF",
+     "a": [
+      [
+       -60,
+       100
+      ],
+      [
+       -24,
+       110
+      ],
+      [
+       0,
+       122
+      ],
+      [
+       8,
+       128
+      ],
+      [
+       13,
+       140
+      ],
+      [
+       14,
+       148
+      ],
+      [
+       17,
+       140
+      ],
+      [
+       24,
+       146
+      ],
+      [
+       36,
+       158
+      ],
+      [
+       47,
+       180
+      ],
+      [
+       60,
+       185
+      ]
+     ]
+    },
+    {
+     "key": "jpy",
+     "label": "Japanese yen (vs USD)",
+     "cls": "category",
+     "color": "#5AA9A3",
+     "a": [
+      [
+       -60,
+       100
+      ],
+      [
+       -24,
+       103
+      ],
+      [
+       0,
+       106
+      ],
+      [
+       8,
+       115
+      ],
+      [
+       13,
+       127
+      ],
+      [
+       17,
+       124
+      ],
+      [
+       27,
+       135
+      ],
+      [
+       36,
+       147
+      ],
+      [
+       48,
+       152
+      ],
+      [
+       60,
+       154
+      ]
+     ]
+    },
+    {
+     "key": "cta",
+     "label": "Trend-following / CTA",
+     "cls": "universal",
+     "color": "#4F79C9",
+     "a": [
+      [
+       -60,
+       100
+      ],
+      [
+       -24,
+       122
+      ],
+      [
+       0,
+       145
+      ],
+      [
+       8,
+       158
+      ],
+      [
+       14,
+       170
+      ],
+      [
+       17,
+       168
+      ],
+      [
+       24,
+       166
+      ],
+      [
+       36,
+       172
+      ],
+      [
+       48,
+       176
+      ],
+      [
+       60,
+       180
+      ]
+     ]
+    },
+    {
+     "key": "cash",
+     "label": "3M T-bills / cash (TR) — phase 1",
+     "cls": "universal",
+     "color": "#BBCF6A",
+     "a": [
+      [
+       -60,
+       100
+      ],
+      [
+       -24,
+       109
+      ],
+      [
+       0,
+       117
+      ],
+      [
+       8,
+       121
+      ],
+      [
+       13,
+       122
+      ],
+      [
+       17,
+       123
+      ],
+      [
+       24,
+       124
+      ],
+      [
+       36,
+       124.5
+      ],
+      [
+       48,
+       125
+      ],
+      [
+       60,
+       125.5
+      ]
+     ]
+    },
+    {
+     "key": "vol",
+     "label": "Long volatility (stylized)",
+     "cls": "universal",
+     "color": "#9A7BD6",
+     "a": [
+      [
+       -60,
+       100
+      ],
+      [
+       -36,
+       86
+      ],
+      [
+       -12,
+       76
+      ],
+      [
+       0,
+       72
+      ],
+      [
+       5,
+       88
+      ],
+      [
+       11,
+       118
+      ],
+      [
+       13,
+       190
+      ],
+      [
+       14,
+       210
+      ],
+      [
+       17,
+       196
+      ],
+      [
+       24,
+       152
+      ],
+      [
+       36,
+       132
+      ],
+      [
+       48,
+       124
+      ],
+      [
+       60,
+       118
+      ]
+     ]
+    }
+   ]
+  },
+  {
+   "id": "euro",
+   "name": "European Sovereign Debt Crisis",
+   "years": "2010–12",
+   "cat": "D",
+   "weight": 0.8,
+   "peak": "Jul 2011 (intensification)",
+   "cause": "Bank–sovereign doom loop; periphery yields spiked to unsustainable levels. Euro-area bank equity collapsed.",
+   "highlight": "Core Bunds and US Treasuries rallied; the CHF surged +~50% vs EUR until the SNB floor (Sep 2011); gold in EUR peaked with the crisis.",
+   "sources": "Ranaldo & Söderlind (2010); SNB-floor literature; Baele et al. (2020)",
+   "series": [
+    {
+     "key": "mkt",
+     "label": "Euro Stoxx Banks",
+     "cls": "market",
+     "color": "#E05252",
+     "a": [
+      [
+       -60,
+       100
+      ],
+      [
+       -48,
+       112
+      ],
+      [
+       -36,
+       55
+      ],
+      [
+       -28,
+       28
+      ],
+      [
+       -24,
+       44
+      ],
+      [
+       -15,
+       48
+      ],
+      [
+       -12,
+       44
+      ],
+      [
+       0,
+       40
+      ],
+      [
+       2,
+       28
+      ],
+      [
+       6,
+       25
+      ],
+      [
+       11,
+       22
+      ],
+      [
+       17,
+       26
+      ],
+      [
+       24,
+       34
+      ],
+      [
+       30,
+       38
+      ],
+      [
+       42,
+       42
+      ],
+      [
+       48,
+       36
+      ],
+      [
+       60,
+       33
+      ]
+     ]
+    },
+    {
+     "key": "bund",
+     "label": "German Bunds 10Y (TR)",
+     "cls": "universal",
+     "color": "#5B8DEF",
+     "a": [
+      [
+       -60,
+       100
+      ],
+      [
+       -24,
+       108
+      ],
+      [
+       -12,
+       112
+      ],
+      [
+       0,
+       118
+      ],
+      [
+       4,
+       127
+      ],
+      [
+       12,
+       135
+      ],
+      [
+       24,
+       142
+      ],
+      [
+       42,
+       152
+      ],
+      [
+       60,
+       160
+      ]
+     ]
+    },
+    {
+     "key": "chf",
+     "label": "Swiss franc (vs EUR)",
+     "cls": "category",
+     "color": "#7EC8E3",
+     "a": [
+      [
+       -60,
+       100
+      ],
+      [
+       -24,
+       110
+      ],
+      [
+       -12,
+       118
+      ],
+      [
+       0,
+       135
+      ],
+      [
+       1,
+       152
+      ],
+      [
+       2,
+       130
+      ],
+      [
+       12,
+       131
+      ],
+      [
+       42,
+       150
+      ],
+      [
+       48,
+       146
+      ],
+      [
+       60,
+       145
+      ]
+     ]
+    },
+    {
+     "key": "au",
+     "label": "Gold (EUR terms)",
+     "cls": "category",
+     "color": "#E0B458",
+     "a": [
+      [
+       -60,
+       100
+      ],
+      [
+       -24,
+       168
+      ],
+      [
+       -12,
+       192
+      ],
+      [
+       0,
+       220
+      ],
+      [
+       2,
+       265
+      ],
+      [
+       12,
+       235
+      ],
+      [
+       24,
+       208
+      ],
+      [
+       36,
+       190
+      ],
+      [
+       48,
+       215
+      ],
+      [
+       60,
+       235
+      ]
+     ]
+    },
+    {
+     "key": "ust",
+     "label": "US Treasuries (TR)",
+     "cls": "universal",
+     "color": "#4F79C9",
+     "a": [
+      [
+       -60,
+       100
+      ],
+      [
+       -24,
+       112
+      ],
+      [
+       0,
+       125
+      ],
+      [
+       12,
+       145
+      ],
+      [
+       24,
+       150
+      ],
+      [
+       48,
+       158
+      ],
+      [
+       60,
+       165
+      ]
+     ]
+    }
+   ]
+  },
+  {
+   "id": "covid",
+   "name": "COVID-19 Crash",
+   "years": "2020",
+   "cat": "E",
+   "weight": 0.5,
+   "peak": "Feb 2020",
+   "cause": "Exogenous pandemic shock + dash-for-cash. S&P 500 −34% in one month — then the fastest recovery on record.",
+   "highlight": "Phase 1 was a 'dash for cash': in mid-March even Treasuries sold off while T-bills/money-market funds absorbed record inflows (Duffie 2020) — then duration rallied. Treasuries later failed in the 2022 inflation regime; Bitcoin fell in lockstep with equities: falsified as a safe haven (Conlon & McGee 2020).",
+   "sources": "Conlon & McGee (2020) Finance Research Letters; Duffie (2020) Brookings; Corbet et al. (2020); Baele et al. (2020)",
+   "series": [
+    {
+     "key": "mkt",
+     "label": "S&P 500",
+     "cls": "market",
+     "color": "#E05252",
+     "a": [
+      [
+       -60,
+       100
+      ],
+      [
+       -48,
+       110
+      ],
+      [
+       -24,
+       130
+      ],
+      [
+       -12,
+       134
+      ],
+      [
+       -2,
+       158
+      ],
+      [
+       0,
+       161
+      ],
+      [
+       1,
+       106
+      ],
+      [
+       3,
+       140
+      ],
+      [
+       6,
+       168
+      ],
+      [
+       12,
+       187
+      ],
+      [
+       22,
+       227
+      ],
+      [
+       27,
+       210
+      ],
+      [
+       32,
+       172
+      ],
+      [
+       40,
+       205
+      ],
+      [
+       48,
+       243
+      ],
+      [
+       60,
+       290
+      ]
+     ]
+    },
+    {
+     "key": "ust",
+     "label": "10Y US Treasuries (TR)",
+     "cls": "universal",
+     "color": "#5B8DEF",
+     "a": [
+      [
+       -60,
+       100
+      ],
+      [
+       -24,
+       105
+      ],
+      [
+       -12,
+       113
+      ],
+      [
+       0,
+       117
+      ],
+      [
+       1,
+       126
+      ],
+      [
+       6,
+       124
+      ],
+      [
+       18,
+       120
+      ],
+      [
+       24,
+       112
+      ],
+      [
+       32,
+       95
+      ],
+      [
+       44,
+       99
+      ],
+      [
+       60,
+       100
+      ]
+     ]
+    },
+    {
+     "key": "cash",
+     "label": "3M T-bills / cash (TR) — phase 1",
+     "cls": "universal",
+     "color": "#BBCF6A",
+     "a": [
+      [
+       -60,
+       100
+      ],
+      [
+       -24,
+       104
+      ],
+      [
+       0,
+       108
+      ],
+      [
+       1,
+       108.2
+      ],
+      [
+       12,
+       108.6
+      ],
+      [
+       24,
+       109
+      ],
+      [
+       32,
+       111
+      ],
+      [
+       48,
+       115
+      ],
+      [
+       60,
+       118
+      ]
+     ]
+    },
+    {
+     "key": "au",
+     "label": "Gold",
+     "cls": "category",
+     "color": "#E0B458",
+     "a": [
+      [
+       -60,
+       100
+      ],
+      [
+       -24,
+       110
+      ],
+      [
+       -12,
+       109
+      ],
+      [
+       0,
+       132
+      ],
+      [
+       1,
+       122
+      ],
+      [
+       3,
+       142
+      ],
+      [
+       6,
+       170
+      ],
+      [
+       12,
+       143
+      ],
+      [
+       24,
+       152
+      ],
+      [
+       32,
+       137
+      ],
+      [
+       48,
+       192
+      ],
+      [
+       60,
+       240
+      ]
+     ]
+    },
+    {
+     "key": "usd",
+     "label": "US dollar (DXY)",
+     "cls": "category",
+     "color": "#8FAE5D",
+     "a": [
+      [
+       -60,
+       100
+      ],
+      [
+       -24,
+       95
+      ],
+      [
+       0,
+       104
+      ],
+      [
+       1,
+       107
+      ],
+      [
+       4,
+       100
+      ],
+      [
+       10,
+       94
+      ],
+      [
+       24,
+       101
+      ],
+      [
+       32,
+       119
+      ],
+      [
+       48,
+       110
+      ],
+      [
+       60,
+       112
+      ]
+     ]
+    },
+    {
+     "key": "btc",
+     "label": "Bitcoin (falsified safe haven)",
+     "cls": "falsified",
+     "color": "#E8853D",
+     "dashed": true,
+     "defaultOff": true,
+     "a": [
+      [
+       -60,
+       100
+      ],
+      [
+       -27,
+       8190
+      ],
+      [
+       -14,
+       1542
+      ],
+      [
+       -8,
+       4500
+      ],
+      [
+       0,
+       4000
+      ],
+      [
+       1,
+       2083
+      ],
+      [
+       3,
+       3900
+      ],
+      [
+       8,
+       4800
+      ],
+      [
+       14,
+       26250
+      ],
+      [
+       22,
+       19583
+      ],
+      [
+       34,
+       6875
+      ],
+      [
+       49,
+       29167
+      ],
+      [
+       60,
+       40417
+      ]
+     ]
+    }
+   ]
+  },
+  {
+   "id": "southsea",
+   "name": "South Sea Bubble",
+   "years": "1720",
+   "cat": "C",
+   "weight": 1,
+   "peak": "Jun 1720",
+   "stylizedAll": true,
+   "cause": "Debt-for-equity conversion scheme fuelled by credit; shares rose ~8× in six months, then collapsed ~85%.",
+   "highlight": "Hoare's Bank rode the bubble knowingly and exited near the top — IRR ≈ 51% p.a. (Temin & Voth 2004). The winning asset was the timed exit to cash and quality, not the bubble itself.",
+   "sources": "Temin & Voth (2004) AER; Garber (1990 JEP; 2000 MIT Press)",
+   "series": [
+    {
+     "key": "mkt",
+     "label": "South Sea Co. shares",
+     "cls": "market",
+     "color": "#E05252",
+     "a": [
+      [
+       -60,
+       100
+      ],
+      [
+       -24,
+       100
+      ],
+      [
+       -12,
+       102
+      ],
+      [
+       -6,
+       116
+      ],
+      [
+       -5,
+       140
+      ],
+      [
+       -4,
+       210
+      ],
+      [
+       -3,
+       330
+      ],
+      [
+       -2,
+       560
+      ],
+      [
+       -1,
+       780
+      ],
+      [
+       0,
+       950
+      ],
+      [
+       1,
+       870
+      ],
+      [
+       2,
+       620
+      ],
+      [
+       3,
+       320
+      ],
+      [
+       4,
+       210
+      ],
+      [
+       6,
+       155
+      ],
+      [
+       12,
+       130
+      ],
+      [
+       24,
+       125
+      ],
+      [
+       60,
+       128
+      ]
+     ]
+    },
+    {
+     "key": "hoare",
+     "label": "Hoare's Bank timed exit (stylized)",
+     "cls": "unique",
+     "color": "#B48CE0",
+     "a": [
+      [
+       -60,
+       100
+      ],
+      [
+       -12,
+       104
+      ],
+      [
+       -6,
+       108
+      ],
+      [
+       -4,
+       120
+      ],
+      [
+       -2,
+       142
+      ],
+      [
+       0,
+       158
+      ],
+      [
+       1,
+       166
+      ],
+      [
+       3,
+       168
+      ],
+      [
+       12,
+       170
+      ],
+      [
+       60,
+       178
+      ]
+     ]
+    },
+    {
+     "key": "boe",
+     "label": "Bank of England stock",
+     "cls": "category",
+     "color": "#5AA9A3",
+     "a": [
+      [
+       -60,
+       100
+      ],
+      [
+       -12,
+       102
+      ],
+      [
+       0,
+       108
+      ],
+      [
+       2,
+       92
+      ],
+      [
+       4,
+       88
+      ],
+      [
+       8,
+       96
+      ],
+      [
+       12,
+       102
+      ],
+      [
+       24,
+       108
+      ],
+      [
+       60,
+       118
+      ]
+     ]
+    },
+    {
+     "key": "cash",
+     "label": "Cash / specie & land",
+     "cls": "category",
+     "color": "#8FAE5D",
+     "a": [
+      [
+       -60,
+       100
+      ],
+      [
+       0,
+       101
+      ],
+      [
+       6,
+       103
+      ],
+      [
+       60,
+       106
+      ]
+     ]
+    }
+   ]
+  }
+ ],
+ "MATRIX": [
+  {
+   "name": "Gold",
+   "vals": [
+    2,
+    2,
+    1,
+    1,
+    1,
+    1,
+    0,
+    2,
+    2,
+    1,
+    3
+   ],
+   "notes": {
+    "0": "Rose via gold-mining shares (Homestake +474–580%) under the fixed gold price.",
+    "3": "Spiked intraday on Black Monday (+4.2%) then sold off as investors liquidated for cash — an 'ATM' in acute liquidity crunches; weak-to-strong per Baur & McDermott (2010).",
+    "4": "Rose in local-currency terms as EM currencies collapsed.",
+    "6": "Fell ≈ −27% into the peak and stayed weak — the key exception that demotes gold from universal status.",
+    "7": "Strong safe haven at the crisis peak (Baur & McDermott 2010).",
+    "10": "ELEVATED to lead regime-matched hedge: 2026 hedge score 0.85 (co-lead with cash at 0.88) — regime-match r 0.96–0.98 vs monetary-crisis scripts, worst-quintile beta ≈ 0, Granger-leads the market; 27% of global reserves, overtaking US Treasuries at 22% (ECB, 2 Jun 2026); record central-bank demand (WGC, Jun 2026). Caveat: ~$4,100 after the $5,595 Jan-2026 record — part of the hedge is pre-paid."
+   }
+  },
+  {
+   "name": "Long safe govt bonds",
+   "vals": [
+    2,
+    0,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    3
+   ],
+   "notes": {
+    "1": "Collapsed in real terms — bonds fail in inflationary regimes.",
+    "8": "Core Bunds/Treasuries only; periphery sovereigns were the collapsing asset.",
+    "9": "Rallied in the crash, then fell ≈ −25% in the 2022 inflation regime.",
+    "10": "Challenged: in April 2025 Treasuries, USD and equities fell TOGETHER; BIS (Sep 2025) found Treasury safe-haven correlations near zero since. 2026 hedge score 0.42 — demoted to 5th, behind CHF, for this configuration (Cheema, Ryan & Sarwar 2025: bonds work best in macro/financial downturns, weaker in geopolitical/inflation shocks)."
+   }
+  },
+  {
+   "name": "Cash / T-bills / USD liquidity",
+   "vals": [
+    2,
+    1,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    1,
+    2,
+    3
+   ],
+   "notes": {
+    "0": "Deflation lifted the real value of cash ~25% peak-to-trough.",
+    "1": "Positive nominal T-bill yields but negative real returns in the inflationary regime.",
+    "9": "March 2020 'dash for cash': even Treasuries sold off while T-bills and money-market funds absorbed record inflows (Duffie 2020; BIS Bulletin No. 2).",
+    "10": "The live phase-1 haven: money-market fund assets at a record $7.95tn (ICI, 1 Jul 2026). 2026 hedge score 0.88 — rank #1 on CERTAINTY (100% worst-month hit rate, no drawdown, par entry); gold is the payoff co-lead."
+   }
+  },
+  {
+   "name": "Japanese yen",
+   "vals": [
+    -1,
+    -1,
+    2,
+    2,
+    1,
+    2,
+    1,
+    2,
+    1,
+    1,
+    3
+   ],
+   "notes": {
+    "7": "Appreciated ≈ +23% vs USD through the acute phase (Ranaldo & Söderlind 2010).",
+    "10": "~¥162 — a ~40-year low; carry dominates haven flows, so the yen has NOT behaved as a haven this cycle."
+   }
+  },
+  {
+   "name": "Swiss franc",
+   "vals": [
+    -1,
+    -1,
+    -1,
+    2,
+    1,
+    2,
+    1,
+    2,
+    2,
+    1,
+    3
+   ],
+   "notes": {
+    "8": "+~50% vs EUR until the SNB imposed the 1.20 floor in Sep 2011.",
+    "10": "Credible secondary haven — the franc strengthened materially vs USD 2021–26 (USD/CHF ~0.76 in Jan 2026)."
+   }
+  },
+  {
+   "name": "US dollar",
+   "vals": [
+    -1,
+    0,
+    -1,
+    1,
+    2,
+    2,
+    1,
+    2,
+    1,
+    2,
+    3
+   ],
+   "notes": {
+    "4": "The classic EM-crisis winner: +~115% vs THB at the extreme.",
+    "9": "Spiked in the Mar 2020 dash-for-cash funding stress.",
+    "10": "Worst first half since 1973 in H1 2025 (DXY −10.8%); reserve diversification away from USD documented (ECB, WGC)."
+   }
+  },
+  {
+   "name": "Commodity futures",
+   "vals": [
+    -1,
+    2,
+    -1,
+    -1,
+    0,
+    -1,
+    0,
+    0,
+    -1,
+    0,
+    3
+   ],
+   "notes": {
+    "1": "Equity-like returns, negatively correlated with stocks, positively with inflation (Gorton & Rouwenhorst 2006)."
+   }
+  },
+  {
+   "name": "Oil / energy",
+   "vals": [
+    -1,
+    2,
+    -1,
+    -1,
+    0,
+    -1,
+    0,
+    0,
+    -1,
+    0,
+    3
+   ],
+   "notes": {
+    "1": "Crude roughly quadrupled after the Oct 1973 embargo ($2.90 → $11.65/bbl by Jan 1974) — the highest-magnitude crisis-unique winner (Alpanda & Peralta-Alva 2010, Rev. Econ. Dynamics; Fed History).",
+    "7": "Fell from ~$147 to ~$34 in the demand-driven collapse (Hamilton 2009, BPEA) — high uniqueness, low recurrence."
+   }
+  },
+  {
+   "name": "Value / small-value stocks",
+   "vals": [
+    -1,
+    1,
+    -1,
+    -1,
+    -1,
+    -1,
+    2,
+    0,
+    -1,
+    0,
+    3
+   ],
+   "notes": {
+    "6": "Small-value ≈ +16.2%/yr 2000–07 vs S&P +1.7%/yr — the post-bubble rotation.",
+    "7": "Fell with the market during the crash itself; the premium is post-trough.",
+    "10": "The dot-com analogue: value / equal-weight rotation is the leading candidate post-bubble winner if an AI unwind mirrors 2000–02."
+   }
+  },
+  {
+   "name": "Low-beta / quality (QMJ)",
+   "vals": [
+    -1,
+    -1,
+    -1,
+    2,
+    -1,
+    -1,
+    2,
+    2,
+    2,
+    2,
+    3
+   ],
+   "notes": {
+    "7": "QMJ shows mild positive convexity — benefits from flight to quality (Asness, Frazzini & Pedersen 2019)."
+   }
+  },
+  {
+   "name": "Trend-following / CTA",
+   "vals": [
+    -1,
+    2,
+    2,
+    1,
+    2,
+    1,
+    2,
+    2,
+    1,
+    1,
+    3
+   ],
+   "notes": {
+    "3": "Crisis alpha is strongest in prolonged drawdowns, weaker in one-day crashes (Kaminski).",
+    "7": "+14–18% in 2008 while equities halved (time-series momentum, Moskowitz et al. 2012)."
+   }
+  },
+  {
+   "name": "Long volatility / index puts",
+   "vals": [
+    -1,
+    -1,
+    -1,
+    2,
+    -1,
+    2,
+    2,
+    2,
+    2,
+    2,
+    3
+   ],
+   "notes": {
+    "3": "Via index puts / portfolio hedges — VIX futures only tradable since 2004, VIX options since 2006.",
+    "7": "Long VIX futures/calls materially cut portfolio risk in 2008 (Szado 2009); VIX a stronger US hedge than gold (Hood & Malik 2013). Cost: persistently negative carry (Carr & Wu 2009).",
+    "10": "Convex insurance is available and relatively cheap pre-spike; expected carry is negative between crises (Dew-Becker et al. 2017)."
+   }
+  },
+  {
+   "name": "Bitcoin",
+   "vals": [
+    -1,
+    -1,
+    -1,
+    -1,
+    -1,
+    -1,
+    -1,
+    -1,
+    -1,
+    0,
+    3
+   ],
+   "notes": {
+    "9": "Fell in lockstep with the S&P 500; a 10% allocation raised 1% portfolio VaR by 13.6% (Conlon & McGee 2020) — falsified as a safe haven.",
+    "10": "−51% from the Oct 2025 ATH (~$126k) to ~$62k by Jul 2026 while equity indices set records — again trading as a risk asset."
+   }
+  }
+ ],
+ "MX_CRISES": [
+  "1929",
+  "1973–74",
+  "Japan ’90",
+  "1987",
+  "Asia ’97",
+  "LTCM ’98",
+  "Dot-com ’00",
+  "GFC ’08",
+  "Euro ’10–12",
+  "COVID ’20",
+  "AI ’26?"
+ ],
+ "CLASSIFICATION": [
+  {
+   "title": "Universal winners — two phases",
+   "tag": "U",
+   "color": "#5B8DEF",
+   "items": [
+    "PHASE 1 · Cash / T-bills / USD liquidity — the first-response winner: flight to liquidity and record money-market inflows (Longstaff 2004; Nagel 2016; Krishnamurthy & Vissing-Jorgensen 2012; Baele et al. 2020; Duffie 2020 'dash for cash')",
+    "PHASE 2 · Long safe sovereign bonds — 9/10 crises once funding stress eases; best in macro/financial downturns, weaker in geopolitical/inflation shocks (Cheema, Ryan & Sarwar 2025) and challenged since April 2025",
+    "Long volatility / index puts — paid in every observed crisis; negative expected carry between crises (Szado 2009; Carr & Wu 2009)",
+    "Trend-following / CTA — 'crisis alpha' in prolonged drawdowns (weaker in one-day crashes)",
+    "Gold is near-universal but demoted historically (it fell in the dot-com bust) — yet for the 2026 configuration it is ELEVATED to lead regime-matched hedge, score 0.85 co-lead with cash (see Analytics ranking)"
+   ]
+  },
+  {
+   "title": "Category-specific winners",
+   "tag": "C",
+   "color": "#E0B458",
+   "items": [
+    "Gold → monetary / inflation / currency crises — AND 'black-swan' ambiguity: investors buy gold on ambiguous signals, bonds on extreme-but-clear ones (Baur & McDermott 2012 working paper; Caballero & Krishnamurthy 2008)",
+    "Value / small-value stocks → after equity-growth bubbles (dot-com)",
+    "US dollar → EM and global funding-stress crises (Asia ’97, LTCM, 2008, 2020)",
+    "Government bonds → deflationary crises specifically — they are the collapsing asset in sovereign/inflation crises",
+    "Quality / low-beta → recessionary equity drawdowns generally"
+   ]
+  },
+  {
+   "title": "Crisis-unique winners",
+   "tag": "★",
+   "color": "#B48CE0",
+   "items": [
+    "Oil / energy — 1973–74: crude ~4× post-embargo; the highest-MAGNITUDE unique winner, though the crisis TYPE recurs (1979, 1990, 2022) and oil FELL in the 2008/2020 demand collapses (Hamilton 2009)",
+    "Homestake Mining & gold miners — 1930s: >500% Oct 1929–Dec 1935 vs a ~⅔ Dow loss (Burdekin & Weidenmier 2004) — the most NON-REPLICABLE winner (fixed-gold-price regime)",
+    "Rolling Nikkei puts — Japan 1990",
+    "Mega-cap tech — the COVID recovery trade, not the crash hedge",
+    "Hoare's Bank timed exit — South Sea 1720 (IRR ≈ 51% p.a., Temin & Voth 2004)"
+   ]
+  },
+  {
+   "title": "Falsified candidates",
+   "tag": "!",
+   "color": "#E8853D",
+   "items": [
+    "Bitcoin — fell in lockstep with equities in Mar 2020 (Conlon & McGee 2020); by Jul 2026 down ~51% from its ATH while indices set records",
+    "Japanese yen (this cycle) — ~¥162, a ~40-year low despite repeated risk episodes; carry has dominated haven flows 2021–26"
+   ]
+  }
+ ],
+ "CAT": {
+  "A": {
+   "label": "Equity / tech bubble",
+   "color": "#D4A017"
+  },
+  "B": {
+   "label": "Real-estate / credit bubble",
+   "color": "#C0564A"
+  },
+  "C": {
+   "label": "Classic mania",
+   "color": "#8A6FB3"
+  },
+  "D": {
+   "label": "Currency / sovereign",
+   "color": "#4A90A4"
+  },
+  "E": {
+   "label": "Liquidity / exogenous shock",
+   "color": "#6B7F6B"
+  }
+ },
+ "CLS": {
+  "market": {
+   "tag": "▼",
+   "name": "Collapsing market"
+  },
+  "universal": {
+   "tag": "U",
+   "name": "Universal winner"
+  },
+  "category": {
+   "tag": "C",
+   "name": "Category-specific winner"
+  },
+  "unique": {
+   "tag": "★",
+   "name": "Crisis-unique winner"
+  },
+  "falsified": {
+   "tag": "!",
+   "name": "Falsified safe haven"
+  }
+ }
+}

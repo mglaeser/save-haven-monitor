@@ -14,12 +14,13 @@ const { REPO } = require("../lib/load.js");
 const { ok } = require("../lib/assert.js");
 
 module.exports = function register(t) {
-  t("committed dashboard.js / bubblegauge.js are a fresh, deterministic build of the .jsx sources", () => {
+  t("committed dashboard.js / bubblegauge.js are a fresh, deterministic build of the src/ sources", () => {
     const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "compiled-fresh-"));
-    // build.js writes next to itself; point it at a temp OUT via --dist into an isolated tree.
+    // build.js bundles from src/; stage src/ + build.js in an isolated tree and rebuild.
     const stage = path.join(tmp, "repo");
     fs.mkdirSync(path.join(stage, "verify"), { recursive: true });
-    for (const f of ["dashboard.jsx", "bubblegauge.jsx", "build.js"]) fs.copyFileSync(path.join(REPO, f), path.join(stage, f));
+    fs.cpSync(path.join(REPO, "src"), path.join(stage, "src"), { recursive: true });
+    fs.copyFileSync(path.join(REPO, "build.js"), path.join(stage, "build.js"));
     // symlink the real esbuild so the isolated build uses the pinned binary
     fs.symlinkSync(path.join(REPO, "verify", "node_modules"), path.join(stage, "verify", "node_modules"));
     execFileSync("node", ["build.js"], { cwd: stage, stdio: "pipe" });

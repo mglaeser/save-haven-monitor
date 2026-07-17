@@ -13,7 +13,7 @@
 const { raw } = require("../lib/load.js");
 const { ok } = require("../lib/assert.js");
 
-const SERVED = ["index.html", "dashboard.jsx", "bubblegauge.jsx"];
+const SERVED = ["index.html", "src/dashboard.tsx", "src/bubblegauge.tsx"];
 // The complete declared egress + rendered-link allowlist for the served site.
 //  (unpkg.com removed — vendors are now self-hosted under ./vendor/, no third-party runtime egress)
 //  www.etoro.com    — a frozen outbound link in the crisis atlas content (dashboard.jsx)
@@ -33,8 +33,8 @@ module.exports = function register(t) {
   });
 
   t("C-08: the only network fetch is the gated status-API; no other fetch/socket exists", () => {
-    const bg = raw("bubblegauge.jsx");
-    const dash = raw("dashboard.jsx");
+    const bg = raw("src/bubblegauge.tsx");
+    const dash = raw("src/dashboard.tsx");
     const html = raw("index.html");
     ok(!/\bfetch\s*\(/.test(dash), "dashboard.jsx must make no network call (it renders frozen data)");
     ok(!/\bfetch\s*\(/.test(html), "index.html must make no network call beyond its pinned <script> tags");

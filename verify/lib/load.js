@@ -40,19 +40,34 @@ function stubGlobals() {
 
 function transpile(code) {
   const esbuild = require("esbuild");
-  return esbuild.transformSync(code, { loader: "jsx", format: "cjs", target: "node16" }).code;
+  // src is now TypeScript/TSX (the module migration); strip types + JSX to CJS.
+  return esbuild.transformSync(code, { loader: "tsx", format: "cjs", target: "node16" }).code;
 }
 
-// Load dashboard.jsx and return its data constants + pure functions.
+const DASH_SRC = "src/dashboard.tsx";
+const ATLAS = "src/data/atlas.json";
+
+// The frozen data now lives in src/data/atlas.json (extracted from the old dashboard.jsx literals;
+// the golden hash is unchanged — proven). loadDashboardFromSource injects these as scope globals so
+// the pure-function characterization + the golden-hash test keep the SAME returned interface, and
+// mutation.js keeps mutating the dashboard source string exactly as before.
+function dataGlobals() {
+  const a = JSON.parse(fs.readFileSync(path.join(REPO, ATLAS), "utf8"));
+  return { CRISES: a.CRISES, MATRIX: a.MATRIX, MX_CRISES: a.MX_CRISES, CLASSIFICATION: a.CLASSIFICATION, CAT: a.CAT, CLS: a.CLS };
+}
+
+// Load src/dashboard.tsx and return its data constants + pure functions.
 function loadDashboard() {
-  return loadDashboardFromSource(fs.readFileSync(path.join(REPO, "dashboard.jsx"), "utf8"));
+  return loadDashboardFromSource(fs.readFileSync(path.join(REPO, DASH_SRC), "utf8"));
 }
 
 // Load from an explicit source string (used by the mutation harness to test mutants).
 function loadDashboardFromSource(src) {
-  const js = transpile(src);
+  // Remove the `import { … } from "./data";` line — the data is injected as globals below.
+  const stripped = src.replace(/^\s*import\s*\{[^}]*\}\s*from\s*["']\.\/data["'];?\s*$/m, "");
+  const js = transpile(stripped);
   const capture = "\nreturn {CRISES, CAT, CLS, MATRIX, MX_CRISES, CLASSIFICATION, interp, rebase, fmtM, logPath, ser, zArr, corrArr, xcorrRow, mulberry32, runFan, subFamily, buildAggregate, TABS};\n";
-  const g = stubGlobals();
+  const g = Object.assign(stubGlobals(), dataGlobals());
   const keys = Object.keys(g);
   // eslint-disable-next-line no-new-func
   const fn = new Function(...keys, "module", "exports", js + capture);
@@ -65,5 +80,5 @@ function raw(rel) {
   return fs.readFileSync(path.join(REPO, rel), "utf8");
 }
 
-function dashboardSource() { return fs.readFileSync(path.join(REPO, "dashboard.jsx"), "utf8"); }
+function dashboardSource() { return fs.readFileSync(path.join(REPO, DASH_SRC), "utf8"); }
 module.exports = { loadDashboard, loadDashboardFromSource, dashboardSource, raw, transpile, REPO };

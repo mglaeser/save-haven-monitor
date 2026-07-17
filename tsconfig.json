@@ -1,0 +1,18 @@
+{
+  "//": "Compiled-ahead module project (DR-006). esbuild does the transpile/bundle; this config is for editor/agent types and a future `tsc --noEmit` strict-typing ratchet (an incremental follow-up — the verbatim-ported code is not strict-clean yet). allowJs + non-strict keeps it green as a marker today.",
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "jsx": "react",
+    "jsxFactory": "React.createElement",
+    "resolveJsonModule": true,
+    "allowJs": true,
+    "checkJs": false,
+    "strict": false,
+    "noEmit": true,
+    "skipLibCheck": true,
+    "types": []
+  },
+  "include": ["src"]
+}

@@ -7,7 +7,7 @@ const { raw } = require("../lib/load.js");
 const { ok } = require("../lib/assert.js");
 
 module.exports = function register(t) {
-  const dash = raw("dashboard.jsx");
+  const dash = raw("src/dashboard.tsx");
   const claude = raw("CLAUDE.md");
   const notes = raw("INTEGRATION_NOTES.md");
 

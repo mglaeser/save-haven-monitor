@@ -37,7 +37,7 @@
     {
       "id": "D6",
       "kind": "untrusted-text-to-sink",
-      "inject": "render API text via dangerouslySetInnerHTML/.innerHTML",
+      "inject": "render API text via dangerouslySetInnerHTML/.innerHTML in src/bubblegauge.tsx",
       "caught_by": "verify/tests/30 no-injection-sinks"
     },
     {
@@ -78,7 +78,7 @@
     {
       "id": "D12",
       "kind": "compiled-stale-drift",
-      "inject": "edit dashboard.jsx (or hand-edit dashboard.js) without rebuilding \u2014 served .js no longer matches source",
+      "inject": "change USED code in src/dashboard.tsx (e.g. a rendered label/number) or hand-edit dashboard.js without rebuilding \u2014 served .js diverges from source (note: dead-code edits are tree-shaken away and are not drift)",
       "caught_by": "verify/tests/66-compiled-fresh",
       "track": "C"
     },
