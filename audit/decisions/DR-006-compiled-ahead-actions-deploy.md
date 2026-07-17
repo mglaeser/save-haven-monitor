@@ -99,3 +99,22 @@ the **unchanged golden data hash** (`5c0c3a20…`):
 Still deferred, honestly (each an incremental follow-up per the plan's "one tab per gated commit"):
 strict `tsc --noEmit` typing of the verbatim code, splitting the pure math into `src/lib/*` and each
 tab into its own module. `production_eligible` stays computed `false`.
+
+## Addendum 3 — pure math extracted + typed with a strict tsc gate (phase 7 landed)
+
+Again behind the unchanged frozen acceptance suite (35/0), unchanged golden hash, and mutation 13/13:
+
+- **Math → `src/lib/math.ts`:** the 12 pure functions (interp/rebase/fmtM/logPath/ser/zArr/corrArr/
+  xcorrRow/mulberry32/runFan/subFamily/buildAggregate) extracted byte-preserving from the view; the
+  mutation harness now targets this module (all 13 find-strings intact, 13/13).
+- **Typed + strict gate:** signatures typed (bodies unchanged); `typescript 5.9.3` pinned as a verify
+  devDependency; `tsconfig.strict.json` type-checks the typed core (src/lib + src/data) with
+  `noImplicitAny` — enforced by the new `verify/tests/67-typecheck` (tsc via the gate) and watched by
+  calibration seed **D14** (a planted type error is caught). Corpus 13/13 → **14/14**; ratchet gains
+  `typed_core_tsc_strict = 0 errors`.
+- **Substrate:** `verify/lib/load.js` loads the functions from `src/lib/math.ts` (data injected) and
+  reads `TABS` from the view; the returned interface is unchanged, so `10`/`20`/`mutation`/`adapter`
+  are untouched. `61-provenance` re-attested (adds src/lib/math.ts).
+
+Deferred, honest (incremental): strict typing + `strictNullChecks` for the two large view modules,
+and splitting each tab into its own component file. `production_eligible` stays computed `false`.

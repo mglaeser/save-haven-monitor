@@ -3691,21 +3691,7 @@
   var CAT = atlas_default.CAT;
   var CLS = atlas_default.CLS;
 
-  // src/dashboard.tsx
-  var { useState, useMemo } = React;
-  var {
-    LineChart,
-    Line,
-    XAxis,
-    YAxis,
-    CartesianGrid,
-    Tooltip,
-    ReferenceLine,
-    ResponsiveContainer,
-    Area,
-    ComposedChart
-  } = Recharts;
-  var BG = typeof window !== "undefined" && window.BubbleGauge || { enabled: false };
+  // src/lib/math.ts
   function interp(anchors) {
     const out = [];
     for (let m = -60; m <= 60; m++) {
@@ -3854,6 +3840,22 @@
       return o;
     });
   }
+
+  // src/dashboard.tsx
+  var { useState, useMemo } = React;
+  var {
+    LineChart,
+    Line,
+    XAxis,
+    YAxis,
+    CartesianGrid,
+    Tooltip,
+    ReferenceLine,
+    ResponsiveContainer,
+    Area,
+    ComposedChart
+  } = Recharts;
+  var BG = typeof window !== "undefined" && window.BubbleGauge || { enabled: false };
   var S = {
     page: { minHeight: "100vh", background: "#0E1526", color: "#EDE8DC", fontFamily: "system-ui, -apple-system, 'Segoe UI', sans-serif" },
     serif: { fontFamily: "Georgia, 'Times New Roman', serif" },

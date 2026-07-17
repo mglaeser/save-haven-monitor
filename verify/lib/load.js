@@ -45,28 +45,41 @@ function transpile(code) {
 }
 
 const DASH_SRC = "src/dashboard.tsx";
+const MATH_SRC = "src/lib/math.ts";
 const ATLAS = "src/data/atlas.json";
 
-// The frozen data now lives in src/data/atlas.json (extracted from the old dashboard.jsx literals;
-// the golden hash is unchanged — proven). loadDashboardFromSource injects these as scope globals so
-// the pure-function characterization + the golden-hash test keep the SAME returned interface, and
-// mutation.js keeps mutating the dashboard source string exactly as before.
+// The frozen data lives in src/data/atlas.json (extracted from the old dashboard.jsx literals; the
+// golden hash is unchanged — proven). The pure math lives in src/lib/math.ts. loadDashboardFromSource
+// evaluates a MATH source string with the data injected as scope globals and captures the pure
+// functions — keeping the SAME returned interface every consumer (10/20-tests, mutation, adapter)
+// relies on. mutation.js mutates the math source (dashboardSource()).
 function dataGlobals() {
   const a = JSON.parse(fs.readFileSync(path.join(REPO, ATLAS), "utf8"));
   return { CRISES: a.CRISES, MATRIX: a.MATRIX, MX_CRISES: a.MX_CRISES, CLASSIFICATION: a.CLASSIFICATION, CAT: a.CAT, CLS: a.CLS };
 }
 
-// Load src/dashboard.tsx and return its data constants + pure functions.
-function loadDashboard() {
-  return loadDashboardFromSource(fs.readFileSync(path.join(REPO, DASH_SRC), "utf8"));
+// TABS is a tiny static literal in the view module; extract + eval it (used by 10-data-invariants).
+function loadTabs() {
+  const src = fs.readFileSync(path.join(REPO, DASH_SRC), "utf8");
+  const m = src.match(/const TABS\s*=\s*(\[[\s\S]*?\]);/);
+  if (!m) throw new Error("TABS literal not found in " + DASH_SRC);
+  // eslint-disable-next-line no-new-func
+  return new Function("return (" + m[1] + ");")();
 }
 
-// Load from an explicit source string (used by the mutation harness to test mutants).
-function loadDashboardFromSource(src) {
-  // Remove the `import { … } from "./data";` line — the data is injected as globals below.
-  const stripped = src.replace(/^\s*import\s*\{[^}]*\}\s*from\s*["']\.\/data["'];?\s*$/m, "");
+// Load the frozen data + pure math + TABS, returning the historical interface.
+function loadDashboard() {
+  const out = loadDashboardFromSource(fs.readFileSync(path.join(REPO, MATH_SRC), "utf8"));
+  out.TABS = loadTabs();
+  return out;
+}
+
+// Load from an explicit MATH source string (used by the mutation harness to test mutants).
+function loadDashboardFromSource(mathSrc) {
+  // Remove the `import { … } from "../data";` line — the data is injected as globals below.
+  const stripped = mathSrc.replace(/^\s*import\s*\{[^}]*\}\s*from\s*["']\.\.\/data["'];?\s*$/m, "");
   const js = transpile(stripped);
-  const capture = "\nreturn {CRISES, CAT, CLS, MATRIX, MX_CRISES, CLASSIFICATION, interp, rebase, fmtM, logPath, ser, zArr, corrArr, xcorrRow, mulberry32, runFan, subFamily, buildAggregate, TABS};\n";
+  const capture = "\nreturn {CRISES, CAT, CLS, MATRIX, MX_CRISES, CLASSIFICATION, interp, rebase, fmtM, logPath, ser, zArr, corrArr, xcorrRow, mulberry32, runFan, subFamily, buildAggregate};\n";
   const g = Object.assign(stubGlobals(), dataGlobals());
   const keys = Object.keys(g);
   // eslint-disable-next-line no-new-func
@@ -80,5 +93,6 @@ function raw(rel) {
   return fs.readFileSync(path.join(REPO, rel), "utf8");
 }
 
-function dashboardSource() { return fs.readFileSync(path.join(REPO, DASH_SRC), "utf8"); }
+// The source the mutation harness perturbs (the pure math).
+function dashboardSource() { return fs.readFileSync(path.join(REPO, MATH_SRC), "utf8"); }
 module.exports = { loadDashboard, loadDashboardFromSource, dashboardSource, raw, transpile, REPO };

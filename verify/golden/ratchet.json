@@ -3,7 +3,7 @@
   "recorded": "2026-07-16 (v2.0)",
   "metrics": {
     "pipeline_catch_rate": {
-      "baseline": "13/13",
+      "baseline": "14/14",
       "direction": "up",
       "gate": "verify/calibration + node run.js",
       "blocks": "release on any seeded-defect escape"
@@ -75,6 +75,12 @@
       "direction": "flat-zero",
       "gate": "verify/tests/35 + 62",
       "blocks": "any unpkg/Babel/third-party runtime fetch in the served site"
+    },
+    "typed_core_tsc_strict": {
+      "baseline": "0 errors",
+      "direction": "flat-zero",
+      "gate": "verify/tests/67-typecheck",
+      "blocks": "any type error in src/lib + src/data (tsc strict-core)"
     }
   }
 }

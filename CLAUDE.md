@@ -58,7 +58,7 @@ COMPLETE while any blocker is open. Do not read "both volumes audited" as "clear
   then the compiled `./bubblegauge.js`, then `./dashboard.js` (order matters — bubblegauge
   defines the `window.BubbleGauge` global that dashboard reads). The compiled `.js` are the
   esbuild output of the `.jsx` sources (`build.js`); no in-browser Babel, no unpkg.
-- `src/dashboard.tsx` — the source of truth for the crisis atlas's view + math (the frozen crisis
+- `src/dashboard.tsx` — the source of truth for the crisis atlas view (the pure math is in src/lib/math.ts, typed + tsc-strict + mutation-tested; the frozen crisis
   DATA now lives in `src/data/atlas.json`, loaded via `src/data.ts`; the golden hash is unchanged).
   calculations. **Do not touch any crisis data constant, string, number, or
   calculation, and do not reformat (no Prettier).** If you believe you've found a

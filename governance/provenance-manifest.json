@@ -16,7 +16,7 @@
     },
     {
       "file": "dashboard.js",
-      "sha256": "56a55ba827d1723834a3df344b9b872aabf9136f42860465827e8072601b20f2",
+      "sha256": "cdee228adf3db56619b965d95574a53df7c830f81e62c601457694ea9cbddf5d",
       "role": "served compiled crisis-atlas (esbuild transpile of dashboard.jsx, IIFE-wrapped)",
       "derives_from_spec": "rewrite/00-recommendation.md + DR-006 (compiled-ahead)",
       "test_evidence": "verify/tests/66-compiled-fresh (bundle==src) + 30/62/63",
@@ -34,7 +34,7 @@
     },
     {
       "file": "src/dashboard.tsx",
-      "sha256": "1935a9fdf069383818992f40fbe4e38ca132f966be5602359264a22da35671fe",
+      "sha256": "871d37e882a6e062bfbe0b333ae9de53ea59988841230387787e3fc14c73b7cc",
       "role": "SOURCE of dashboard.js (view + math; imports ./data)",
       "derives_from_spec": "rewrite/00-recommendation.md + DR-006 (module migration)",
       "test_evidence": "verify/tests/*",
@@ -112,6 +112,15 @@
       "test_evidence": "presence asserted by verify/tests/61-provenance",
       "adversarial_verification": "frozen acceptance suite (35/0 against the modularized bundle) + Track C seeds",
       "owning_role": "platform-security"
+    },
+    {
+      "file": "src/lib/math.ts",
+      "role": "pure crisis-atlas math (typed; mutation-tested; tsc-strict)",
+      "derives_from_spec": "rewrite/00-recommendation.md + DR-006",
+      "test_evidence": "verify/mutation.js (13/13) + verify/tests/67-typecheck (tsc strict) + 10-data-invariants",
+      "adversarial_verification": "frozen acceptance 35/0 + mutation",
+      "owning_role": "ai-quality",
+      "sha256": "1f7a22b60fc809be5916599769e23ce82575f151cbd6525b55366408a9b59508"
     }
   ],
   "reconstruction_control": "verify/tests/61-provenance reconstructs the chain for every shipped component on every build and fails loudly if a component is unlisted or its hash drifted; the git history supplies which commit/model authored each change. A scheduled spot-reconstruction is the standing cadence (governance/mandate cadence table)."

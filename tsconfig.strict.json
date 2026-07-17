@@ -1,0 +1,20 @@
+{
+  "//": "Strict type-check GATE for the typed core (the pure math + the data loader). The verbatim view modules (src/dashboard.tsx, src/bubblegauge.tsx) are NOT yet strict-typed and are excluded — typing them is the next incremental pass. strictNullChecks is deliberately off for now (the data-guaranteed .find() lookups would need `!` body edits); noImplicitAny is the load-bearing check here.",
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "noEmit": true,
+    "skipLibCheck": true,
+    "noImplicitAny": true,
+    "strictNullChecks": false,
+    "strictFunctionTypes": true,
+    "noImplicitReturns": true,
+    "noImplicitThis": true,
+    "alwaysStrict": true,
+    "forceConsistentCasingInFileNames": true,
+    "types": []
+  },
+  "files": ["src/global.d.ts", "src/data.ts", "src/lib/math.ts"]
+}
