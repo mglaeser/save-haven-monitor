@@ -1,6 +1,7 @@
 # Deterministic verification gate (mandate S1 / Article I). Runs on every push and PR.
-# It VERIFIES the served site; it does not build or deploy it — Pages still serves the
-# static files directly from main. See audit/decisions/DR-002-ci-gate.md.
+# It VERIFIES the site; deploy.yml is what publishes it (Pages from GitHub Actions), gated on
+# this same suite. Third-party actions are SHA-pinned (supply-chain, C-26); harness deps install
+# from the committed lockfile with `npm ci --ignore-scripts` (C-03). See DR-006.
 name: verify
 on:
   push:
@@ -12,19 +13,36 @@ permissions:
 jobs:
   gate:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: verify
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
-          node-version: "20"
-      - name: Install harness deps (CI-only; not shipped)
-        run: npm install --no-audit --no-fund
-      - name: Run verification suite
+          node-version: "22"
+      - name: Install harness deps (CI-only, pinned; no lifecycle scripts)
+        working-directory: verify
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Verification suite
+        working-directory: verify
         run: node run.js
-      - name: Run mutation testing (suite must be able to fail)
+      - name: Mutation testing (the suite must be able to fail)
+        working-directory: verify
         run: node mutation.js
-      - name: Run policy gate (fail-closed)
+      - name: Policy gate (fail-closed)
+        working-directory: verify
         run: node gate.js
+
+  acceptance:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: "22"
+      - name: Install harness deps (pinned; no lifecycle scripts)
+        working-directory: verify
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Install the Chromium the acceptance suite drives
+        working-directory: verify
+        run: npx --no-install playwright install --with-deps chromium
+      - name: Frozen acceptance suite (parity contract) against the current site
+        run: node acceptance/run.js

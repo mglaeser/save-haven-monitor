@@ -1,17 +1,23 @@
-# Constraints for this repo (zero-build GitHub Pages site)
+# Constraints for this repo (GitHub Pages site)
 
-**The served site is zero-build.** Deployment = `git push` to `main`, nothing else. The
-browser transpiles the JSX; there is no bundler and no build/transform step between the
-repository and what Pages serves. For the served site: **no bundler, no build step, no
-service workers, no TypeScript, no router, no analytics/trackers, no CSS frameworks, and
-no npm dependency of the shipped files.**
+**Amended by DR-006 (owner-authorized).** The former hard "zero-build" rule is superseded by a
+**compiled-ahead** direction: a build step is now permitted, but only as a CI step whose output is
+served — never in the viewer's browser, and never a server. The site still runs **purely on GitHub
+Pages** (now "deploy from GitHub Actions": CI builds + gates, Pages serves the artifact — see the
+setup guide `rewrite/03-pages-setup-guide.md`). Still forbidden for the **served** artifact: a server,
+runtime backend, service workers, analytics/trackers, CSS frameworks, and any runtime dependency the
+browser must fetch from a third party. Migration order and controls: `rewrite/00-recommendation.md`.
 
-**Exception — the verification harness (`verify/`) is CI-only tooling, not part of the
-served site.** It has its own `package.json`/`node_modules` (gitignored) and a GitHub
-Actions workflow (`.github/workflows/verify.yml`) that runs the deterministic gate on every
-push/PR. This does not violate zero-build: it verifies the site, it does not build or deploy
-it. See `audit/decisions/DR-001` and `DR-002`. Do not add a build/transform step to the
-*served* files, and do not add npm deps to the *shipped* code.
+**Current served state (until the code-migration phases land):** the served files
+(`index.html`, `dashboard.jsx`, `bubblegauge.jsx`) are still browser-transpiled by Babel — the
+compiled-ahead pipeline is being introduced deploy-first (workflows + lockfile) before any served
+code moves. Do not assume the site is bundled yet.
+
+**The verification harness (`verify/`) + the frozen acceptance suite (`acceptance/`) are CI-only.**
+They have a committed lockfile (`verify/package-lock.json`, exact-pinned, installed via
+`npm ci --ignore-scripts` — C-03) and drive `.github/workflows/verify.yml` (gate) and
+`.github/workflows/deploy.yml` (gate-blocked Pages publish). See `audit/decisions/DR-001`, `DR-002`,
+`DR-006`.
 
 ## Privacy: the production domain is never written into this repo
 

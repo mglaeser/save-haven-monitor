@@ -1,0 +1,20 @@
+{
+ "note": "FROZEN acceptance-suite manifest. These files are the implementation-agnostic parity contract for the rewrite; verify/tests/64-acceptance-freeze fails the build if any hash drifts. Re-freezing requires a decision record and must happen BEFORE a rewrite phase, never to make a failing rewrite pass. acceptance/adapter.js is deliberately EXCLUDED \u2014 it is the one file re-pointed at the new implementation, and its output is pinned by the golden files listed here.",
+ "frozen_at": "2026-07-16",
+ "baseline_result": "35 pass \u00b7 0 fail against the current site",
+ "files": {
+  "acceptance/SPEC.md": "a4bbccbc6b8b06122ce0c7dc1f3fdbe7bfff2ab2ec03f68df8447d0640d084b0",
+  "acceptance/run.js": "c6719d582fac1ab712e1590b47179b0ea5d83e05f1f3b9fa2be3554876eea2c9",
+  "acceptance/lib/harness.js": "a1c11c3661171fba983c5b32e859912fce49fc62ae83dfae9a7b75dd20e7ef64",
+  "acceptance/tests/01-viewer.js": "4bfebe9797f5b640628230a8f34dc60088a2465e15455d539edbc5e5b98b58c7",
+  "acceptance/tests/02-integration.js": "1929bb1fa26fbdf9854caa4ad8d96db9d0cae84a51430bd0cf7cb0de739c0b73",
+  "acceptance/tests/03-negative.js": "aeb5ecb08ed403324ce33e18ab1f328b8ff53347552f70704b760993635bda48",
+  "acceptance/tests/04-responsive.js": "2b0afd59d4395175a5baa737d1b05075e14546b17a4d4eea3d8b93eba7d82ee3",
+  "acceptance/tests/05-data-goldens.js": "01f0fe4aaf42493a6c378fdb1eb8c47c358be6f0920d708fe4bae7e2401f1593",
+  "acceptance/golden/atlas-data.canonical.json": "e15b4d6e61e3d88566581c3263183ea06c0a76119cc373a12dfaa9b301dfd117",
+  "acceptance/golden/atlas-data.sha256": "9f59a0e0215003f6c55dd989400920d7ac38f4b2de1fa314560c5ae05c3e1a0a",
+  "acceptance/golden/computed-aggregate.json": "d6a973448ca6ed9a4ac7dacc46b1060bafb90a9b23b5ac3d321a68d82fc24e1b",
+  "acceptance/golden/computed-fans.json": "779f7aacdd75c71348c84e066d36ebb941c63692a88c84bce53f9d657e8b1cc1",
+  "acceptance/golden/computed-xcorr.json": "e0ad662d4d53dedac48f60985d98a8cf1cd4efbb909418616e719317f2a068b5"
+ }
+}
