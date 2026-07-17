@@ -1121,6 +1121,58 @@
   }
   function AiLivePanel() { return <Boundary fallback={null}><AiLiveInner /></Boundary>; }
 
+  // Compact CNN Fear & Greed STATUS line for the top strip area (feed-sourced, gated). Surfaces the
+  // current reading + rating on its own 0-100 zone gauge, plus THE LAST THREE readings (previous
+  // close / 1 week / 1 month — the three most recent CNN reference values, null-safe: null ≠ zero).
+  // Same axis discipline as FearGreedBlock: own 0-100 scale, never rebased, never wired into AI_MAP;
+  // the value is the server-side snapshot (the browser never calls CNN). No-ops (renders nothing)
+  // when the feed carries no valid fear_greed metric, so the failure shape drops only this line.
+  function FearGreedStripInner() {
+    const f = useFeed();
+    if (f.loading || f.notReady) return null;
+    const j = f.json;
+    const m = j && j.data && j.data.metrics && j.data.metrics.fear_greed;
+    if (!validFearGreed(m)) return null;
+    const det = m.detail || {};
+    const rating = det.rating || null;
+    const col = (rating && FG_COLORS[rating]) || C.dim;
+    const zoneCols = ["#E05252", "#C0564A", "#9AA3B5", "#7fbf94", "#5AA9A3"];
+    const edges = [0].concat(FG_ZONES, [100]);
+    // "the last three values": the three most recent CNN reference readings. null is skipped, never a 0.
+    const recent = [["prev close", det.previous_close], ["1w", det.previous_1_week], ["1m", det.previous_1_month]]
+      .filter((p) => isNum(p[1]));
+    const tip = "CNN Fear & Greed · as of " + (m.as_of || "?") + (det.timestamp ? " (" + det.timestamp + ")" : "") +
+      " · " + (m.source || "cnn:fear_greed") + " · unofficial CNN endpoint — context only, does not feed the bubble score" + (m.note ? " · " + m.note : "");
+    return (
+      <aside aria-label="CNN Fear and Greed status" title={tip}
+        style={{ ...BS.panel, background: C.panel2, padding: "8px 14px", margin: "0 0 14px",
+          display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
+        <div style={{ display: "flex", alignItems: "baseline", gap: 8, flexWrap: "wrap" }}>
+          <span style={{ ...BS.eyebrow, color: C.muted }}>CNN Fear &amp; Greed</span>
+          <b style={{ ...BS.serif, fontSize: 20, fontWeight: 700, color: col, fontVariantNumeric: "tabular-nums" }}>{m.value.toFixed(1)}</b>
+          {rating ? <span style={{ fontSize: 11, color: col, fontStyle: "italic" }}>{rating}</span> : null}
+          {m.stale ? <span style={{ fontSize: 10, color: "#E8853D" }}>·stale</span> : null}
+        </div>
+        <div style={{ position: "relative", height: 8, borderRadius: 4, overflow: "hidden", display: "flex", flex: "1 1 160px", minWidth: 120, maxWidth: 260 }}>
+          {zoneCols.map((zc, i) => (
+            <div key={i} style={{ width: (edges[i + 1] - edges[i]) + "%", background: zc, opacity: 0.28 }} />
+          ))}
+          <div style={{ position: "absolute", left: "calc(" + m.value + "% - 1.5px)", top: 0, bottom: 0, width: 3, background: col, borderRadius: 1.5 }} />
+        </div>
+        {recent.length > 0 && (
+          <div style={{ fontSize: 10.5, color: C.faint, whiteSpace: "nowrap" }}>
+            <span style={{ color: C.muted }}>last 3</span>{" "}
+            {recent.map((p, i) => (
+              <span key={p[0]}>{i > 0 ? " · " : ""}{p[0]} <span style={{ color: C.dim, fontVariantNumeric: "tabular-nums" }}>{Math.round(p[1])}</span></span>
+            ))}
+          </div>
+        )}
+        <div style={{ marginLeft: "auto" }}><Freshness computedAt={j.meta && j.meta.computed_at} /></div>
+      </aside>
+    );
+  }
+  function FearGreedStrip() { return <Boundary fallback={null}><FearGreedStripInner /></Boundary>; }
+
   // Small live/static badge for the tabs that consume the re-anchored series
   // (Aggregate 2026 overlays, Analytics crisis clock). keys = AI-2026 line keys used there.
   function LiveBadgeInner({ keys, label }) {
@@ -1148,6 +1200,7 @@
     apiBase: API_BASE,
     tab: { id: "bubblegauge", label: "AI Regime" },
     Strip: StripBoundary,
+    FearGreedStrip: FearGreedStrip,
     DetailTab: DetailTab,
     useAiLive: useAiLive,
     AiLivePanel: AiLivePanel,

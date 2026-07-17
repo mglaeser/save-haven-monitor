@@ -986,6 +986,46 @@
     function AiLivePanel() {
       return /* @__PURE__ */ React.createElement(Boundary, { fallback: null }, /* @__PURE__ */ React.createElement(AiLiveInner, null));
     }
+    function FearGreedStripInner() {
+      const f = useFeed();
+      if (f.loading || f.notReady)
+        return null;
+      const j = f.json;
+      const m = j && j.data && j.data.metrics && j.data.metrics.fear_greed;
+      if (!validFearGreed(m))
+        return null;
+      const det = m.detail || {};
+      const rating = det.rating || null;
+      const col = rating && FG_COLORS[rating] || C.dim;
+      const zoneCols = ["#E05252", "#C0564A", "#9AA3B5", "#7fbf94", "#5AA9A3"];
+      const edges = [0].concat(FG_ZONES, [100]);
+      const recent = [["prev close", det.previous_close], ["1w", det.previous_1_week], ["1m", det.previous_1_month]].filter((p) => isNum(p[1]));
+      const tip = "CNN Fear & Greed · as of " + (m.as_of || "?") + (det.timestamp ? " (" + det.timestamp + ")" : "") + " · " + (m.source || "cnn:fear_greed") + " · unofficial CNN endpoint — context only, does not feed the bubble score" + (m.note ? " · " + m.note : "");
+      return /* @__PURE__ */ React.createElement(
+        "aside",
+        {
+          "aria-label": "CNN Fear and Greed status",
+          title: tip,
+          style: {
+            ...BS.panel,
+            background: C.panel2,
+            padding: "8px 14px",
+            margin: "0 0 14px",
+            display: "flex",
+            alignItems: "center",
+            gap: 14,
+            flexWrap: "wrap"
+          }
+        },
+        /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "baseline", gap: 8, flexWrap: "wrap" } }, /* @__PURE__ */ React.createElement("span", { style: { ...BS.eyebrow, color: C.muted } }, "CNN Fear & Greed"), /* @__PURE__ */ React.createElement("b", { style: { ...BS.serif, fontSize: 20, fontWeight: 700, color: col, fontVariantNumeric: "tabular-nums" } }, m.value.toFixed(1)), rating ? /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, color: col, fontStyle: "italic" } }, rating) : null, m.stale ? /* @__PURE__ */ React.createElement("span", { style: { fontSize: 10, color: "#E8853D" } }, "·stale") : null),
+        /* @__PURE__ */ React.createElement("div", { style: { position: "relative", height: 8, borderRadius: 4, overflow: "hidden", display: "flex", flex: "1 1 160px", minWidth: 120, maxWidth: 260 } }, zoneCols.map((zc, i) => /* @__PURE__ */ React.createElement("div", { key: i, style: { width: edges[i + 1] - edges[i] + "%", background: zc, opacity: 0.28 } })), /* @__PURE__ */ React.createElement("div", { style: { position: "absolute", left: "calc(" + m.value + "% - 1.5px)", top: 0, bottom: 0, width: 3, background: col, borderRadius: 1.5 } })),
+        recent.length > 0 && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 10.5, color: C.faint, whiteSpace: "nowrap" } }, /* @__PURE__ */ React.createElement("span", { style: { color: C.muted } }, "last 3"), " ", recent.map((p, i) => /* @__PURE__ */ React.createElement("span", { key: p[0] }, i > 0 ? " · " : "", p[0], " ", /* @__PURE__ */ React.createElement("span", { style: { color: C.dim, fontVariantNumeric: "tabular-nums" } }, Math.round(p[1]))))),
+        /* @__PURE__ */ React.createElement("div", { style: { marginLeft: "auto" } }, /* @__PURE__ */ React.createElement(Freshness, { computedAt: j.meta && j.meta.computed_at }))
+      );
+    }
+    function FearGreedStrip() {
+      return /* @__PURE__ */ React.createElement(Boundary, { fallback: null }, /* @__PURE__ */ React.createElement(FearGreedStripInner, null));
+    }
     function LiveBadgeInner({ keys, label }) {
       const f = useFeed();
       const live = useMemo(function() {
@@ -1015,6 +1055,7 @@
       apiBase: API_BASE,
       tab: { id: "bubblegauge", label: "AI Regime" },
       Strip: StripBoundary,
+      FearGreedStrip,
       DetailTab,
       useAiLive,
       AiLivePanel,
