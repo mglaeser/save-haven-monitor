@@ -92,12 +92,48 @@ var FG_COLORS={"extreme fear":"#E05252","fear":"#C0564A","neutral":"#9AA3B5","gr
 var GREEN="#7fbf94", RED="#C0564A";
 
 var SAMPLE={score:40,band:"hold",iqr:[34,47],redFlags:0,spy:"IN",qqq:"IN",
-  fg:{value:46,rating:"neutral"},cape:42.2,goldTtm:22.9,btcDd:-44,asOf:"sample"};
+  fg:{value:46,rating:"neutral"},cape:42.2,goldTtm:22.9,btcDd:-44,asOf:"sample",
+  scoreTrend:[37,39,40],fgTrend:[31,44,46]}; // last-3 points → V2 trend tails
 var DATA=SAMPLE;
 
 function span(cls,txt){var s=document.createElement("span");if(cls)s.className=cls;if(txt!=null)s.textContent=txt;return s;}
 function cell(k,v,c){var d=span("cell");d.appendChild(span("k",k+" "));var e=span(null,v);if(c)e.style.color=c;d.appendChild(e);return d;}
 function clamp(x){return Math.max(0,Math.min(100,x));}
+/* V2 "Kielwasser" trend tail: a fading tail from the value 3 readings ago to the marker, in the
+   direction of the move. Length grows with |change over the last 3 points|; a small sine wave is
+   added only on a reversal (up-then-down / down-then-up), amplitude proportional to the overshoot.
+   Drawn on top of the bar, undistorted (measured in real px). Removes itself when data is absent. */
+function tail(barEl,pts,flip,color){
+  if(!barEl) return;
+  var old=barEl.querySelector("svg.tt"); if(old) old.parentNode.removeChild(old);
+  if(!pts||pts.length!==3||!pts.every(isFinite)) return;
+  var W=barEl.clientWidth,H=barEl.clientHeight||9; if(!W) return;
+  function xf(v){v=clamp(v);return ((flip?100-v:v)/100)*W;}
+  var x0=xf(pts[0]),x2=xf(pts[2]); if(Math.abs(x2-x0)<2) return;
+  var dir=x2>=x0?1:-1,yc=H/2,a=pts[1]-pts[0],b=pts[2]-pts[1],rev=(a>0&&b<0)||(a<0&&b>0);
+  var ov=Math.abs(pts[1]-(pts[0]+pts[2])/2),amp=rev?Math.min(H*0.4,ov*0.34):0,d;
+  if(amp<0.4){ d="M"+x0.toFixed(1)+" "+yc+" L"+x2.toFixed(1)+" "+yc; }
+  else { var n=28,len=Math.abs(x2-x0),hp=2.5; d=""; for(var i=0;i<=n;i++){var t=i/n,x=x0+dir*len*t,
+    yy=yc+Math.sin(t*hp*Math.PI)*amp*(0.35+0.65*Math.sin(t*Math.PI)); d+=(i?" L":"M")+x.toFixed(1)+" "+yy.toFixed(1);} }
+  var hh=Math.min(H*0.42,3.4),hl=4.4,gid="tt"+(flip?"f":"r");
+  var head="M"+x2.toFixed(1)+" "+(yc-hh).toFixed(1)+" L"+(x2+dir*hl).toFixed(1)+" "+yc+" L"+x2.toFixed(1)+" "+(yc+hh).toFixed(1);
+  var ns="http://www.w3.org/2000/svg",svg=document.createElementNS(ns,"svg");
+  svg.setAttribute("class","tt"); svg.setAttribute("width",W); svg.setAttribute("height",H);
+  svg.setAttribute("style","position:absolute;inset:0;pointer-events:none");
+  var defs=document.createElementNS(ns,"defs"),g=document.createElementNS(ns,"linearGradient");
+  g.setAttribute("id",gid); g.setAttribute("gradientUnits","userSpaceOnUse");
+  g.setAttribute("x1",x0.toFixed(1)); g.setAttribute("y1","0"); g.setAttribute("x2",x2.toFixed(1)); g.setAttribute("y2","0");
+  [["0","0.18"],["0.55","0.66"],["1","0.96"]].forEach(function(o){var st=document.createElementNS(ns,"stop");
+    st.setAttribute("offset",o[0]); st.setAttribute("stop-color",color); st.setAttribute("stop-opacity",o[1]); g.appendChild(st);});
+  defs.appendChild(g); svg.appendChild(defs);
+  var p1=document.createElementNS(ns,"path"); p1.setAttribute("d",d); p1.setAttribute("fill","none");
+  p1.setAttribute("stroke","url(#"+gid+")"); p1.setAttribute("stroke-width",Math.max(3,H*0.5).toFixed(1)); p1.setAttribute("stroke-linecap","round");
+  var p2=document.createElementNS(ns,"path"); p2.setAttribute("d",head); p2.setAttribute("fill","none");
+  p2.setAttribute("stroke",color); p2.setAttribute("stroke-width",Math.max(1.5,H*0.24).toFixed(1));
+  p2.setAttribute("stroke-linecap","round"); p2.setAttribute("stroke-linejoin","round");
+  svg.appendChild(p1); svg.appendChild(p2);
+  barEl.insertBefore(svg,barEl.firstChild); // behind the marker (.mk paints on top)
+}
 function render(){
   var d=DATA,b=bandOf(d.band);
   // regime: big score + band, marker on the zone bar
@@ -128,6 +164,10 @@ function render(){
   var foot=document.getElementById("foot"); foot.textContent="";
   if(d.asOf&&d.asOf!=="sample"){ foot.appendChild(document.createTextNode("updated "+rel(d.asOf))); }
   else { foot.appendChild(span("badge","sample")); foot.appendChild(document.createTextNode(" · heuristic, not advice")); }
+  // V2 "Kielwasser" trend tails on both bars (regime + F&G), same encoding as the dashboard/splash.
+  // Drawn in the marker's cream ink so the tail reads on every zone (a zone-matched tail vanishes).
+  tail(document.querySelector(".bar.reg"),d.scoreTrend,false,"#EDE8DC");
+  tail(document.querySelector(".bar.fg"),(d.fg&&isFinite(d.fg.value))?d.fgTrend:null,true,"#EDE8DC");
 }
 function rel(iso){var t=Date.parse(iso);if(!isFinite(t))return String(iso);
   var h=(Date.now()-t)/36e5;return h<1?"just now":h<48?Math.round(h)+"h ago":Math.round(h/24)+"d ago";}
@@ -140,10 +180,17 @@ if(ACT.live){
   var opt={headers:{accept:"application/json"},signal:ctrl&&ctrl.signal};
   Promise.all([
     fetch(API_BASE+"/api/v1/score",opt).then(function(r){return r.ok?r.json():null;}).catch(function(){return null;}),
-    fetch(API_BASE+"/api/v1/dashboard/feed",opt).then(function(r){return r.ok?r.json():null;}).catch(function(){return null;})
+    fetch(API_BASE+"/api/v1/dashboard/feed",opt).then(function(r){return r.ok?r.json():null;}).catch(function(){return null;}),
+    fetch(API_BASE+"/api/v1/score/history?granularity=daily&limit=1000",opt).then(function(r){return r.ok?r.json():null;}).catch(function(){return null;})
   ]).then(function(res){
     try{
       var sc=res[0]&&res[0].data, mx=(res[1]&&res[1].data&&res[1].data.metrics)||{}, fg=mx.fear_greed, ts=sc&&sc.trend_states;
+      // last-3 regime medians from the history payload, re-anchored to end at the live score
+      var hi=res[2]&&res[2].data, sT=null;
+      if(Array.isArray(hi)&&hi.length>=3){ var mm=hi.slice(-3).map(function(r){return r&&isFinite(r.median)?r.median:NaN;});
+        if(mm.every(isFinite)) sT=[mm[0],mm[1],isFinite(sc&&sc.headline_median)?sc.headline_median:mm[2]]; }
+      var det=fg&&fg.detail, fT=(det&&isFinite(det.previous_1_month)&&isFinite(det.previous_1_week)&&fg.available&&isFinite(fg.value))
+        ?[det.previous_1_month,det.previous_1_week,fg.value]:null;
       if(sc){
         DATA={score:sc.headline_median,band:sc.action_band,iqr:sc.iqr||null,redFlags:sc.red_flag_count,
           spy:ts&&ts.SPY&&ts.SPY.faber_10mo, qqq:ts&&ts.QQQ&&ts.QQQ.faber_10mo,
@@ -151,6 +198,7 @@ if(ACT.live){
           cape:(mx.cape&&mx.cape.available)?mx.cape.value:NaN,
           goldTtm:(mx.gold_ttm_pct&&mx.gold_ttm_pct.available)?mx.gold_ttm_pct.value:NaN,
           btcDd:(mx.btc_drawdown_pct&&mx.btc_drawdown_pct.available)?mx.btc_drawdown_pct.value:NaN,
+          scoreTrend:sT, fgTrend:fT,
           asOf:(res[0].meta&&res[0].meta.computed_at)||new Date().toISOString()};
         render();
       }
