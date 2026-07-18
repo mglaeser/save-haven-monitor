@@ -16,7 +16,7 @@
     },
     {
       "file": "widget.html",
-      "sha256": "9ae7d937f85fc1533481c69805def4cf86fae9130e4ca02c8319cdd4f18add15",
+      "sha256": "c05ef90954930781aafa7cc17148a7c232ef06b9bb0abc98ef59ca7ae8ace07f",
       "role": "served self-contained iOS JS-Widget (WidgetWeb spec) — stateless; gated ?status-api fetch to the constructed API_BASE only; no cookies/localStorage/vendors",
       "derives_from_spec": "DR-008 (widget served from Pages) + INTEGRATION_NOTES (gating) + github.com/Villy21/JsWidget spec",
       "test_evidence": "verify/tests/62-security-surface (in SERVED: gated fetch, no cookie/localStorage/telemetry/AI-client), 61-provenance (this hash)",
@@ -34,7 +34,7 @@
     },
     {
       "file": "bubblegauge.js",
-      "sha256": "d325d3c30cb7225f03598882b9079d15e25f90a6fff92e06017626a120ecc47d",
+      "sha256": "6a068e5695c0c184177bcb5693bedeafbd2a1c88c452bd49d78f368eaef9b37d",
       "role": "served compiled gated integration (esbuild transpile of bubblegauge.jsx)",
       "derives_from_spec": "rewrite/00-recommendation.md + DR-006 (compiled-ahead)",
       "test_evidence": "verify/tests/66-compiled-fresh (bundle==src) + 30/62/63",
@@ -52,7 +52,7 @@
     },
     {
       "file": "src/bubblegauge.tsx",
-      "sha256": "0f43a1340eb30357e08d424637880710a5fcb987816a50a2b34cd5567ac4d1fb",
+      "sha256": "1ecd3f3720fdeaf9000f6fbc7a73fb727167fa934c4353dcf904f99a7dc5130c",
       "role": "SOURCE of bubblegauge.js (gated integration)",
       "derives_from_spec": "rewrite/00-recommendation.md + DR-006 (module migration)",
       "test_evidence": "verify/tests/*",
