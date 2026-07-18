@@ -436,7 +436,7 @@
             background: b.color, opacity: 0.35 }} />
         )}
         {trend3(trend && trend[0], trend && trend[1], trend && trend[2]) && (
-          <TrendTail pts={trend} flip={false} barH={h} color={b.color} />
+          <TrendTail pts={trend} flip={false} barH={h} />
         )}
         <div style={{ position: "absolute", top: -2, bottom: -2, left: "calc(" + clamp(value) + "% - 1.5px)", width: 3,
           background: b.color, borderRadius: 2, boxShadow: "0 0 0 1px rgba(11,17,31,0.6)" }} />
@@ -462,7 +462,7 @@
     if (!m.every(isNum)) return null;
     return [m[0], m[1], isNum(current) ? current : m[2]];
   }
-  function TrendTail({ pts, flip, barH, color }) {
+  function TrendTail({ pts, flip, barH }) {
     const ref = useRef(null);
     const gidRef = useRef(null);
     if (gidRef.current == null) gidRef.current = "tt" + (++__ttUid);
@@ -488,6 +488,9 @@
       const reversed = (aa > 0 && bb < 0) || (aa < 0 && bb > 0);
       const ov = Math.abs(pts[1] - (pts[0] + pts[2]) / 2);
       const amp = reversed ? Math.min(barH * 0.4, ov * 0.34) : 0;
+      // shaft runs from where the value was 3 readings ago (x0) up to the marker (x2); the FILLED
+      // arrowhead leads at the marker pointing in the travel direction, so the signal reads forward
+      // (not as a backward-trailing wake).
       let d;
       if (amp < 0.4) {
         d = "M" + x0.toFixed(1) + " " + yc + " L" + x2.toFixed(1) + " " + yc;
@@ -500,9 +503,14 @@
           d += (i ? " L" : "M") + x.toFixed(1) + " " + yy.toFixed(1);
         }
       }
-      const hh = Math.min(barH * 0.42, 3.6), hl = 4.6;
-      const head = "M" + x2.toFixed(1) + " " + (yc - hh).toFixed(1) + " L" + (x2 + dir * hl).toFixed(1) + " " + yc + " L" + x2.toFixed(1) + " " + (yc + hh).toFixed(1);
-      return { x0, x2, d, head, sw: Math.max(3, barH * 0.5), hw: Math.max(1.6, barH * 0.24) };
+      const hh = Math.max(2.6, Math.min(barH * 0.5 - 0.5, 4.4)), hl = Math.min(Math.max(4.5, Math.min(6.5, barH * 0.75)), Math.abs(x2 - x0));
+      const tipX = x2 + dir * 1.2, backX = tipX - dir * hl; // tip a hair past the marker, base behind; head never exceeds the move
+      const head = "M" + tipX.toFixed(1) + " " + yc + " L" + backX.toFixed(1) + " " + (yc - hh).toFixed(1) + " L" + backX.toFixed(1) + " " + (yc + hh).toFixed(1) + " Z";
+      // the arrowhead is filled with the colour of the bar END it is heading toward (full-saturation
+      // extreme), so the hue itself signals the trend; both bars are red on the right, F&G is greed-teal
+      // on the left and regime blue on the left.
+      const destColor = dir > 0 ? "#E05252" : (flip ? "#5AA9A3" : "#5B8DEF");
+      return { x0, x2, d, head, sw: Math.max(2.4, barH * 0.34), destColor };
     }, [pts, w, flip, barH]);
     const gid = gidRef.current;
     // The tail is drawn in the marker's cream ink (not the zone hue) so it reads as the marker's own
@@ -520,7 +528,7 @@
               </linearGradient>
             </defs>
             <path d={geom.d} fill="none" stroke={"url(#" + gid + ")"} strokeWidth={geom.sw} strokeLinecap="round" />
-            <path d={geom.head} fill="none" stroke={ink} strokeWidth={geom.hw} strokeLinecap="round" strokeLinejoin="round" />
+            <path d={geom.head} fill={geom.destColor} stroke={ink} strokeWidth={Math.max(0.8, barH * 0.12)} strokeLinejoin="round" />
           </svg>
         )}
       </div>
@@ -1135,7 +1143,7 @@
             <div key={i} style={{ width: (edges[i + 1] - edges[i]) + "%", background: zc, opacity: 0.28 }} />
           ))}
           {trend3(det.previous_1_month, det.previous_1_week, m.value) && (
-            <TrendTail pts={[det.previous_1_month, det.previous_1_week, m.value]} flip={true} barH={8} color={col} />
+            <TrendTail pts={[det.previous_1_month, det.previous_1_week, m.value]} flip={true} barH={8} />
           )}
           <div style={{ position: "absolute", left: "calc(" + (100 - m.value) + "% - 1.5px)", top: 0, bottom: 0, width: 3, background: col, borderRadius: 1.5 }} />
         </div>
@@ -1249,7 +1257,7 @@
             <div key={i} style={{ width: (edges[i + 1] - edges[i]) + "%", background: zc, opacity: 0.28 }} />
           ))}
           {trend3(det.previous_1_month, det.previous_1_week, m.value) && (
-            <TrendTail pts={[det.previous_1_month, det.previous_1_week, m.value]} flip={true} barH={8} color={col} />
+            <TrendTail pts={[det.previous_1_month, det.previous_1_week, m.value]} flip={true} barH={8} />
           )}
           <div style={{ position: "absolute", left: "calc(" + (100 - m.value) + "% - 1.5px)", top: 0, bottom: 0, width: 3, background: col, borderRadius: 1.5 }} />
         </div>
@@ -1341,6 +1349,21 @@
     const regT = regimeTrend(hist, d.headline_median);
     const tRecent = regT ? Math.max(0, Math.min(1, regT[0] / 100)) : null;
     const tLo = regT ? Math.min(tRecent, t) : 0, tHi = regT ? Math.max(tRecent, t) : 0;
+    // a FILLED arrowhead riding the arc at the marker, pointing along the tangent in the direction
+    // the score has been moving (clockwise = rising) — the arc's counterpart to the bars' arrow.
+    const arcArrow = (function () {
+      if (!regT || Math.abs(t - tRecent) < 0.012) return null;
+      const aRad = (ang * Math.PI) / 180, sgn = t >= tRecent ? 1 : -1;
+      const tx = -Math.sin(aRad), ty = Math.cos(aRad); // +angle (clockwise) tangent
+      const nx = Math.cos(aRad), ny = Math.sin(aRad); // radial normal
+      const AHL = 12, AHH = 6.4, bx = mk[0] - sgn * tx * 2, by = mk[1] - sgn * ty * 2; // base a hair behind
+      const tip = [mk[0] + sgn * tx * AHL, mk[1] + sgn * ty * AHL];
+      return "M" + tip[0].toFixed(1) + " " + tip[1].toFixed(1) +
+        " L" + (bx + nx * AHH).toFixed(1) + " " + (by + ny * AHH).toFixed(1) +
+        " L" + (bx - nx * AHH).toFixed(1) + " " + (by - ny * AHH).toFixed(1) + " Z";
+    })();
+    // arc arrowhead takes the colour of the arc END it heads toward: rising→red (100), falling→blue (0).
+    const arcArrowColor = regT ? (t >= tRecent ? "#E05252" : "#5B8DEF") : null;
     const mx = (live && live.metrics) || null;
     const fg = mx && mx.fear_greed, fgOk = validFearGreed(fg);
     const fgCol = fgOk ? ((fg.detail && FG_COLORS[fg.detail.rating]) || C.dim) : C.dim;
@@ -1409,6 +1432,7 @@
               <line x1={mkIn[0].toFixed(1)} y1={mkIn[1].toFixed(1)} x2={mkOut[0].toFixed(1)} y2={mkOut[1].toFixed(1)} stroke={band.color} strokeWidth="2" />
               <circle cx={mk[0].toFixed(1)} cy={mk[1].toFixed(1)} r="7" fill={C.bg} stroke={band.color} strokeWidth="2" />
               <circle cx={mk[0].toFixed(1)} cy={mk[1].toFixed(1)} r="2.4" fill={band.color} />
+              {arcArrow && <path d={arcArrow} fill={arcArrowColor} stroke={C.text} strokeWidth="1.1" strokeLinejoin="round" />}
               <text x="104" y="252" textAnchor="middle" fontFamily="Georgia,serif" fontSize="11" fill={C.faint} style={{ fontVariantNumeric: "tabular-nums" }}>0</text>
               <text x="286" y="252" textAnchor="middle" fontFamily="Georgia,serif" fontSize="11" fill={C.faint} style={{ fontVariantNumeric: "tabular-nums" }}>100</text>
               <text x="195" y="94" textAnchor="middle" fontSize="9.5" letterSpacing="3.4" fill={C.muted}>REGIME SCORE</text>
@@ -1450,7 +1474,7 @@
               </div>
               <div style={{ position: "relative", height: 6, borderRadius: 999, marginTop: 9, background: "linear-gradient(90deg,#5AA9A3,#7fbf94,#9AA3B5,#C0564A,#E05252)" }}>
                 {trend3(fg.detail && fg.detail.previous_1_month, fg.detail && fg.detail.previous_1_week, fg.value) && (
-                  <TrendTail pts={[fg.detail.previous_1_month, fg.detail.previous_1_week, fg.value]} flip={true} barH={6} color={fgCol} />
+                  <TrendTail pts={[fg.detail.previous_1_month, fg.detail.previous_1_week, fg.value]} flip={true} barH={6} />
                 )}
                 <div style={{ position: "absolute", top: -3, left: (100 - fg.value) + "%", transform: "translateX(-50%)", width: 2, height: 12, borderRadius: 2, background: C.text, boxShadow: "0 0 0 2px " + C.bg }} />
               </div>
