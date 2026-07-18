@@ -500,7 +500,7 @@
     function EpiChip() {
       return /* @__PURE__ */ React.createElement(Pill, { color: C.muted, outline: true, title: COPY.notProbLong }, "Heuristic · not a probability · n≈4");
     }
-    function GaugeBar({ value, iqr, band, height }) {
+    function GaugeBar({ value, iqr, band, height, trend }) {
       const b = bandOf(band);
       const clamp = (x) => Math.max(0, Math.min(100, x));
       const h = height || 12;
@@ -520,7 +520,7 @@
         width: clamp(iqr[1]) - clamp(iqr[0]) + "%",
         background: b.color,
         opacity: 0.35
-      } }), /* @__PURE__ */ React.createElement("div", { style: {
+      } }), trend3(trend && trend[0], trend && trend[1], trend && trend[2]) && /* @__PURE__ */ React.createElement(TrendTail, { pts: trend, flip: false, barH: h, color: b.color }), /* @__PURE__ */ React.createElement("div", { style: {
         position: "absolute",
         top: -2,
         bottom: -2,
@@ -530,6 +530,80 @@
         borderRadius: 2,
         boxShadow: "0 0 0 1px rgba(11,17,31,0.6)"
       } }));
+    }
+    let __ttUid = 0;
+    function trend3(a, b, c) {
+      return isNum(a) && isNum(b) && isNum(c) ? [a, b, c] : null;
+    }
+    function regimeTrend(hist, current) {
+      const arr = hist && hist.json && Array.isArray(hist.json.data) ? hist.json.data : null;
+      if (!arr || arr.length < 3)
+        return null;
+      const m = arr.slice(-3).map((r) => r && isNum(r.median) ? r.median : NaN);
+      if (!m.every(isNum))
+        return null;
+      return [m[0], m[1], isNum(current) ? current : m[2]];
+    }
+    function TrendTail({ pts, flip, barH, color }) {
+      const ref = useRef(null);
+      const gidRef = useRef(null);
+      if (gidRef.current == null)
+        gidRef.current = "tt" + ++__ttUid;
+      const [w, setW] = useState(0);
+      useEffect(function() {
+        const el = ref.current;
+        if (!el)
+          return void 0;
+        const measure = function() {
+          setW(el.clientWidth || 0);
+        };
+        measure();
+        let ro;
+        try {
+          ro = new ResizeObserver(measure);
+          ro.observe(el);
+        } catch (e) {
+        }
+        window.addEventListener("resize", measure);
+        return function() {
+          try {
+            ro && ro.disconnect();
+          } catch (e) {
+          }
+          window.removeEventListener("resize", measure);
+        };
+      }, []);
+      const geom = useMemo(function() {
+        if (!pts || !w)
+          return null;
+        const clamp = (x) => Math.max(0, Math.min(100, x));
+        const xOf = (v) => (flip ? 100 - clamp(v) : clamp(v)) / 100 * w;
+        const x0 = xOf(pts[0]), x2 = xOf(pts[2]);
+        if (Math.abs(x2 - x0) < 2)
+          return null;
+        const dir = x2 >= x0 ? 1 : -1, yc = barH / 2;
+        const aa = pts[1] - pts[0], bb = pts[2] - pts[1];
+        const reversed = aa > 0 && bb < 0 || aa < 0 && bb > 0;
+        const ov = Math.abs(pts[1] - (pts[0] + pts[2]) / 2);
+        const amp = reversed ? Math.min(barH * 0.4, ov * 0.34) : 0;
+        let d;
+        if (amp < 0.4) {
+          d = "M" + x0.toFixed(1) + " " + yc + " L" + x2.toFixed(1) + " " + yc;
+        } else {
+          const n = 30, len = Math.abs(x2 - x0), humps = 2.5;
+          d = "";
+          for (let i = 0; i <= n; i++) {
+            const t = i / n, x = x0 + dir * len * t, yy = yc + Math.sin(t * humps * Math.PI) * amp * (0.35 + 0.65 * Math.sin(t * Math.PI));
+            d += (i ? " L" : "M") + x.toFixed(1) + " " + yy.toFixed(1);
+          }
+        }
+        const hh = Math.min(barH * 0.42, 3.6), hl = 4.6;
+        const head = "M" + x2.toFixed(1) + " " + (yc - hh).toFixed(1) + " L" + (x2 + dir * hl).toFixed(1) + " " + yc + " L" + x2.toFixed(1) + " " + (yc + hh).toFixed(1);
+        return { x0, x2, d, head, sw: Math.max(3, barH * 0.5), hw: Math.max(1.6, barH * 0.24) };
+      }, [pts, w, flip, barH]);
+      const gid = gidRef.current;
+      const ink = C.text;
+      return /* @__PURE__ */ React.createElement("div", { ref, "aria-hidden": "true", style: { position: "absolute", inset: 0, pointerEvents: "none" } }, geom && /* @__PURE__ */ React.createElement("svg", { width: w, height: barH, style: { display: "block" } }, /* @__PURE__ */ React.createElement("defs", null, /* @__PURE__ */ React.createElement("linearGradient", { id: gid, gradientUnits: "userSpaceOnUse", x1: geom.x0, y1: "0", x2: geom.x2, y2: "0" }, /* @__PURE__ */ React.createElement("stop", { offset: "0", stopColor: ink, stopOpacity: "0.18" }), /* @__PURE__ */ React.createElement("stop", { offset: "0.55", stopColor: ink, stopOpacity: "0.66" }), /* @__PURE__ */ React.createElement("stop", { offset: "1", stopColor: ink, stopOpacity: "0.96" }))), /* @__PURE__ */ React.createElement("path", { d: geom.d, fill: "none", stroke: "url(#" + gid + ")", strokeWidth: geom.sw, strokeLinecap: "round" }), /* @__PURE__ */ React.createElement("path", { d: geom.head, fill: "none", stroke: ink, strokeWidth: geom.hw, strokeLinecap: "round", strokeLinejoin: "round" })));
     }
     function StripShell({ children, onClick, dim }) {
       const clickable = !!onClick;
@@ -587,6 +661,7 @@
     }
     function Strip({ goToDetail }) {
       const s = useScore();
+      const hist = useHistory();
       if (s.loading)
         return /* @__PURE__ */ React.createElement(StripSkeleton, null);
       if (s.notReady)
@@ -595,6 +670,7 @@
         return /* @__PURE__ */ React.createElement(StripUnavailable, null);
       const d = s.json.data, meta = s.json.meta, b = bandOf(d.action_band);
       const trend = d.trend_states;
+      const regTrend = regimeTrend(hist, d.headline_median);
       return /* @__PURE__ */ React.createElement(StripShell, { onClick: goToDetail }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 4, flex: "1 1 240px", minWidth: 200 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "baseline", gap: 8, flexWrap: "wrap" } }, /* @__PURE__ */ React.createElement("span", { style: { ...BS.serif, fontSize: 22, fontWeight: 700, color: b.color, fontVariantNumeric: "tabular-nums" } }, Math.round(d.headline_median)), pair(d.iqr) && /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, color: C.muted } }, "IQR ", Math.round(d.iqr[0]), "–", Math.round(d.iqr[1])), /* @__PURE__ */ React.createElement("span", { style: {
         fontSize: 11,
         fontWeight: 800,
@@ -603,7 +679,7 @@
         padding: "1px 7px",
         borderRadius: 5,
         background: b.zone
-      } }, b.label), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 9.5, color: C.faint } }, COPY.micro)), /* @__PURE__ */ React.createElement(GaugeBar, { value: d.headline_median, iqr: d.iqr, band: d.action_band })), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" } }, /* @__PURE__ */ React.createElement(
+      } }, b.label), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 9.5, color: C.faint } }, COPY.micro)), /* @__PURE__ */ React.createElement(GaugeBar, { value: d.headline_median, iqr: d.iqr, band: d.action_band, trend: regTrend })), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" } }, /* @__PURE__ */ React.createElement(
         Pill,
         {
           color: d.red_flag_count >= 3 ? "#E05252" : d.red_flag_count > 0 ? "#E0B458" : C.muted,
@@ -961,7 +1037,7 @@
           segs.push(cur.join(" "));
       }
       const tip = "as of " + (m.as_of || "?") + (det.timestamp ? " (" + det.timestamp + ")" : "") + " · " + (m.source || "cnn:fear_greed") + " · unofficial CNN endpoint — context only, does not feed the bubble score" + (m.note ? " · " + m.note : "");
-      return /* @__PURE__ */ React.createElement("div", { title: tip, style: { marginTop: 8, marginBottom: 6, maxWidth: 420 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "baseline", gap: 8, flexWrap: "wrap", marginBottom: 4 } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 10.5, color: C.muted } }, "CNN Fear & Greed"), /* @__PURE__ */ React.createElement("b", { style: { fontSize: 13, color: col, fontVariantNumeric: "tabular-nums" } }, m.value.toFixed(1)), rating ? /* @__PURE__ */ React.createElement("span", { style: { fontSize: 10.5, color: col, fontStyle: "italic" } }, rating) : null, m.stale ? /* @__PURE__ */ React.createElement("span", { style: { fontSize: 10, color: "#E8853D" } }, "·stale") : null), /* @__PURE__ */ React.createElement("div", { style: { position: "relative", height: 8, borderRadius: 4, overflow: "hidden", display: "flex" } }, zoneCols.map((zc, i) => /* @__PURE__ */ React.createElement("div", { key: i, style: { width: edges[i + 1] - edges[i] + "%", background: zc, opacity: 0.28 } })), /* @__PURE__ */ React.createElement("div", { style: { position: "absolute", left: "calc(" + (100 - m.value) + "% - 1.5px)", top: 0, bottom: 0, width: 3, background: col, borderRadius: 1.5 } })), deltas.length > 0 && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 9.5, color: C.faint, marginTop: 3 } }, deltas.map((p, i) => /* @__PURE__ */ React.createElement("span", { key: p[0] }, i > 0 ? " · " : "", p[0], " ", /* @__PURE__ */ React.createElement("span", { style: { color: C.dim, fontVariantNumeric: "tabular-nums" } }, Math.round(p[1]))))), segs.length > 0 && /* @__PURE__ */ React.createElement("svg", { viewBox: "0 0 100 100", preserveAspectRatio: "none", style: { display: "block", width: "100%", height: 34, marginTop: 4 } }, FG_ZONES.map((z) => /* @__PURE__ */ React.createElement("line", { key: z, x1: "0", x2: "100", y1: 100 - z, y2: 100 - z, stroke: "rgba(237,232,220,0.10)", strokeWidth: "0.8", vectorEffect: "non-scaling-stroke" })), segs.map((d, i) => /* @__PURE__ */ React.createElement("polyline", { key: i, points: d, fill: "none", stroke: col, strokeWidth: "1.4", vectorEffect: "non-scaling-stroke" }))), segs.length > 0 && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 8.5, color: C.faint, display: "flex", justifyContent: "space-between" } }, /* @__PURE__ */ React.createElement("span", null, "t−60 · gaps = no observation (CNN history ≈ 13 months)"), /* @__PURE__ */ React.createElement("span", null, live.anchorMonth)));
+      return /* @__PURE__ */ React.createElement("div", { title: tip, style: { marginTop: 8, marginBottom: 6, maxWidth: 420 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "baseline", gap: 8, flexWrap: "wrap", marginBottom: 4 } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 10.5, color: C.muted } }, "CNN Fear & Greed"), /* @__PURE__ */ React.createElement("b", { style: { fontSize: 13, color: col, fontVariantNumeric: "tabular-nums" } }, m.value.toFixed(1)), rating ? /* @__PURE__ */ React.createElement("span", { style: { fontSize: 10.5, color: col, fontStyle: "italic" } }, rating) : null, m.stale ? /* @__PURE__ */ React.createElement("span", { style: { fontSize: 10, color: "#E8853D" } }, "·stale") : null), /* @__PURE__ */ React.createElement("div", { style: { position: "relative", height: 8, borderRadius: 4, overflow: "hidden", display: "flex" } }, zoneCols.map((zc, i) => /* @__PURE__ */ React.createElement("div", { key: i, style: { width: edges[i + 1] - edges[i] + "%", background: zc, opacity: 0.28 } })), trend3(det.previous_1_month, det.previous_1_week, m.value) && /* @__PURE__ */ React.createElement(TrendTail, { pts: [det.previous_1_month, det.previous_1_week, m.value], flip: true, barH: 8, color: col }), /* @__PURE__ */ React.createElement("div", { style: { position: "absolute", left: "calc(" + (100 - m.value) + "% - 1.5px)", top: 0, bottom: 0, width: 3, background: col, borderRadius: 1.5 } })), deltas.length > 0 && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 9.5, color: C.faint, marginTop: 3 } }, deltas.map((p, i) => /* @__PURE__ */ React.createElement("span", { key: p[0] }, i > 0 ? " · " : "", p[0], " ", /* @__PURE__ */ React.createElement("span", { style: { color: C.dim, fontVariantNumeric: "tabular-nums" } }, Math.round(p[1]))))), segs.length > 0 && /* @__PURE__ */ React.createElement("svg", { viewBox: "0 0 100 100", preserveAspectRatio: "none", style: { display: "block", width: "100%", height: 34, marginTop: 4 } }, FG_ZONES.map((z) => /* @__PURE__ */ React.createElement("line", { key: z, x1: "0", x2: "100", y1: 100 - z, y2: 100 - z, stroke: "rgba(237,232,220,0.10)", strokeWidth: "0.8", vectorEffect: "non-scaling-stroke" })), segs.map((d, i) => /* @__PURE__ */ React.createElement("polyline", { key: i, points: d, fill: "none", stroke: col, strokeWidth: "1.4", vectorEffect: "non-scaling-stroke" }))), segs.length > 0 && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 8.5, color: C.faint, display: "flex", justifyContent: "space-between" } }, /* @__PURE__ */ React.createElement("span", null, "t−60 · gaps = no observation (CNN history ≈ 13 months)"), /* @__PURE__ */ React.createElement("span", null, live.anchorMonth)));
     }
     function AiLiveInner() {
       const live = useAiLive();
@@ -1018,7 +1094,7 @@
           }
         },
         /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "baseline", gap: 8, flexWrap: "wrap" } }, /* @__PURE__ */ React.createElement("span", { style: { ...BS.eyebrow, color: C.muted } }, "CNN Fear & Greed"), /* @__PURE__ */ React.createElement("b", { style: { ...BS.serif, fontSize: 20, fontWeight: 700, color: col, fontVariantNumeric: "tabular-nums" } }, m.value.toFixed(1)), rating ? /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, color: col, fontStyle: "italic" } }, rating) : null, m.stale ? /* @__PURE__ */ React.createElement("span", { style: { fontSize: 10, color: "#E8853D" } }, "·stale") : null),
-        /* @__PURE__ */ React.createElement("div", { style: { position: "relative", height: 8, borderRadius: 4, overflow: "hidden", display: "flex", flex: "1 1 160px", minWidth: 120, maxWidth: 260 } }, zoneCols.map((zc, i) => /* @__PURE__ */ React.createElement("div", { key: i, style: { width: edges[i + 1] - edges[i] + "%", background: zc, opacity: 0.28 } })), /* @__PURE__ */ React.createElement("div", { style: { position: "absolute", left: "calc(" + (100 - m.value) + "% - 1.5px)", top: 0, bottom: 0, width: 3, background: col, borderRadius: 1.5 } })),
+        /* @__PURE__ */ React.createElement("div", { style: { position: "relative", height: 8, borderRadius: 4, overflow: "hidden", display: "flex", flex: "1 1 160px", minWidth: 120, maxWidth: 260 } }, zoneCols.map((zc, i) => /* @__PURE__ */ React.createElement("div", { key: i, style: { width: edges[i + 1] - edges[i] + "%", background: zc, opacity: 0.28 } })), trend3(det.previous_1_month, det.previous_1_week, m.value) && /* @__PURE__ */ React.createElement(TrendTail, { pts: [det.previous_1_month, det.previous_1_week, m.value], flip: true, barH: 8, color: col }), /* @__PURE__ */ React.createElement("div", { style: { position: "absolute", left: "calc(" + (100 - m.value) + "% - 1.5px)", top: 0, bottom: 0, width: 3, background: col, borderRadius: 1.5 } })),
         recent.length > 0 && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 10.5, color: C.faint, whiteSpace: "nowrap" } }, /* @__PURE__ */ React.createElement("span", { style: { color: C.muted } }, "last 3"), " ", recent.map((p, i) => /* @__PURE__ */ React.createElement("span", { key: p[0] }, i > 0 ? " · " : "", p[0], " ", /* @__PURE__ */ React.createElement("span", { style: { color: C.dim, fontVariantNumeric: "tabular-nums" } }, Math.round(p[1]))))),
         /* @__PURE__ */ React.createElement("div", { style: { marginLeft: "auto" } }, /* @__PURE__ */ React.createElement(Freshness, { computedAt: j.meta && j.meta.computed_at }))
       );
@@ -1063,6 +1139,7 @@
     function SplashInner() {
       const score = useScore();
       const live = useAiLive();
+      const hist = useHistory();
       const [open, setOpen] = useState(function() {
         return !splSeen() && splIsSmallPortrait();
       });
@@ -1142,6 +1219,9 @@
       const s = Math.max(0, Math.min(100, +d.headline_median));
       const t = s / 100, ang = SPL.a0 + t * SPL.sweep;
       const mk = splPol(SPL.r, ang), mkIn = splPol(SPL.r - 14, ang), mkOut = splPol(SPL.r + 16, ang);
+      const regT = regimeTrend(hist, d.headline_median);
+      const tRecent = regT ? Math.max(0, Math.min(1, regT[0] / 100)) : null;
+      const tLo = regT ? Math.min(tRecent, t) : 0, tHi = regT ? Math.max(tRecent, t) : 0;
       const mx = live && live.metrics || null;
       const fg = mx && mx.fear_greed, fgOk = validFearGreed(fg);
       const fgCol = fgOk ? fg.detail && FG_COLORS[fg.detail.rating] || C.dim : C.dim;
@@ -1249,6 +1329,7 @@
           /* @__PURE__ */ React.createElement("path", { d: splArc(0.6, 1), fill: "none", stroke: "#E05252", strokeOpacity: "0.28", strokeWidth: "11", strokeLinecap: "round" }),
           /* @__PURE__ */ React.createElement("path", { d: splArc(0, t), fill: "none", stroke: band.color, strokeOpacity: "0.22", strokeWidth: "11", strokeLinecap: "round", filter: "url(#splSoft)" }),
           /* @__PURE__ */ React.createElement("path", { d: splArc(0, t), fill: "none", stroke: band.color, strokeWidth: "4.5", strokeLinecap: "round" }),
+          regT && tHi - tLo > 0.012 && /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("path", { d: splArc(tLo, tHi), fill: "none", stroke: band.color, strokeOpacity: "0.5", strokeWidth: "12", strokeLinecap: "round", filter: "url(#splSoft)" }), /* @__PURE__ */ React.createElement("path", { d: splArc(tLo, tHi), fill: "none", stroke: band.color, strokeWidth: "4.5", strokeLinecap: "round" })),
           /* @__PURE__ */ React.createElement("line", { x1: mkIn[0].toFixed(1), y1: mkIn[1].toFixed(1), x2: mkOut[0].toFixed(1), y2: mkOut[1].toFixed(1), stroke: C.bg, strokeWidth: "4" }),
           /* @__PURE__ */ React.createElement("line", { x1: mkIn[0].toFixed(1), y1: mkIn[1].toFixed(1), x2: mkOut[0].toFixed(1), y2: mkOut[1].toFixed(1), stroke: band.color, strokeWidth: "2" }),
           /* @__PURE__ */ React.createElement("circle", { cx: mk[0].toFixed(1), cy: mk[1].toFixed(1), r: "7", fill: C.bg, stroke: band.color, strokeWidth: "2" }),
@@ -1259,7 +1340,7 @@
           /* @__PURE__ */ React.createElement("text", { x: "195", y: "164", textAnchor: "middle", fontFamily: "Georgia,'Times New Roman',serif", fontSize: "76", fill: band.color, style: { fontVariantNumeric: "tabular-nums" }, letterSpacing: "0.01em" }, Math.round(s)),
           /* @__PURE__ */ React.createElement("text", { x: "195", y: "188", textAnchor: "middle", fontSize: "12.5", letterSpacing: "4.6", fill: band.color }, band.label),
           /* @__PURE__ */ React.createElement("text", { x: "195", y: "208", textAnchor: "middle", fontSize: "10.5", fill: C.faint, style: { fontVariantNumeric: "tabular-nums" } }, "point est. " + d.point_score + (pair(d.iqr) ? " · IQR " + Math.round(d.iqr[0]) + "–" + Math.round(d.iqr[1]) : ""))
-        )), /* @__PURE__ */ React.createElement("div", { style: { margin: "2px 26px 0", paddingTop: 14, borderTop: "1px solid " + C.line, display: "flex", justifyContent: "space-between", alignItems: "flex-start" } }, /* @__PURE__ */ React.createElement("div", { style: { maxWidth: 210 } }, /* @__PURE__ */ React.createElement("div", { style: { ...BS.eyebrow } }, "Action band"), /* @__PURE__ */ React.createElement("div", { style: { ...BS.serif, fontSize: 16, color: band.color, marginTop: 4 } }, band.label), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: C.faint, marginTop: 3, lineHeight: 1.45 } }, bandBlurb)), pair(d.band_5_95) && /* @__PURE__ */ React.createElement("div", { style: { textAlign: "right" } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 10, letterSpacing: "0.1em", textTransform: "uppercase", color: C.faint } }, "90% band"), /* @__PURE__ */ React.createElement("div", { style: { ...BS.serif, fontSize: 16, color: C.dim, marginTop: 3, fontVariantNumeric: "tabular-nums" } }, Math.round(d.band_5_95[0]) + "–" + Math.round(d.band_5_95[1])))), /* @__PURE__ */ React.createElement("div", { style: { margin: "12px 26px 0", display: "flex", alignItems: "center", gap: 14, fontSize: 11, color: C.muted, flexWrap: "wrap" } }, /* @__PURE__ */ React.createElement("span", { style: { display: "inline-flex", alignItems: "center", gap: 6 } }, /* @__PURE__ */ React.createElement("span", { style: { width: 6, height: 6, borderRadius: 999, background: d.red_flag_count > 0 ? "#E0B458" : "#7fbf94" } }), "Red-flags ", /* @__PURE__ */ React.createElement("span", { style: { color: C.text, fontVariantNumeric: "tabular-nums" } }, d.red_flag_count, " / 4")), trend && /* @__PURE__ */ React.createElement("span", { style: { display: "inline-flex", alignItems: "center", gap: 14 } }, /* @__PURE__ */ React.createElement("span", { style: { color: "rgba(237,232,220,0.14)" } }, "|"), /* @__PURE__ */ React.createElement("span", null, "Faber trend", " ", /* @__PURE__ */ React.createElement("span", { style: { color: trend.SPY.faber_10mo === "IN" ? "#7fbf94" : "#E05252" } }, "SPY ", trend.SPY.faber_10mo), " · ", /* @__PURE__ */ React.createElement("span", { style: { color: trend.QQQ.faber_10mo === "IN" ? "#7fbf94" : "#E05252" } }, "QQQ ", trend.QQQ.faber_10mo)))), fgOk && /* @__PURE__ */ React.createElement("div", { style: { margin: "18px 26px 0" } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "baseline" } }, /* @__PURE__ */ React.createElement("div", { style: { ...BS.eyebrow } }, "CNN Fear & Greed"), /* @__PURE__ */ React.createElement("div", { style: { ...BS.serif, fontSize: 15, color: fgCol, fontVariantNumeric: "tabular-nums" } }, fg.value.toFixed(1), fg.detail && fg.detail.rating ? " · " + fg.detail.rating : "")), /* @__PURE__ */ React.createElement("div", { style: { position: "relative", height: 6, borderRadius: 999, marginTop: 9, background: "linear-gradient(90deg,#5AA9A3,#7fbf94,#9AA3B5,#C0564A,#E05252)" } }, /* @__PURE__ */ React.createElement("div", { style: { position: "absolute", top: -3, left: 100 - fg.value + "%", transform: "translateX(-50%)", width: 2, height: 12, borderRadius: 2, background: C.text, boxShadow: "0 0 0 2px " + C.bg } })), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", fontSize: 10, color: C.faint, marginTop: 6, fontVariantNumeric: "tabular-nums" } }, /* @__PURE__ */ React.createElement("span", null, fgRecent), /* @__PURE__ */ React.createElement("span", null, "0 — 100"))), chips.length > 0 && /* @__PURE__ */ React.createElement("div", { style: { margin: "18px 26px 0", display: "flex", flexWrap: "wrap", gap: 7 } }, chips.map((c) => /* @__PURE__ */ React.createElement("div", { key: c[0], title: c[1].title, style: { display: "inline-flex", alignItems: "center", gap: 7, border: "1px solid " + C.line, borderRadius: 999, padding: "6px 11px" } }, /* @__PURE__ */ React.createElement("span", { style: { width: 6, height: 6, borderRadius: 999, background: c[2] } }), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, color: C.muted } }, c[0]), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 12, color: C.text, fontVariantNumeric: "tabular-nums" } }, c[1].text, c[0] === "Gold" && goldTtm ? /* @__PURE__ */ React.createElement("span", { style: { color: "#7fbf94" } }, " ", goldTtm.text) : null, c[0] === "BTC" && btcDd ? /* @__PURE__ */ React.createElement("span", { style: { color: "#E05252" } }, " ", btcDd.text) : null)))), d.judgment_call && d.judgment_call.text && /* @__PURE__ */ React.createElement("div", { style: { margin: "18px 26px 0", ...BS.serif, fontStyle: "italic", fontSize: 13, lineHeight: 1.5, color: C.dim } }, d.judgment_call.text), /* @__PURE__ */ React.createElement("div", { style: { marginTop: "auto", padding: "18px 26px 0", fontSize: 9.5, lineHeight: 1.5, color: C.faint } }, "Heuristic regime read — a rules-based score, not a probability. Research, not advice or a recommendation."))
+        )), /* @__PURE__ */ React.createElement("div", { style: { margin: "2px 26px 0", paddingTop: 14, borderTop: "1px solid " + C.line, display: "flex", justifyContent: "space-between", alignItems: "flex-start" } }, /* @__PURE__ */ React.createElement("div", { style: { maxWidth: 210 } }, /* @__PURE__ */ React.createElement("div", { style: { ...BS.eyebrow } }, "Action band"), /* @__PURE__ */ React.createElement("div", { style: { ...BS.serif, fontSize: 16, color: band.color, marginTop: 4 } }, band.label), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: C.faint, marginTop: 3, lineHeight: 1.45 } }, bandBlurb)), pair(d.band_5_95) && /* @__PURE__ */ React.createElement("div", { style: { textAlign: "right" } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 10, letterSpacing: "0.1em", textTransform: "uppercase", color: C.faint } }, "90% band"), /* @__PURE__ */ React.createElement("div", { style: { ...BS.serif, fontSize: 16, color: C.dim, marginTop: 3, fontVariantNumeric: "tabular-nums" } }, Math.round(d.band_5_95[0]) + "–" + Math.round(d.band_5_95[1])))), /* @__PURE__ */ React.createElement("div", { style: { margin: "12px 26px 0", display: "flex", alignItems: "center", gap: 14, fontSize: 11, color: C.muted, flexWrap: "wrap" } }, /* @__PURE__ */ React.createElement("span", { style: { display: "inline-flex", alignItems: "center", gap: 6 } }, /* @__PURE__ */ React.createElement("span", { style: { width: 6, height: 6, borderRadius: 999, background: d.red_flag_count > 0 ? "#E0B458" : "#7fbf94" } }), "Red-flags ", /* @__PURE__ */ React.createElement("span", { style: { color: C.text, fontVariantNumeric: "tabular-nums" } }, d.red_flag_count, " / 4")), trend && /* @__PURE__ */ React.createElement("span", { style: { display: "inline-flex", alignItems: "center", gap: 14 } }, /* @__PURE__ */ React.createElement("span", { style: { color: "rgba(237,232,220,0.14)" } }, "|"), /* @__PURE__ */ React.createElement("span", null, "Faber trend", " ", /* @__PURE__ */ React.createElement("span", { style: { color: trend.SPY.faber_10mo === "IN" ? "#7fbf94" : "#E05252" } }, "SPY ", trend.SPY.faber_10mo), " · ", /* @__PURE__ */ React.createElement("span", { style: { color: trend.QQQ.faber_10mo === "IN" ? "#7fbf94" : "#E05252" } }, "QQQ ", trend.QQQ.faber_10mo)))), fgOk && /* @__PURE__ */ React.createElement("div", { style: { margin: "18px 26px 0" } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "baseline" } }, /* @__PURE__ */ React.createElement("div", { style: { ...BS.eyebrow } }, "CNN Fear & Greed"), /* @__PURE__ */ React.createElement("div", { style: { ...BS.serif, fontSize: 15, color: fgCol, fontVariantNumeric: "tabular-nums" } }, fg.value.toFixed(1), fg.detail && fg.detail.rating ? " · " + fg.detail.rating : "")), /* @__PURE__ */ React.createElement("div", { style: { position: "relative", height: 6, borderRadius: 999, marginTop: 9, background: "linear-gradient(90deg,#5AA9A3,#7fbf94,#9AA3B5,#C0564A,#E05252)" } }, trend3(fg.detail && fg.detail.previous_1_month, fg.detail && fg.detail.previous_1_week, fg.value) && /* @__PURE__ */ React.createElement(TrendTail, { pts: [fg.detail.previous_1_month, fg.detail.previous_1_week, fg.value], flip: true, barH: 6, color: fgCol }), /* @__PURE__ */ React.createElement("div", { style: { position: "absolute", top: -3, left: 100 - fg.value + "%", transform: "translateX(-50%)", width: 2, height: 12, borderRadius: 2, background: C.text, boxShadow: "0 0 0 2px " + C.bg } })), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", fontSize: 10, color: C.faint, marginTop: 6, fontVariantNumeric: "tabular-nums" } }, /* @__PURE__ */ React.createElement("span", null, fgRecent), /* @__PURE__ */ React.createElement("span", null, "0 — 100"))), chips.length > 0 && /* @__PURE__ */ React.createElement("div", { style: { margin: "18px 26px 0", display: "flex", flexWrap: "wrap", gap: 7 } }, chips.map((c) => /* @__PURE__ */ React.createElement("div", { key: c[0], title: c[1].title, style: { display: "inline-flex", alignItems: "center", gap: 7, border: "1px solid " + C.line, borderRadius: 999, padding: "6px 11px" } }, /* @__PURE__ */ React.createElement("span", { style: { width: 6, height: 6, borderRadius: 999, background: c[2] } }), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, color: C.muted } }, c[0]), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 12, color: C.text, fontVariantNumeric: "tabular-nums" } }, c[1].text, c[0] === "Gold" && goldTtm ? /* @__PURE__ */ React.createElement("span", { style: { color: "#7fbf94" } }, " ", goldTtm.text) : null, c[0] === "BTC" && btcDd ? /* @__PURE__ */ React.createElement("span", { style: { color: "#E05252" } }, " ", btcDd.text) : null)))), d.judgment_call && d.judgment_call.text && /* @__PURE__ */ React.createElement("div", { style: { margin: "18px 26px 0", ...BS.serif, fontStyle: "italic", fontSize: 13, lineHeight: 1.5, color: C.dim } }, d.judgment_call.text), /* @__PURE__ */ React.createElement("div", { style: { marginTop: "auto", padding: "18px 26px 0", fontSize: 9.5, lineHeight: 1.5, color: C.faint } }, "Heuristic regime read — a rules-based score, not a probability. Research, not advice or a recommendation."))
       );
     }
     function Splash() {

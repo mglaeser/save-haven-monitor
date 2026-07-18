@@ -420,7 +420,7 @@
   }
 
   // Accessible 0–100 gauge: 3 zones (<45,45–60,≥60), IQR band, median marker.
-  function GaugeBar({ value, iqr, band, height }) {
+  function GaugeBar({ value, iqr, band, height, trend }) {
     const b = bandOf(band);
     const clamp = (x) => Math.max(0, Math.min(100, x));
     const h = height || 12;
@@ -435,8 +435,94 @@
           <div style={{ position: "absolute", top: 0, bottom: 0, left: clamp(iqr[0]) + "%", width: (clamp(iqr[1]) - clamp(iqr[0])) + "%",
             background: b.color, opacity: 0.35 }} />
         )}
+        {trend3(trend && trend[0], trend && trend[1], trend && trend[2]) && (
+          <TrendTail pts={trend} flip={false} barH={h} color={b.color} />
+        )}
         <div style={{ position: "absolute", top: -2, bottom: -2, left: "calc(" + clamp(value) + "% - 1.5px)", width: 3,
           background: b.color, borderRadius: 2, boxShadow: "0 0 0 1px rgba(11,17,31,0.6)" }} />
+      </div>
+    );
+  }
+
+  /* ---------- V2 "Kielwasser" recent-trend signal (shared by every bar) ----------
+     A fading tail from the value three readings ago to the current marker, in the
+     direction of the move. Tail LENGTH ∝ |change over the last 3 points| (small change
+     → short tail, big change → long tail); a small sine WAVE is added ONLY on a reversal
+     (up-then-down / down-then-up) in those 3 points, its amplitude ∝ the overshoot. It is
+     decorative + data-driven: renders nothing when the change is negligible or the three
+     points aren't all available. It measures its own width so the tail/wave/chevron stay
+     undistorted on any bar size (no preserveAspectRatio skew). No new egress, no store. */
+  let __ttUid = 0;
+  function trend3(a, b, c) { return isNum(a) && isNum(b) && isNum(c) ? [a, b, c] : null; }
+  // last-3 regime medians from the score-history payload, re-anchored to end at the live marker
+  function regimeTrend(hist, current) {
+    const arr = hist && hist.json && Array.isArray(hist.json.data) ? hist.json.data : null;
+    if (!arr || arr.length < 3) return null;
+    const m = arr.slice(-3).map((r) => (r && isNum(r.median) ? r.median : NaN));
+    if (!m.every(isNum)) return null;
+    return [m[0], m[1], isNum(current) ? current : m[2]];
+  }
+  function TrendTail({ pts, flip, barH, color }) {
+    const ref = useRef(null);
+    const gidRef = useRef(null);
+    if (gidRef.current == null) gidRef.current = "tt" + (++__ttUid);
+    const [w, setW] = useState(0);
+    useEffect(function () {
+      const el = ref.current;
+      if (!el) return undefined;
+      const measure = function () { setW(el.clientWidth || 0); };
+      measure();
+      let ro;
+      try { ro = new ResizeObserver(measure); ro.observe(el); } catch (e) {}
+      window.addEventListener("resize", measure);
+      return function () { try { ro && ro.disconnect(); } catch (e) {} window.removeEventListener("resize", measure); };
+    }, []);
+    const geom = useMemo(function () {
+      if (!pts || !w) return null;
+      const clamp = (x) => Math.max(0, Math.min(100, x));
+      const xOf = (v) => ((flip ? 100 - clamp(v) : clamp(v)) / 100) * w;
+      const x0 = xOf(pts[0]), x2 = xOf(pts[2]);
+      if (Math.abs(x2 - x0) < 2) return null; // negligible move → no signal
+      const dir = x2 >= x0 ? 1 : -1, yc = barH / 2;
+      const aa = pts[1] - pts[0], bb = pts[2] - pts[1];
+      const reversed = (aa > 0 && bb < 0) || (aa < 0 && bb > 0);
+      const ov = Math.abs(pts[1] - (pts[0] + pts[2]) / 2);
+      const amp = reversed ? Math.min(barH * 0.4, ov * 0.34) : 0;
+      let d;
+      if (amp < 0.4) {
+        d = "M" + x0.toFixed(1) + " " + yc + " L" + x2.toFixed(1) + " " + yc;
+      } else {
+        const n = 30, len = Math.abs(x2 - x0), humps = 2.5;
+        d = "";
+        for (let i = 0; i <= n; i++) {
+          const t = i / n, x = x0 + dir * len * t,
+            yy = yc + Math.sin(t * humps * Math.PI) * amp * (0.35 + 0.65 * Math.sin(t * Math.PI));
+          d += (i ? " L" : "M") + x.toFixed(1) + " " + yy.toFixed(1);
+        }
+      }
+      const hh = Math.min(barH * 0.42, 3.6), hl = 4.6;
+      const head = "M" + x2.toFixed(1) + " " + (yc - hh).toFixed(1) + " L" + (x2 + dir * hl).toFixed(1) + " " + yc + " L" + x2.toFixed(1) + " " + (yc + hh).toFixed(1);
+      return { x0, x2, d, head, sw: Math.max(3, barH * 0.5), hw: Math.max(1.6, barH * 0.24) };
+    }, [pts, w, flip, barH]);
+    const gid = gidRef.current;
+    // The tail is drawn in the marker's cream ink (not the zone hue) so it reads as the marker's own
+    // "wake" and stays legible on every zone — a zone-matched tail vanishes on its own colour.
+    const ink = C.text;
+    return (
+      <div ref={ref} aria-hidden="true" style={{ position: "absolute", inset: 0, pointerEvents: "none" }}>
+        {geom && (
+          <svg width={w} height={barH} style={{ display: "block" }}>
+            <defs>
+              <linearGradient id={gid} gradientUnits="userSpaceOnUse" x1={geom.x0} y1="0" x2={geom.x2} y2="0">
+                <stop offset="0" stopColor={ink} stopOpacity="0.18" />
+                <stop offset="0.55" stopColor={ink} stopOpacity="0.66" />
+                <stop offset="1" stopColor={ink} stopOpacity="0.96" />
+              </linearGradient>
+            </defs>
+            <path d={geom.d} fill="none" stroke={"url(#" + gid + ")"} strokeWidth={geom.sw} strokeLinecap="round" />
+            <path d={geom.head} fill="none" stroke={ink} strokeWidth={geom.hw} strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        )}
       </div>
     );
   }
@@ -493,11 +579,13 @@
 
   function Strip({ goToDetail }) {
     const s = useScore();
+    const hist = useHistory();
     if (s.loading) return <StripSkeleton />;
     if (s.notReady) return <StripWarmingUp />;
     if (s.error || !s.json) return <StripUnavailable />;
     const d = s.json.data, meta = s.json.meta, b = bandOf(d.action_band);
     const trend = d.trend_states;
+    const regTrend = regimeTrend(hist, d.headline_median);
     return (
       <StripShell onClick={goToDetail}>
         <div style={{ display: "flex", flexDirection: "column", gap: 4, flex: "1 1 240px", minWidth: 200 }}>
@@ -508,7 +596,7 @@
               padding: "1px 7px", borderRadius: 5, background: b.zone }}>{b.label}</span>
             <span style={{ fontSize: 9.5, color: C.faint }}>{COPY.micro}</span>
           </div>
-          <GaugeBar value={d.headline_median} iqr={d.iqr} band={d.action_band} />
+          <GaugeBar value={d.headline_median} iqr={d.iqr} band={d.action_band} trend={regTrend} />
         </div>
         <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
           <Pill color={d.red_flag_count >= 3 ? "#E05252" : d.red_flag_count > 0 ? "#E0B458" : C.muted}
@@ -1046,6 +1134,9 @@
           {zoneCols.map((zc, i) => (
             <div key={i} style={{ width: (edges[i + 1] - edges[i]) + "%", background: zc, opacity: 0.28 }} />
           ))}
+          {trend3(det.previous_1_month, det.previous_1_week, m.value) && (
+            <TrendTail pts={[det.previous_1_month, det.previous_1_week, m.value]} flip={true} barH={8} color={col} />
+          )}
           <div style={{ position: "absolute", left: "calc(" + (100 - m.value) + "% - 1.5px)", top: 0, bottom: 0, width: 3, background: col, borderRadius: 1.5 }} />
         </div>
         {deltas.length > 0 && (
@@ -1157,6 +1248,9 @@
           {zoneCols.map((zc, i) => (
             <div key={i} style={{ width: (edges[i + 1] - edges[i]) + "%", background: zc, opacity: 0.28 }} />
           ))}
+          {trend3(det.previous_1_month, det.previous_1_week, m.value) && (
+            <TrendTail pts={[det.previous_1_month, det.previous_1_week, m.value]} flip={true} barH={8} color={col} />
+          )}
           <div style={{ position: "absolute", left: "calc(" + (100 - m.value) + "% - 1.5px)", top: 0, bottom: 0, width: 3, background: col, borderRadius: 1.5 }} />
         </div>
         {recent.length > 0 && (
@@ -1203,6 +1297,7 @@
   function SplashInner() {
     const score = useScore();
     const live = useAiLive();
+    const hist = useHistory();
     const [open, setOpen] = useState(function () { return !splSeen() && splIsSmallPortrait(); }); // shown once on opening
     const [portrait, setPortrait] = useState(splIsSmallPortrait);
     const [dismissed, setDismissed] = useState(splSeen);
@@ -1241,6 +1336,11 @@
     const s = Math.max(0, Math.min(100, +d.headline_median));
     const t = s / 100, ang = SPL.a0 + t * SPL.sweep;
     const mk = splPol(SPL.r, ang), mkIn = splPol(SPL.r - 14, ang), mkOut = splPol(SPL.r + 16, ang);
+    // recent-move highlight (V2 "Kielwasser" on the arc): brighten the segment the score has
+    // traversed over the last 3 readings, so where it just came from reads at a glance.
+    const regT = regimeTrend(hist, d.headline_median);
+    const tRecent = regT ? Math.max(0, Math.min(1, regT[0] / 100)) : null;
+    const tLo = regT ? Math.min(tRecent, t) : 0, tHi = regT ? Math.max(tRecent, t) : 0;
     const mx = (live && live.metrics) || null;
     const fg = mx && mx.fear_greed, fgOk = validFearGreed(fg);
     const fgCol = fgOk ? ((fg.detail && FG_COLORS[fg.detail.rating]) || C.dim) : C.dim;
@@ -1299,6 +1399,12 @@
               <path d={splArc(0.6, 1)} fill="none" stroke="#E05252" strokeOpacity="0.28" strokeWidth="11" strokeLinecap="round" />
               <path d={splArc(0, t)} fill="none" stroke={band.color} strokeOpacity="0.22" strokeWidth="11" strokeLinecap="round" filter="url(#splSoft)" />
               <path d={splArc(0, t)} fill="none" stroke={band.color} strokeWidth="4.5" strokeLinecap="round" />
+              {regT && tHi - tLo > 0.012 && (
+                <>
+                  <path d={splArc(tLo, tHi)} fill="none" stroke={band.color} strokeOpacity="0.5" strokeWidth="12" strokeLinecap="round" filter="url(#splSoft)" />
+                  <path d={splArc(tLo, tHi)} fill="none" stroke={band.color} strokeWidth="4.5" strokeLinecap="round" />
+                </>
+              )}
               <line x1={mkIn[0].toFixed(1)} y1={mkIn[1].toFixed(1)} x2={mkOut[0].toFixed(1)} y2={mkOut[1].toFixed(1)} stroke={C.bg} strokeWidth="4" />
               <line x1={mkIn[0].toFixed(1)} y1={mkIn[1].toFixed(1)} x2={mkOut[0].toFixed(1)} y2={mkOut[1].toFixed(1)} stroke={band.color} strokeWidth="2" />
               <circle cx={mk[0].toFixed(1)} cy={mk[1].toFixed(1)} r="7" fill={C.bg} stroke={band.color} strokeWidth="2" />
@@ -1343,6 +1449,9 @@
                 <div style={{ ...BS.serif, fontSize: 15, color: fgCol, fontVariantNumeric: "tabular-nums" }}>{fg.value.toFixed(1)}{fg.detail && fg.detail.rating ? " · " + fg.detail.rating : ""}</div>
               </div>
               <div style={{ position: "relative", height: 6, borderRadius: 999, marginTop: 9, background: "linear-gradient(90deg,#5AA9A3,#7fbf94,#9AA3B5,#C0564A,#E05252)" }}>
+                {trend3(fg.detail && fg.detail.previous_1_month, fg.detail && fg.detail.previous_1_week, fg.value) && (
+                  <TrendTail pts={[fg.detail.previous_1_month, fg.detail.previous_1_week, fg.value]} flip={true} barH={6} color={fgCol} />
+                )}
                 <div style={{ position: "absolute", top: -3, left: (100 - fg.value) + "%", transform: "translateX(-50%)", width: 2, height: 12, borderRadius: 2, background: C.text, boxShadow: "0 0 0 2px " + C.bg }} />
               </div>
               <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: C.faint, marginTop: 6, fontVariantNumeric: "tabular-nums" }}>
