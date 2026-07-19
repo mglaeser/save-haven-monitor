@@ -10,12 +10,18 @@ browser must fetch from a third party. Migration order and controls: `rewrite/00
 
 **Current served state (compiled-ahead — vendors self-hosted, no in-browser Babel).** The browser
 loads self-hosted, SRI-pinned vendors from `./vendor/*` (byte-identical to the former unpkg bytes)
-plus the CI-compiled `./bubblegauge.js` + `./dashboard.js` (esbuild transpile of the `.jsx` SOURCES
-via `build.js`, pinned esbuild 0.19.12). No unpkg, no `@babel/standalone`, no runtime third-party
-fetch. `verify/tests/66-compiled-fresh` proves the committed `.js` is byte-identical to a fresh build
-of the `.jsx`, so source and served are provably the same program; `40-sri-recompute` verifies the
-vendor bytes offline. Build for preview: `node build.js` then `python3 -m http.server 8000`. The
-`.jsx` files remain the source of truth (golden data hash, mutation, claims run on them).
+plus the CI-compiled `./bubblegauge.js` + `./dashboard.js` (esbuild transpile **+ minify** of the
+`src/*.tsx` SOURCES via `build.js`, pinned esbuild 0.19.12). No unpkg, no `@babel/standalone`, no
+runtime third-party fetch. `verify/tests/66-compiled-fresh` proves the committed `.js` is byte-identical
+to a fresh (minified) build of the sources, so source and served are provably the same program;
+`40-sri-recompute` verifies the vendor bytes offline. `verify/tests/71-perf-budget` is a per-deploy
+performance guardrail: the compiled bundles must stay minified and within a byte budget (per-file +
+total served-JS page weight), and index.html must load the production React builds — a breach fails the
+gate, so no deploy silently regresses page-load. Build for preview: `node build.js` then
+`python3 -m http.server 8000`. The `src/` files remain the source of truth (golden data hash, mutation,
+claims run on them). NOTE: HTTP cache-TTL headers and CDN edge caching are set by the host/CDN, not in
+this repo (GitHub Pages serves fixed relative-URL assets); repo-side perf levers are minification + the
+byte budget above.
 
 **The verification harness (`verify/`) + the frozen acceptance suite (`acceptance/`) are CI-only.**
 They have a committed lockfile (`verify/package-lock.json`, exact-pinned, installed via

@@ -25,8 +25,8 @@
     },
     {
       "file": "dashboard.js",
-      "sha256": "68169d96fc7b71e915fe56f80705fa2f15b269cbcb3e26bd5311dea91c7edb17",
-      "role": "served compiled crisis-atlas (esbuild transpile of dashboard.jsx, IIFE-wrapped)",
+      "sha256": "71da06c06b24199d4e2d29b160bc37e11da0168a9ff0b178b6ac57f271fc01a7",
+      "role": "served compiled crisis-atlas (esbuild transpile + minify of src/dashboard.tsx, IIFE-wrapped)",
       "derives_from_spec": "rewrite/00-recommendation.md + DR-006 (compiled-ahead)",
       "test_evidence": "verify/tests/66-compiled-fresh (bundle==src) + 30/62/63",
       "adversarial_verification": "frozen acceptance suite (35/0 against the modularized bundle) + Track C seeds",
@@ -34,8 +34,8 @@
     },
     {
       "file": "bubblegauge.js",
-      "sha256": "6a068e5695c0c184177bcb5693bedeafbd2a1c88c452bd49d78f368eaef9b37d",
-      "role": "served compiled gated integration (esbuild transpile of bubblegauge.jsx)",
+      "sha256": "6434c80d19694434d20f869acaae8f0db81784c0a9e86eea0cb7f2607e03416b",
+      "role": "served compiled gated integration (esbuild transpile + minify of src/bubblegauge.tsx)",
       "derives_from_spec": "rewrite/00-recommendation.md + DR-006 (compiled-ahead)",
       "test_evidence": "verify/tests/66-compiled-fresh (bundle==src) + 30/62/63",
       "adversarial_verification": "frozen acceptance suite (35/0 against the modularized bundle) + Track C seeds",
