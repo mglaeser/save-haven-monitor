@@ -30,7 +30,7 @@ else {
   // golden hash + core invariants + the deterministic security controls must be PASS (not merely
   // non-fail). These are never "offline", so requiring PASS here is strict but always satisfiable.
   // (In the gate self-test's minimal results.json these files are simply absent → not checked.)
-  const mustPass = r.results.filter((x) => /golden|data-invariants|static-security|provenance|security-surface/.test(x.file));
+  const mustPass = r.results.filter((x) => /golden|data-invariants|static-security|provenance|security-surface|perf-budget/.test(x.file));
   for (const x of mustPass) if (x.status !== "PASS") fail(`required check not PASS: ${x.file} :: ${x.name} (${x.status})`);
 }
 

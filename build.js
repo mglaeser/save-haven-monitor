@@ -20,7 +20,10 @@ const COMMON = {
   jsx: "transform",
   jsxFactory: "React.createElement",
   jsxFragment: "React.Fragment",
-  minify: false,
+  // Minify the CI-compiled output (DR-006 permits a build step; browser never transpiles). Deterministic
+  // for a pinned esbuild, so 66-compiled-fresh still proves committed == fresh build. Shrinks payload +
+  // parse time; guarded by verify/tests/71-perf-budget (minified + under a size budget on every deploy).
+  minify: true,
   charset: "utf8",
   legalComments: "none",
   logLevel: "warning",
