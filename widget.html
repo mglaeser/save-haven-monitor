@@ -172,8 +172,18 @@ function render(){
   tail(document.querySelector(".bar.reg"),d.scoreTrend,false);
   tail(document.querySelector(".bar.fg"),(d.fg&&num(d.fg.value))?d.fgTrend:null,true);
 }
-function rel(iso){var t=Date.parse(iso);if(!isFinite(t))return String(iso);
-  var h=(Date.now()-t)/36e5;return h<1?"just now":h<48?Math.round(h)+"h ago":Math.round(h/24)+"d ago";}
+function rel(iso){
+  var date=new Date(iso);if(!isFinite(date.getTime()))return String(iso);
+  // Date's local getters intentionally use the visitor's/device's timezone.
+  var now=new Date(),day=864e5;
+  var dateDay=Date.UTC(date.getFullYear(),date.getMonth(),date.getDate());
+  var todayDay=Date.UTC(now.getFullYear(),now.getMonth(),now.getDate());
+  var days=Math.round((todayDay-dateDay)/day);
+  var time=(date.getHours()<10?"0":"")+date.getHours()+":"+(date.getMinutes()<10?"0":"")+date.getMinutes()+"h";
+  if(days===0)return "today "+time;
+  if(days===1)return "yesterday "+time;
+  return date.toLocaleDateString(undefined,{day:"numeric",month:"short"})+" "+time;
+}
 
 /* ---- optional live fetch: the ONLY network call, to the gated API_BASE ---- */
 var LIVE_READY=!ACT.live;
