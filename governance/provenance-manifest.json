@@ -16,7 +16,7 @@
     },
     {
       "file": "widget.html",
-      "sha256": "c05ef90954930781aafa7cc17148a7c232ef06b9bb0abc98ef59ca7ae8ace07f",
+      "sha256": "649780910cdfe13e739e7e7b0fa39cf4f6a22461ded9eb4409580ece88f60e20",
       "role": "served self-contained iOS JS-Widget (WidgetWeb spec) — stateless; gated ?status-api fetch to the constructed API_BASE only; no cookies/localStorage/vendors",
       "derives_from_spec": "DR-008 (widget served from Pages) + INTEGRATION_NOTES (gating) + github.com/Villy21/JsWidget spec",
       "test_evidence": "verify/tests/62-security-surface (in SERVED: gated fetch, no cookie/localStorage/telemetry/AI-client), 61-provenance (this hash)",
