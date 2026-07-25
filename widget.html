@@ -93,7 +93,7 @@ var GREEN="#7fbf94", RED="#C0564A";
 
 var SAMPLE={score:40,band:"hold",iqr:[34,47],redFlags:0,spy:"IN",qqq:"IN",
   fg:{value:46,rating:"neutral"},cape:42.2,goldTtm:22.9,btcDd:-44,asOf:"sample",
-  scoreTrend:[37,39,40],fgTrend:[31,44,46]}; // last-3 points → V2 trend tails
+  scoreTrend:[37,39,40],fgTrend:[29,31,46]}; // last-3 OBSERVED snapshots (score history / F&G feed series) → V2 trend tails
 var DATA=SAMPLE;
 
 function span(cls,txt){var s=document.createElement("span");if(cls)s.className=cls;if(txt!=null)s.textContent=txt;return s;}
@@ -202,8 +202,15 @@ if(ACT.live){
       var hi=res[2]&&res[2].data, sT=null;
       if(Array.isArray(hi)&&hi.length>=3){ var mm=hi.slice(-3).map(function(r){return r&&num(r.median)?r.median:NaN;});
         if(mm.every(num)) sT=[mm[0],mm[1],num(sc&&sc.headline_median)?sc.headline_median:mm[2]]; }
-      var det=fg&&fg.detail, fT=(det&&num(det.previous_1_month)&&num(det.previous_1_week)&&fg.available&&num(fg.value))
-        ?[det.previous_1_month,det.previous_1_week,fg.value]:null;
+      // F&G trend from OBSERVED snapshots: the feed's series (server-side-snapshotted history — the
+      // same series the dashboard's history strip draws), re-anchored to the live reading. The CNN
+      // previous_close/1_week/1_month REFERENCE fields are deliberately NOT used (owner decision).
+      // Null-safe: null points skipped (never 0); < 3 observed points -> no arrow.
+      var sfg=res[1]&&res[1].data&&res[1].data.series&&res[1].data.series.fear_greed, fT=null;
+      if(sfg&&sfg.available!==false&&Array.isArray(sfg.points)&&fg&&fg.available&&num(fg.value)){
+        var vv=[]; for(var i=0;i<sfg.points.length;i++){var p=sfg.points[i]; if(p&&num(p.value)) vv.push(p.value);}
+        if(vv.length>=3) fT=[vv[vv.length-3],vv[vv.length-2],fg.value];
+      }
       if(sc){
         DATA={score:sc.headline_median,band:sc.action_band,iqr:sc.iqr||null,redFlags:sc.red_flag_count,
           spy:ts&&ts.SPY&&ts.SPY.faber_10mo, qqq:ts&&ts.QQQ&&ts.QQQ.faber_10mo,

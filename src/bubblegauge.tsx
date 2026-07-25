@@ -462,6 +462,19 @@
     if (!m.every(isNum)) return null;
     return [m[0], m[1], isNum(current) ? current : m[2]];
   }
+  // last-3 OBSERVED Fear & Greed snapshots from the feed's series (the same server-side-snapshotted
+  // series the history strip draws), re-anchored to end at the live reading — so the arrow always
+  // agrees with the drawn history. The CNN previous_close/1_week/1_month REFERENCE fields are
+  // deliberately NOT used for the trend (owner decision, 2026-07): observed snapshots only.
+  // Null-safe: null points are skipped (never treated as 0); < 3 observed points → no signal.
+  function fgSeriesTrend(series, current) {
+    const pts = series && series.available !== false && Array.isArray(series.points) ? series.points : null;
+    if (!pts || !isNum(current)) return null;
+    const vals = [];
+    for (const p of pts) if (p && isNum(p.value)) vals.push(p.value);
+    if (vals.length < 3) return null;
+    return [vals[vals.length - 3], vals[vals.length - 2], current];
+  }
   function TrendTail({ pts, flip, barH }) {
     const ref = useRef(null);
     const gidRef = useRef(null);
@@ -519,7 +532,7 @@
     return (
       <div ref={ref} aria-hidden="true" style={{ position: "absolute", inset: 0, pointerEvents: "none" }}>
         {geom && (
-          <svg width={w} height={barH} style={{ display: "block" }}>
+          <svg width={w} height={barH} style={{ display: "block", overflow: "visible" }}>
             <defs>
               <linearGradient id={gid} gradientUnits="userSpaceOnUse" x1={geom.x0} y1="0" x2={geom.x2} y2="0">
                 <stop offset="0" stopColor={ink} stopOpacity="0.18" />
@@ -1117,6 +1130,7 @@
     const deltas = [["prev close", det.previous_close], ["1w", det.previous_1_week], ["1m", det.previous_1_month], ["1y", det.previous_1_year]]
       .filter((p) => isNum(p[1])); // null ≠ zero: a null comparison is skipped, never shown as 0
     const s = live.fgSeries;
+    const fgT = fgSeriesTrend(s, m.value); // arrow from OBSERVED snapshots (same series as the strip below)
     const pts = (s && s.available && Array.isArray(s.points)) ? s.points : null;
     // null-safe polyline segments: split wherever value == null (no interpolation across gaps)
     let segs = [];
@@ -1142,9 +1156,7 @@
           {zoneCols.map((zc, i) => (
             <div key={i} style={{ width: (edges[i + 1] - edges[i]) + "%", background: zc, opacity: 0.28 }} />
           ))}
-          {trend3(det.previous_1_month, det.previous_1_week, m.value) && (
-            <TrendTail pts={[det.previous_1_month, det.previous_1_week, m.value]} flip={true} barH={8} />
-          )}
+          {fgT && <TrendTail pts={fgT} flip={true} barH={8} />}
           <div style={{ position: "absolute", left: "calc(" + (100 - m.value) + "% - 1.5px)", top: 0, bottom: 0, width: 3, background: col, borderRadius: 1.5 }} />
         </div>
         {deltas.length > 0 && (
@@ -1240,6 +1252,9 @@
     // "the last three values": the three most recent CNN reference readings. null is skipped, never a 0.
     const recent = [["prev close", det.previous_close], ["1w", det.previous_1_week], ["1m", det.previous_1_month]]
       .filter((p) => isNum(p[1]));
+    // arrow from OBSERVED snapshots (feed series — same source the F&G block's history strip draws),
+    // NOT the CNN reference fields above (those stay as the informational "last 3" text row).
+    const fgT = fgSeriesTrend(j.data.series && j.data.series.fear_greed, m.value);
     const tip = "CNN Fear & Greed · as of " + (m.as_of || "?") + (det.timestamp ? " (" + det.timestamp + ")" : "") +
       " · " + (m.source || "cnn:fear_greed") + " · unofficial CNN endpoint — context only, does not feed the bubble score" + (m.note ? " · " + m.note : "");
     return (
@@ -1256,9 +1271,7 @@
           {zoneCols.map((zc, i) => (
             <div key={i} style={{ width: (edges[i + 1] - edges[i]) + "%", background: zc, opacity: 0.28 }} />
           ))}
-          {trend3(det.previous_1_month, det.previous_1_week, m.value) && (
-            <TrendTail pts={[det.previous_1_month, det.previous_1_week, m.value]} flip={true} barH={8} />
-          )}
+          {fgT && <TrendTail pts={fgT} flip={true} barH={8} />}
           <div style={{ position: "absolute", left: "calc(" + (100 - m.value) + "% - 1.5px)", top: 0, bottom: 0, width: 3, background: col, borderRadius: 1.5 }} />
         </div>
         {recent.length > 0 && (
@@ -1369,6 +1382,8 @@
     const fgCol = fgOk ? ((fg.detail && FG_COLORS[fg.detail.rating]) || C.dim) : C.dim;
     const fgRecent = fgOk ? [["prev", fg.detail && fg.detail.previous_close], ["1w", fg.detail && fg.detail.previous_1_week], ["1m", fg.detail && fg.detail.previous_1_month]]
       .filter((p) => isNum(p[1])).map((p) => p[0] + " " + Math.round(p[1])).join(" · ") : "";
+    // arrow from OBSERVED snapshots (feed series), not the CNN reference fields (which stay as text)
+    const fgT = fgOk ? fgSeriesTrend(live && live.fgSeries, fg.value) : null;
     const trend = d.trend_states;
     const bandBlurb = { hold: "Structural risk present, not acute.", trim: "Fragility elevated — the trend rule is the trigger.", "de-risk": "Fragility high, or a hard override fired." }[d.action_band] || "Not scored — inputs degraded.";
     const chips = [
@@ -1473,9 +1488,7 @@
                 <div style={{ ...BS.serif, fontSize: 15, color: fgCol, fontVariantNumeric: "tabular-nums" }}>{fg.value.toFixed(1)}{fg.detail && fg.detail.rating ? " · " + fg.detail.rating : ""}</div>
               </div>
               <div style={{ position: "relative", height: 6, borderRadius: 999, marginTop: 9, background: "linear-gradient(90deg,#5AA9A3,#7fbf94,#9AA3B5,#C0564A,#E05252)" }}>
-                {trend3(fg.detail && fg.detail.previous_1_month, fg.detail && fg.detail.previous_1_week, fg.value) && (
-                  <TrendTail pts={[fg.detail.previous_1_month, fg.detail.previous_1_week, fg.value]} flip={true} barH={6} />
-                )}
+                {fgT && <TrendTail pts={fgT} flip={true} barH={6} />}
                 <div style={{ position: "absolute", top: -3, left: (100 - fg.value) + "%", transform: "translateX(-50%)", width: 2, height: 12, borderRadius: 2, background: C.text, boxShadow: "0 0 0 2px " + C.bg }} />
               </div>
               <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: C.faint, marginTop: 6, fontVariantNumeric: "tabular-nums" }}>
