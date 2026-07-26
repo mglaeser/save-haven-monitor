@@ -467,8 +467,10 @@
   // agrees with the drawn history. The CNN previous_close/1_week/1_month REFERENCE fields are
   // deliberately NOT used for the trend (owner decision, 2026-07): observed snapshots only.
   // Null-safe: null points are skipped (never treated as 0); < 3 observed points → no signal.
+  // Availability gate is TRUTHY series.available — the same gate the history strip uses, so the
+  // arrow can never render over a strip that draws nothing (review finding, aligned).
   function fgSeriesTrend(series, current) {
-    const pts = series && series.available !== false && Array.isArray(series.points) ? series.points : null;
+    const pts = series && series.available && Array.isArray(series.points) ? series.points : null;
     if (!pts || !isNum(current)) return null;
     const vals = [];
     for (const p of pts) if (p && isNum(p.value)) vals.push(p.value);
@@ -1233,8 +1235,9 @@
   function AiLivePanel() { return <Boundary fallback={null}><AiLiveInner /></Boundary>; }
 
   // Compact CNN Fear & Greed STATUS line for the top strip area (feed-sourced, gated). Surfaces the
-  // current reading + rating on its own 0-100 zone gauge, plus THE LAST THREE readings (previous
-  // close / 1 week / 1 month — the three most recent CNN reference values, null-safe: null ≠ zero).
+  // current reading + rating on its own 0-100 zone gauge, plus CNN's reference readings as text
+  // (previous close / 1 week / 1 month, null-safe: null ≠ zero). The trend ARROW on the gauge is
+  // sourced from the OBSERVED snapshot series (fgSeriesTrend), not from those reference fields.
   // Same axis discipline as FearGreedBlock: own 0-100 scale, never rebased, never wired into AI_MAP;
   // the value is the server-side snapshot (the browser never calls CNN). No-ops (renders nothing)
   // when the feed carries no valid fear_greed metric, so the failure shape drops only this line.
@@ -1249,11 +1252,12 @@
     const col = (rating && FG_COLORS[rating]) || C.dim;
     const zoneCols = ["#5AA9A3", "#7fbf94", "#9AA3B5", "#C0564A", "#E05252"]; // flipped: red on the right (matches the regime gauge)
     const edges = [0].concat(FG_ZONES, [100]);
-    // "the last three values": the three most recent CNN reference readings. null is skipped, never a 0.
+    // CNN's own reference readings — informational text only; the ARROW's source is the observed
+    // snapshot series below (fgSeriesTrend), NOT these. null is skipped, never a 0.
     const recent = [["prev close", det.previous_close], ["1w", det.previous_1_week], ["1m", det.previous_1_month]]
       .filter((p) => isNum(p[1]));
     // arrow from OBSERVED snapshots (feed series — same source the F&G block's history strip draws),
-    // NOT the CNN reference fields above (those stay as the informational "last 3" text row).
+    // NOT the CNN reference fields above (those stay as the informational "CNN refs" text row).
     const fgT = fgSeriesTrend(j.data.series && j.data.series.fear_greed, m.value);
     const tip = "CNN Fear & Greed · as of " + (m.as_of || "?") + (det.timestamp ? " (" + det.timestamp + ")" : "") +
       " · " + (m.source || "cnn:fear_greed") + " · unofficial CNN endpoint — context only, does not feed the bubble score" + (m.note ? " · " + m.note : "");
@@ -1276,7 +1280,7 @@
         </div>
         {recent.length > 0 && (
           <div style={{ fontSize: 10.5, color: C.faint, whiteSpace: "nowrap" }}>
-            <span style={{ color: C.muted }}>last 3</span>{" "}
+            <span style={{ color: C.muted }}>CNN refs</span>{" "}
             {recent.map((p, i) => (
               <span key={p[0]}>{i > 0 ? " · " : ""}{p[0]} <span style={{ color: C.dim, fontVariantNumeric: "tabular-nums" }}>{Math.round(p[1])}</span></span>
             ))}
