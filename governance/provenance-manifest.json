@@ -25,7 +25,7 @@
     },
     {
       "file": "dashboard.js",
-      "sha256": "23e172dc71354b183103b2b9c8c8c123d0d1f2f4751cbaa6be5fa044cfd2d67d",
+      "sha256": "bff86c183b123f075a2b54a90b8137230057efd0242ae7248d9e691afafc03ab",
       "role": "served compiled crisis-atlas (esbuild transpile + minify of src/dashboard.tsx, IIFE-wrapped)",
       "derives_from_spec": "rewrite/00-recommendation.md + DR-006 (compiled-ahead)",
       "test_evidence": "verify/tests/66-compiled-fresh (bundle==src) + 30/62/63",
@@ -34,7 +34,7 @@
     },
     {
       "file": "bubblegauge.js",
-      "sha256": "9a21b5bc6d399ebbf306c353918d485a6db3404b03f054f95bc73655425f41f1",
+      "sha256": "1ce2d13d1e523d4f93b35935cd1857a61e790e9b692d42e6075f992963e98b13",
       "role": "served compiled gated integration (esbuild transpile + minify of src/bubblegauge.tsx)",
       "derives_from_spec": "rewrite/00-recommendation.md + DR-006 (compiled-ahead)",
       "test_evidence": "verify/tests/66-compiled-fresh (bundle==src) + 30/62/63",
@@ -43,20 +43,20 @@
     },
     {
       "file": "src/dashboard.tsx",
-      "sha256": "a6ea80f20123df610747ad0cd1bdae2199246f736804ea90070c72da33ac6155",
+      "sha256": "868d65d77b00e1d3ceb49a103f54ed0a08c5fc2db7d220c71235fc7cda2b7b0f",
       "role": "SOURCE of dashboard.js (view + math; imports ./data)",
-      "derives_from_spec": "rewrite/00-recommendation.md + DR-006 (module migration)",
+      "derives_from_spec": "rewrite/00-recommendation.md + DR-006 (module migration) + DR-011 (app-wide palette, owner-authorised)",
       "test_evidence": "verify/tests/*",
       "adversarial_verification": "frozen acceptance suite (35/0 against the modularized bundle) + Track C seeds",
       "owning_role": "platform-security"
     },
     {
       "file": "src/bubblegauge.tsx",
-      "sha256": "abd807e5d7238becf8c66b368d857543cb6f1901cee6c1617ecb74bd55b025fe",
+      "sha256": "65f7487ba6765e3170af29baa7d51b4581345f0e1b245cecdf6e67211a4f6bd2",
       "role": "SOURCE of bubblegauge.js (gated integration)",
-      "derives_from_spec": "rewrite/00-recommendation.md + DR-006 (module migration) + DR-010 (desktop overview hero)",
+      "derives_from_spec": "rewrite/00-recommendation.md + DR-006 (module migration) + DR-010 (desktop overview hero) + DR-011 (full-screen console, palette, budget)",
       "test_evidence": "verify/tests/*; 73-overview-verdict (verdict/distance/persistence contract, executed against the shipped functions)",
-      "adversarial_verification": "design panel of 3 independent directions scored by 3 lenses (clarity/craft/buildable), synthesized; the fetch in-flight map and the mounted-but-hidden Strip were both adopted from that review to hold egress and the frozen acceptance assertion invariant. Verified by executing verdictOf/distanceOf/runOf against a table (73-overview-verdict, red->green); NOT driven in a real browser at 1024-1600px.",
+      "adversarial_verification": "Built and screenshotted in headless Chromium at 1280x800 / 1440x900 / 1920x1080 and iterated four times against those images; then reviewed by an independent three-lens panel (visual craft / number honesty / a11y+robustness) over the same screenshots and the source. Defects found and fixed this way: section mounted 324px down and inside the 1060px column; clipped y-axis numerals; gauge overflowing its card so the legend was swallowed by overflow:hidden; sparklines reading a live.series field the feed does not expose; a table row sliced at 800px height; and a \"VIX\" legend showing multiplier/2 as a percentage. Verified in a real browser, NOT only by static render.",
       "owning_role": "platform-security"
     },
     {
