@@ -10,12 +10,12 @@
 <title>AI Bubble Monitor — JS-Widget</title>
 <style type="text/css">
   :root{
-    --bg:#0E1526; --text:#EDE8DC; --dim:#C7CBD6; --muted:#9AA3B5; --faint:#78829a;
-    --gold:#E0B458; --line:rgba(237,232,220,0.09); --serif:Georgia,'Times New Roman',serif;
+    --bg:#21252D; --text:#FFFFFF; --dim:#C6CCD6; --muted:#8A92A0; --faint:#666E7B;
+    --violet:#B79DFF; --line:rgba(255,255,255,0.07); --serif:Georgia,'Times New Roman',serif;
   }
   *{box-sizing:border-box}
   html,body{margin:0;padding:0;background:var(--bg)}
-  body{color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Helvetica Neue',sans-serif;-webkit-font-smoothing:antialiased}
+  body{color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Helvetica Neue',Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased}
   /* Fixed 168x168 box == small 1:1 widget, authored at that size (no downscaling). Dense, no radial
      whitespace: a horizontal REGIME zone bar (blue/gold/red, marker) with a big score+band, an F&G
      zone bar, then a full metric grid + freshness. Every number fits; content clipped to the box. */
@@ -38,8 +38,8 @@
   .fgval .rating{font-size:8px;letter-spacing:0.02em;margin-left:3px}
   #fgblock .lab{letter-spacing:0.05em} /* 12-char label vs REGIME's 6 — buy width back for the rating */
   .bar{position:relative;height:9px;border-radius:999px}
-  .bar.reg{background:linear-gradient(90deg,#5B8DEF 0 45%,#E0B458 45% 60%,#E05252 60% 100%);opacity:0.9}
-  .bar.fg{background:linear-gradient(90deg,#5AA9A3,#7fbf94,#9AA3B5,#C0564A,#E05252)}  /* flipped */
+  .bar.reg{background:linear-gradient(90deg,#29C7E8 0 45%,#B79DFF 45% 60%,#FF6B8A 60% 100%);opacity:0.9}
+  .bar.fg{background:linear-gradient(90deg,#2E86E8,#29C7E8,#C6CCD6,#F08AA0,#FF6B8A)}  /* flipped */
   .mk{position:absolute;top:-3px;width:2.5px;height:15px;border-radius:2px;background:var(--text);
     box-shadow:0 0 0 2px var(--bg);transform:translateX(-50%)}
   .grid{display:grid;grid-template-columns:1fr 1fr;column-gap:10px;row-gap:3px;
@@ -94,13 +94,13 @@ var API_BASE = ACT.base || null;
 var DEMO = !!ACT.demo;
 
 /* ---- tokens ---- */
-var BAND={hold:{label:"HOLD",color:"#5B8DEF"},trim:{label:"TRIM",color:"#E0B458"},"de-risk":{label:"DE-RISK",color:"#E05252"}};
+var BAND={hold:{label:"HOLD",color:"#29C7E8"},trim:{label:"TRIM",color:"#B79DFF"},"de-risk":{label:"DE-RISK",color:"#FF6B8A"}};
 function bandOf(b){return BAND[b]||BAND.hold;}
-var FG_COLORS={"extreme fear":"#E05252","fear":"#C0564A","neutral":"#9AA3B5","greed":"#7fbf94","extreme greed":"#5AA9A3"};
+var FG_COLORS={"extreme fear":"#FF6B8A","fear":"#F08AA0","neutral":"#C6CCD6","greed":"#29C7E8","extreme greed":"#2E86E8"};
 var FG_RATINGS=["extreme fear","fear","neutral","greed","extreme greed"]; // same enum the dashboard validates against
 function fgRating(r){return FG_RATINGS.indexOf(r)!==-1?r:null;} // array lookup: never reaches Object.prototype
 var FG_SHORT={"extreme greed":"extr. greed","extreme fear":"extr. fear"}; // display-only: full rating still drives FG_COLORS
-var GREEN="#7fbf94", RED="#C0564A";
+var GREEN="#29C7E8", RED="#FF6B8A";
 
 var SAMPLE={score:40,band:"hold",iqr:[34,47],redFlags:0,spy:"IN",qqq:"IN",
   fg:{value:46,rating:"neutral"},cape:42.2,goldTtm:22.9,btcDd:-44,asOf:"sample",
@@ -119,7 +119,7 @@ function tail(barEl,pts,flip){
   if(!barEl) return;
   var old=barEl.querySelector("svg.tt"); if(old) old.parentNode.removeChild(old);
   if(!pts||pts.length!==3||!pts.every(num)) return;
-  var color="#EDE8DC"; // cream ink (= C.text), matches the dashboard's TrendTail — reads on every zone
+  var color="#FFFFFF"; // cream ink (= C.text), matches the dashboard's TrendTail — reads on every zone
   var W=barEl.clientWidth,H=barEl.clientHeight||9; if(!W) return;
   function xf(v){v=clamp(v);return ((flip?100-v:v)/100)*W;}
   var x0=xf(pts[0]),x2=xf(pts[2]),mlen=Math.abs(x2-x0); if(mlen<2) return;
@@ -131,7 +131,7 @@ function tail(barEl,pts,flip){
   var hh=Math.max(2.6,Math.min(H*0.5-0.5,4.4)),hl=Math.min(Math.max(4.5,Math.min(6.5,H*0.75)),mlen),gid="tt"+(flip?"f":"r"); // head never exceeds the move / the bar height
   var tipX=x2+dir*1.2,backX=tipX-dir*hl; // filled arrowhead leads at the marker, pointing forward
   var head="M"+tipX.toFixed(1)+" "+yc+" L"+backX.toFixed(1)+" "+(yc-hh).toFixed(1)+" L"+backX.toFixed(1)+" "+(yc+hh).toFixed(1)+" Z";
-  var destColor=dir>0?"#E05252":(flip?"#5AA9A3":"#5B8DEF"); // head = colour of the bar end it heads toward
+  var destColor=dir>0?"#FF6B8A":(flip?"#2E86E8":"#29C7E8"); // head = colour of the bar end it heads toward
   var ns="http://www.w3.org/2000/svg",svg=document.createElementNS(ns,"svg");
   svg.setAttribute("class","tt"); svg.setAttribute("width",W); svg.setAttribute("height",H);
   svg.setAttribute("style","position:absolute;inset:0;pointer-events:none;overflow:visible");
@@ -165,7 +165,7 @@ function render(){
     fv.appendChild(document.createTextNode(Math.round(d.fg.value*10)/10));
     var rt=fgRating(d.fg.rating); // off-enum -> no rating text, neutral colour (never a stale one)
     if(rt) fv.appendChild(span("rating",FG_SHORT[rt]||rt)); // small span, same shape as score+band
-    fv.style.color=(rt&&FG_COLORS[rt])||"#9AA3B5";
+    fv.style.color=(rt&&FG_COLORS[rt])||"#C6CCD6";
     document.getElementById("fgmk").style.left=(100-clamp(d.fg.value))+"%";
   } else { fgblock.style.display="none"; }
   // dense metric grid — every remaining number
@@ -177,8 +177,8 @@ function render(){
   // Math.round(null) is 0, so a null bound would otherwise print a fabricated "IQR 0–0" interval.
   if(Array.isArray(d.iqr)&&d.iqr.length===2&&num(d.iqr[0])&&num(d.iqr[1]))
     g.appendChild(cell("IQR",Math.round(d.iqr[0])+"–"+Math.round(d.iqr[1]))); // round like every other cell: live IQR is float
-  if(num(d.redFlags)) g.appendChild(cell("Flags",d.redFlags+"/4",d.redFlags>0?"#E0B458":GREEN));
-  if(d.spy&&d.qqq){ var tc=(d.spy==="IN"&&d.qqq==="IN")?GREEN:(d.spy==="OUT"&&d.qqq==="OUT")?RED:"#E0B458";
+  if(num(d.redFlags)) g.appendChild(cell("Flags",d.redFlags+"/4",d.redFlags>0?"#B79DFF":GREEN));
+  if(d.spy&&d.qqq){ var tc=(d.spy==="IN"&&d.qqq==="IN")?GREEN:(d.spy==="OUT"&&d.qqq==="OUT")?RED:"#B79DFF";
     g.appendChild(cell("Trend",d.spy+"·"+d.qqq,tc)); }
   // freshness / sample
   var foot=document.getElementById("foot"); foot.textContent="";

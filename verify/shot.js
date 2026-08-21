@@ -39,5 +39,13 @@ const srv=http.createServer((rq,rs)=>{
       (errs.length?'  ERRORS: '+errs.slice(0,2).join(' | '):''));
     await pg.close();
   }
+  // the 168x168 JS-Widget, same palette and type as the app
+  const wp=await b.newPage({viewport:{width:400,height:400},deviceScaleFactor:2});
+  await wp.goto('http://127.0.0.1:8099/widget.html',{waitUntil:'networkidle'});
+  await wp.waitForTimeout(600);
+  const el=await wp.$('.wrap');
+  if(el) await el.screenshot({path:require('path').join(process.argv[2]||'/tmp/shots','widget.png')});
+  console.log('  widget.png captured');
+  await wp.close();
   await b.close(); srv.close();
 })().catch(e=>{console.error('FAILED: '+e.message);process.exit(1);});
