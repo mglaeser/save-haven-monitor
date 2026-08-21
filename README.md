@@ -1,6 +1,6 @@
 # Crisis Winners — and the 2026 AI question
 
-[![AI Audit Mandate: Level 2, Governed](https://raw.githubusercontent.com/mglaeser/ai-audit-mandate/main/assets/badges/level-2-governed.svg)](audit/)
+[![AI Audit Mandate: Level 2, Governed](https://raw.githubusercontent.com/mglaeser/ai-audit-mandate/main/assets/badges/level-2-governed.svg)](https://github.com/mglaeser/ai-audit-mandate)
 
 An interactive five-tab atlas of assets that rose when markets collapsed — ten historical crises on a
 common t−60 → t+60 month scale, plus the potential 2026 AI-bubble configuration, an algorithmic
