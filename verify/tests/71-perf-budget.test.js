@@ -19,7 +19,7 @@ const { REPO, raw } = require("../lib/load.js");
 const { ok } = require("../lib/assert.js");
 
 // per-file byte ceilings for the CI-compiled bundles (raw, uncompressed) — headroom over current sizes
-const JS_BUDGET = { "dashboard.js": 155000, "bubblegauge.js": 95000 };
+const JS_BUDGET = { "dashboard.js": 155000, "bubblegauge.js": 110000 };
 // self-hosted vendor JS the browser fetches (bytes pinned by 35/40; counted toward total page weight)
 const VENDOR_JS = [
   "vendor/react.production.min.js",

@@ -77,9 +77,9 @@
   /* ---------- palette (inherit the dashboard's dark tokens) ---------- */
 
   const C = {
-    bg: "#0E1526", panel: "#141D31", panel2: "#0B111F",
-    text: "#EDE8DC", dim: "#C7CBD6", muted: "#9AA3B5", faint: "#78829a",
-    gold: "#E0B458", line: "rgba(237,232,220,0.09)",
+    bg: "#21252D", panel: "#272C35", panel2: "#1B1F26",
+    text: "#FFFFFF", dim: "#C6CCD6", muted: "#8A92A0", faint: "#666E7B",
+    violet: "#B79DFF", cyan: "#29C7E8", blue: "#2E86E8", indigo: "#6C4FE0", line: "rgba(255,255,255,0.07)",
   };
   const BS = {
     serif: { fontFamily: "Georgia, 'Times New Roman', serif" },
@@ -89,6 +89,7 @@
   // Static style objects for the desktop hero, hoisted so they are allocated once, not per render.
   const HS = {
     off: { display: "none" },
+    stripWrap: { maxWidth: 1060, margin: "0 auto", padding: "0 14px" },
     head: { display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" },
     grid: { display: "grid", gridTemplateColumns: "minmax(0,1fr) 300px", gap: 26, alignItems: "start", marginTop: 12 },
     left: { minWidth: 0 },
@@ -100,27 +101,40 @@
     cap: { fontSize: 9.5, color: C.faint, lineHeight: 1.5, marginTop: 4 },
     val: { fontSize: 12.5, color: C.text, marginTop: 3 },
     link: { background: "transparent", border: "none", padding: 0, cursor: "pointer", fontSize: 11, fontWeight: 700, fontFamily: "inherit" },
-    track: { width: 54, height: 4, background: "rgba(237,232,220,0.07)", borderRadius: 99 },
+    track: { width: 54, height: 4, background: "rgba(255,255,255,0.07)", borderRadius: 99 },
     brk: { position: "relative", height: 7, marginTop: 3 },
     scale: { position: "relative", height: 12, fontSize: 9.5, color: C.faint, fontVariantNumeric: "tabular-nums" },
+    // full-screen overview (DR-011)
+    screen: { position: "relative", overflow: "hidden", minHeight: "100vh", display: "flex", flexDirection: "column", gap: 12, padding: "14px 20px 20px", background: C.bg },
+    lift: { position: "relative", zIndex: 1 },
+    bar: { display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" },
+    card: { background: C.panel, borderRadius: 12, padding: "14px 16px", minWidth: 0, overflow: "hidden", display: "flex", flexDirection: "column" },
+    r1: { display: "grid", gridTemplateColumns: "minmax(0,1.62fr) minmax(0,1fr)", gap: 12, flex: "1.15 1 0", minHeight: 0 },
+    r2: { display: "grid", gridTemplateColumns: "minmax(0,1.62fr) minmax(0,1fr)", gap: 12, flex: "0.85 1 0", minHeight: 0 },
+    r3: { display: "grid", gridTemplateColumns: "minmax(0,1.62fr) minmax(0,1fr)", gap: 12, flex: "0 0 auto" },
+    ttl: { fontSize: 13, fontWeight: 600, color: C.text, margin: 0 },
+    tbl: { width: "100%", borderCollapse: "collapse", fontSize: 11.5, fontVariantNumeric: "tabular-nums" },
+    th: { textAlign: "left", fontSize: 9.5, letterSpacing: "0.12em", textTransform: "uppercase", color: C.faint, fontWeight: 600, padding: "0 0 7px" },
+    td: { padding: "4px 0", color: C.dim, borderTop: "1px solid " + C.line, whiteSpace: "nowrap" },
+    rings: { display: "flex", gap: 6, justifyContent: "space-between" },
   };
 
   // Action-band semantics — reuse the dashboard's stress palette, never clickbait red.
   const BAND = {
-    hold:   { label: "HOLD",   color: "#5B8DEF", zone: "rgba(91,141,239,0.14)" },
-    trim:   { label: "TRIM",   color: "#E0B458", zone: "rgba(224,180,88,0.16)" },
-    "de-risk": { label: "DE-RISK", color: "#E05252", zone: "rgba(224,82,82,0.16)" },
-    "suppressed (block degraded)": { label: "SUPPRESSED", color: "#9AA3B5", zone: "rgba(154,163,181,0.12)" },
+    hold:   { label: "HOLD",   color: "#29C7E8", zone: "rgba(41,199,232,0.14)" },
+    trim:   { label: "TRIM",   color: "#B79DFF", zone: "rgba(183,157,255,0.16)" },
+    "de-risk": { label: "DE-RISK", color: "#FF6B8A", zone: "rgba(255,107,138,0.16)" },
+    "suppressed (block degraded)": { label: "SUPPRESSED", color: "#8A919E", zone: "rgba(138,145,158,0.12)" },
   };
   const bandOf = (b) => BAND[b] || BAND.hold;
 
   // Grounding chips (spec §10)
   const GROUND = {
-    "literature-grounded":   { c: "#7fbf94", t: "Backed by peer-reviewed research." },
+    "literature-grounded":   { c: "#29C7E8", t: "Backed by peer-reviewed research." },
     "literature-adjacent":   { c: "#5AA9A3", t: "Motivated by the research, with a reasoned (not directly fitted) mapping." },
     "judgmental":            { c: "#d9b45c", t: "Reasoned expert choice, not a fitted model." },
-    "contested":             { c: "#E8853D", t: "Known to misfire — deliberately down-weighted." },
-    "lagging-confirmation":  { c: "#9AA3B5", t: "Confirms stress already underway; does not predict." },
+    "contested":             { c: "#2E86E8", t: "Known to misfire — deliberately down-weighted." },
+    "lagging-confirmation":  { c: "#8A919E", t: "Confirms stress already underway; does not predict." },
   };
   const groundOf = (g) => GROUND[g] || { c: C.muted, t: "" };
 
@@ -456,7 +470,7 @@
       ", action band " + b.label.toLowerCase();
     return (
       <div role="img" aria-label={label} style={{ position: "relative", height: h, borderRadius: 99, overflow: "hidden",
-        background: "linear-gradient(90deg, rgba(91,141,239,0.16) 0 45%, rgba(224,180,88,0.18) 45% 60%, rgba(224,82,82,0.18) 60% 100%)",
+        background: "linear-gradient(90deg, rgba(41,199,232,0.16) 0 45%, rgba(183,157,255,0.18) 45% 60%, rgba(255,107,138,0.18) 60% 100%)",
         border: "1px solid " + C.line }}>
         {pair(iqr) && (
           <div style={{ position: "absolute", top: 0, bottom: 0, left: clamp(iqr[0]) + "%", width: (clamp(iqr[1]) - clamp(iqr[0])) + "%",
@@ -551,7 +565,7 @@
       // the arrowhead is filled with the colour of the bar END it is heading toward (full-saturation
       // extreme), so the hue itself signals the trend; both bars are red on the right, F&G is greed-teal
       // on the left and regime blue on the left.
-      const destColor = dir > 0 ? "#E05252" : (flip ? "#5AA9A3" : "#5B8DEF");
+      const destColor = dir > 0 ? "#FF6B8A" : (flip ? "#5AA9A3" : "#29C7E8");
       return { x0, x2, d, head, sw: Math.max(2.4, barH * 0.34), destColor };
     }, [pts, w, flip, barH]);
     const gid = gidRef.current;
@@ -622,9 +636,9 @@
 
   function CoverageChip({ coverage }) {
     if (!coverage) return null;
-    if (coverage.degraded) return <Pill color="#E8853D" title={COPY.coverageTip}>Degraded</Pill>;
+    if (coverage.degraded) return <Pill color="#2E86E8" title={COPY.coverageTip}>Degraded</Pill>;
     const pct = Math.round(100 * Math.min(coverage.S ? coverage.S.coverage : 1, coverage.D ? coverage.D.coverage : 1));
-    return <Pill color="#7fbf94" title={COPY.coverageTip}>Coverage {pct}%</Pill>;
+    return <Pill color="#29C7E8" title={COPY.coverageTip}>Coverage {pct}%</Pill>;
   }
 
   function Strip({ goToDetail }) {
@@ -649,11 +663,11 @@
           <GaugeBar value={d.headline_median} iqr={d.iqr} band={d.action_band} trend={regTrend} />
         </div>
         <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-          <Pill color={d.red_flag_count >= 3 ? "#E05252" : d.red_flag_count > 0 ? "#E0B458" : C.muted}
+          <Pill color={d.red_flag_count >= 3 ? "#FF6B8A" : d.red_flag_count > 0 ? "#B79DFF" : C.muted}
             title={Object.keys(d.red_flag_detail).filter((k) => d.red_flag_detail[k]).map((k) => REDFLAG_COPY[k]).join(" · ") || "no override flags fired"}>
             {d.red_flag_count}/4 flags
           </Pill>
-          {trend && <Pill color={trend.SPY.faber_10mo === "OUT" ? "#E05252" : "#7fbf94"} outline
+          {trend && <Pill color={trend.SPY.faber_10mo === "OUT" ? "#FF6B8A" : "#29C7E8"} outline
             title="Faber 10-month trend rule (execution trigger)">
             Trend SPY {trend.SPY.faber_10mo} · QQQ {trend.QQQ.faber_10mo}
           </Pill>}
@@ -713,7 +727,7 @@
     const reg = regOf(id), g = groundOf(r.grounding);
     const live = !r.dropped;
     return (
-      <div style={{ borderTop: "1px solid rgba(237,232,220,0.06)", padding: "8px 0" }}>
+      <div style={{ borderTop: "1px solid rgba(255,255,255,0.06)", padding: "8px 0" }}>
         <div onClick={() => setOpen(!open)} style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", flexWrap: "wrap" }}>
           <span style={{ ...BS.eyebrow, minWidth: 26 }}>{id.toUpperCase()}</span>
           <span style={{ color: C.text, fontWeight: 600, fontSize: 12.5, flex: "1 1 140px" }}>{reg.name}</span>
@@ -721,17 +735,17 @@
           <span style={{ fontSize: 10.5, color: C.faint, whiteSpace: "nowrap" }}>w {Math.round(r.weight * 100)}%</span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 5 }}>
-          <div style={{ flex: 1, height: 7, borderRadius: 99, background: "rgba(237,232,220,0.07)" }}>
+          <div style={{ flex: 1, height: 7, borderRadius: 99, background: "rgba(255,255,255,0.07)" }}>
             <div style={{ width: (live && isNum(r.sub_score) ? Math.round(r.sub_score * 100) : 0) + "%", height: "100%", borderRadius: 99, background: g.c, opacity: 0.8 }} />
           </div>
           <span style={{ fontSize: 10.5, color: C.muted, fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap", minWidth: 96, textAlign: "right" }}>
-            {live ? (isNum(r.sub_score) ? r.sub_score.toFixed(2) : "—") : <span style={{ color: "#E8853D" }}>not live</span>}
-            {r.stale ? <span style={{ color: "#E8853D" }}> · stale</span> : null}
+            {live ? (isNum(r.sub_score) ? r.sub_score.toFixed(2) : "—") : <span style={{ color: "#2E86E8" }}>not live</span>}
+            {r.stale ? <span style={{ color: "#2E86E8" }}> · stale</span> : null}
             {r.fallback_used ? <span style={{ color: C.faint }}> · fallback</span> : null}
           </span>
         </div>
         {open && (
-          <div style={{ marginTop: 7, padding: "9px 11px", background: "rgba(237,232,220,0.03)", borderRadius: 7, borderLeft: "2px solid " + g.c, fontSize: 11.5, color: C.dim, lineHeight: 1.6 }}>
+          <div style={{ marginTop: 7, padding: "9px 11px", background: "rgba(255,255,255,0.03)", borderRadius: 7, borderLeft: "2px solid " + g.c, fontSize: 11.5, color: C.dim, lineHeight: 1.6 }}>
             <div>{reg.plain}</div>
             <div style={{ marginTop: 5, color: C.muted }}><b style={{ color: C.dim }}>Fires when:</b> {reg.fire}</div>
             <div style={{ marginTop: 3, color: C.muted }}><b style={{ color: C.dim }}>Weighted this way because:</b> {reg.why}</div>
@@ -767,7 +781,7 @@
             block={d.block_S} order={["s1", "s2", "s3", "s4", "s5"]} />
           <BlockColumn title={"Block D · dynamics / trigger"} sub={"maps to TIMING · raw " + (isNum(d.block_D.value_raw) ? d.block_D.value_raw.toFixed(3) : "—") + " → ×V " + d.V.multiplier + " → " + d.block_D.value.toFixed(3)}
             block={d.block_D} order={["d1", "d2", "d3", "d4"]}
-            footer={<div style={{ marginTop: 8, paddingTop: 8, borderTop: "1px solid rgba(237,232,220,0.06)", fontSize: 11, color: C.muted }}>
+            footer={<div style={{ marginTop: 8, paddingTop: 8, borderTop: "1px solid rgba(255,255,255,0.06)", fontSize: 11, color: C.muted }}>
               <b style={{ color: C.dim }}>V · VIX term-structure multiplier</b> — {d.V.state} → ×{d.V.multiplier} ({d.V.label}). When near-term fear exceeds long-term fear, stress is already underway; this confirms, it doesn't predict.
             </div>} />
         </div>
@@ -788,12 +802,12 @@
         {keys.map((k) => {
           const on = !!d.red_flag_detail[k];
           return (
-            <div key={k} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 0", borderTop: "1px solid rgba(237,232,220,0.06)" }}>
+            <div key={k} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 0", borderTop: "1px solid rgba(255,255,255,0.06)" }}>
               <span style={{ width: 16, height: 16, borderRadius: 4, display: "inline-flex", alignItems: "center", justifyContent: "center",
-                background: on ? "rgba(224,82,82,0.75)" : "transparent", border: "1px solid " + (on ? "#E05252" : "rgba(237,232,220,0.2)"),
-                color: "#0E1526", fontWeight: 800, fontSize: 11 }}>{on ? "!" : ""}</span>
+                background: on ? "rgba(255,107,138,0.75)" : "transparent", border: "1px solid " + (on ? "#FF6B8A" : "rgba(255,255,255,0.2)"),
+                color: "#1E222A", fontWeight: 800, fontSize: 11 }}>{on ? "!" : ""}</span>
               <span style={{ fontSize: 12, color: on ? C.text : C.muted, fontWeight: on ? 600 : 400 }}>{REDFLAG_COPY[k]}</span>
-              <span style={{ marginLeft: "auto", fontSize: 10, color: on ? "#E05252" : C.faint, fontWeight: 700 }}>{on ? "FIRED" : "clear"}</span>
+              <span style={{ marginLeft: "auto", fontSize: 10, color: on ? "#FF6B8A" : C.faint, fontWeight: 700 }}>{on ? "FIRED" : "clear"}</span>
             </div>
           );
         })}
@@ -804,7 +818,7 @@
   // (4) Three-leg action ladder
   function LadderCard({ n, title, state, color, caption }) {
     return (
-      <div style={{ borderRadius: 10, background: "rgba(237,232,220,0.03)", border: "1px solid rgba(237,232,220,0.08)", borderTop: "3px solid " + color, padding: "11px 13px" }}>
+      <div style={{ borderRadius: 10, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderTop: "3px solid " + color, padding: "11px 13px" }}>
         <div style={{ ...BS.eyebrow, marginBottom: 4 }}>Rung {n}</div>
         <div style={{ ...BS.serif, fontSize: 15, fontWeight: 700, color: C.text }}>{title}</div>
         <div style={{ fontSize: 13, fontWeight: 700, color: color, margin: "3px 0 6px" }}>{state}</div>
@@ -822,9 +836,9 @@
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 10 }}>
           <LadderCard n="1" title="Strategic ceiling" color={b.color} state={"Score " + Math.round(d.headline_median) + " → " + b.label} caption={COPY.ladder.ceiling} />
-          <LadderCard n="2" title="Execution trigger" color={tr.SPY.faber_10mo === "OUT" ? "#E05252" : "#7fbf94"}
+          <LadderCard n="2" title="Execution trigger" color={tr.SPY.faber_10mo === "OUT" ? "#FF6B8A" : "#29C7E8"}
             state={"Faber SPY " + tr.SPY.faber_10mo + " · QQQ " + tr.QQQ.faber_10mo} caption={COPY.ladder.trigger} />
-          <LadderCard n="3" title="Fast alarm (speed)" color={fa.vrp_flag ? "#E05252" : "#5B8DEF"}
+          <LadderCard n="3" title="Fast alarm (speed)" color={fa.vrp_flag ? "#FF6B8A" : "#29C7E8"}
             state={fa.term_structure + " · VRP " + fa.vrp + (fa.vrp_flag ? " (stress)" : "")} caption={COPY.ladder.speed} />
         </div>
         <p style={{ fontSize: 11, color: C.faint, lineHeight: 1.6, margin: "8px 2px 0" }}>{COPY.ladder.caveat}</p>
@@ -837,7 +851,7 @@
     if (!active || !payload || !payload.length) return null;
     const r = payload[0] && payload[0].payload; if (!r) return null;
     return (
-      <div style={{ background: C.panel2, border: "1px solid rgba(237,232,220,0.15)", borderRadius: 8, padding: "7px 10px", fontSize: 11 }}>
+      <div style={{ background: C.panel2, border: "1px solid rgba(255,255,255,0.15)", borderRadius: 8, padding: "7px 10px", fontSize: 11 }}>
         <div style={{ color: C.muted, marginBottom: 3 }}>{(r.computed_at || "").slice(0, 10)}</div>
         <div style={{ color: C.text }}>median {Math.round(r.median)}</div>
         {pair(r.iqr) && <div style={{ color: C.muted }}>IQR {Math.round(r.iqr[0])}–{Math.round(r.iqr[1])}</div>}
@@ -858,14 +872,14 @@
          rows.length === 0 ? <div style={{ color: C.faint, fontSize: 12, padding: "20px 0" }}>no history available</div> : (
           <ResponsiveContainer width="100%" height={220}>
             <ComposedChart data={rows} margin={{ top: 6, right: 12, bottom: 4, left: 0 }}>
-              <CartesianGrid stroke="rgba(237,232,220,0.06)" vertical={false} />
-              <XAxis dataKey="computed_at" tickFormatter={(x) => (x || "").slice(2, 7)} tick={{ fill: C.muted, fontSize: 9.5 }} stroke="rgba(237,232,220,0.18)" />
-              <YAxis domain={[0, 100]} ticks={[0, 45, 60, 100]} tick={{ fill: C.muted, fontSize: 9.5 }} stroke="rgba(237,232,220,0.18)" width={28} />
+              <CartesianGrid stroke="rgba(255,255,255,0.06)" vertical={false} />
+              <XAxis dataKey="computed_at" tickFormatter={(x) => (x || "").slice(2, 7)} tick={{ fill: C.muted, fontSize: 9.5 }} stroke="rgba(255,255,255,0.18)" />
+              <YAxis domain={[0, 100]} ticks={[0, 45, 60, 100]} tick={{ fill: C.muted, fontSize: 9.5 }} stroke="rgba(255,255,255,0.18)" width={28} />
               <Tooltip content={<HistTip />} />
-              <ReferenceLine y={45} stroke="#E0B458" strokeOpacity={0.4} strokeDasharray="3 3" />
-              <ReferenceLine y={60} stroke="#E05252" strokeOpacity={0.4} strokeDasharray="3 3" />
-              <Area dataKey="band" stroke="none" fill="#5B8DEF" fillOpacity={0.14} isAnimationActive={false} />
-              <Line dataKey="median" stroke="#E0B458" strokeWidth={2} dot={false} isAnimationActive={false} />
+              <ReferenceLine y={45} stroke="#B79DFF" strokeOpacity={0.4} strokeDasharray="3 3" />
+              <ReferenceLine y={60} stroke="#FF6B8A" strokeOpacity={0.4} strokeDasharray="3 3" />
+              <Area dataKey="band" stroke="none" fill="#29C7E8" fillOpacity={0.14} isAnimationActive={false} />
+              <Line dataKey="median" stroke="#B79DFF" strokeWidth={2} dot={false} isAnimationActive={false} />
             </ComposedChart>
           </ResponsiveContainer>
         )}
@@ -882,20 +896,20 @@
     const caveats = (meta && meta.epistemic_caveats && meta.epistemic_caveats.length) ? meta.epistemic_caveats : EPISTEMIC;
     const cov = meta && meta.coverage;
     const audit = st.json && st.json.science_audit;
-    const sevColor = { error: "#E05252", warn: "#E0B458", info: C.muted };
+    const sevColor = { error: "#FF6B8A", warn: "#B79DFF", info: C.muted };
     return (
       <Panel style={{ borderLeft: "3px solid #5AA9A3" }}>
         <H sub="the honesty is the feature, not the fine print">Epistemic status</H>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 10 }}>
-          {caveats.map((c, i) => <span key={i} style={{ fontSize: 10.5, color: C.dim, background: "rgba(237,232,220,0.04)", border: "1px solid rgba(237,232,220,0.1)", borderRadius: 6, padding: "4px 8px", lineHeight: 1.4 }}>{c}</span>)}
+          {caveats.map((c, i) => <span key={i} style={{ fontSize: 10.5, color: C.dim, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 6, padding: "4px 8px", lineHeight: 1.4 }}>{c}</span>)}
         </div>
         {cov && (
           <div style={{ display: "flex", gap: 14, flexWrap: "wrap", marginBottom: 10 }}>
             {["S", "D"].map((k) => cov[k] && (
               <div key={k} style={{ flex: "1 1 160px" }}>
                 <div style={{ fontSize: 10.5, color: C.muted, marginBottom: 3 }}>Block {k} coverage {Math.round(cov[k].coverage * 100)}%{cov[k].degraded ? " · degraded" : ""}</div>
-                <div style={{ height: 6, borderRadius: 99, background: "rgba(237,232,220,0.07)" }}>
-                  <div style={{ width: Math.round(cov[k].coverage * 100) + "%", height: "100%", borderRadius: 99, background: cov[k].degraded ? "#E8853D" : "#7fbf94" }} />
+                <div style={{ height: 6, borderRadius: 99, background: "rgba(255,255,255,0.07)" }}>
+                  <div style={{ width: Math.round(cov[k].coverage * 100) + "%", height: "100%", borderRadius: 99, background: cov[k].degraded ? "#2E86E8" : "#29C7E8" }} />
                 </div>
               </div>
             ))}
@@ -911,7 +925,7 @@
           <div>
             <div style={{ ...BS.eyebrow, marginBottom: 5 }}>Science audit ({audit.counts ? audit.counts.error + " err · " + audit.counts.warn + " warn · " + audit.counts.info + " info" : audit.flags.length})</div>
             {audit.flags.map((f, i) => (
-              <div key={i} style={{ display: "flex", gap: 8, padding: "5px 0", borderTop: "1px solid rgba(237,232,220,0.05)" }}>
+              <div key={i} style={{ display: "flex", gap: 8, padding: "5px 0", borderTop: "1px solid rgba(255,255,255,0.05)" }}>
                 <Pill color={sevColor[f.severity] || C.muted} outline>{f.severity}</Pill>
                 <div style={{ fontSize: 11, color: C.dim, lineHeight: 1.5 }}><b style={{ color: C.text }}>{f.title}</b> — {f.detail}{f.ref ? <span style={{ color: C.faint }}> ({f.ref})</span> : null}</div>
               </div>
@@ -928,20 +942,20 @@
     const rows = useMemo(() => analogues(todayFingerprint(d)), [d]);
     const top = rows[0];
     return (
-      <Panel style={{ borderTop: "2px solid #E0B458" }}>
+      <Panel style={{ borderTop: "2px solid #B79DFF" }}>
         <H sub="from Block S composition · analogy, not forecast">{COPY.fusionHeader}</H>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 10 }}>
           {rows.map((r) => (
             <button key={r.label} onClick={() => goToCrisis && goToCrisis(r.explorer)} style={{
               cursor: goToCrisis ? "pointer" : "default", borderRadius: 8, padding: "8px 11px", textAlign: "left",
-              border: "1px solid " + (r === top ? "#E0B458" : "rgba(237,232,220,0.14)"),
-              background: r === top ? "rgba(224,180,88,0.1)" : "transparent", color: C.text, flex: "1 1 150px" }}>
+              border: "1px solid " + (r === top ? "#B79DFF" : "rgba(255,255,255,0.14)"),
+              background: r === top ? "rgba(183,157,255,0.1)" : "transparent", color: C.text, flex: "1 1 150px" }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
                 <span style={{ ...BS.serif, fontSize: 16, fontWeight: 700 }}>{r.label}</span>
-                <span style={{ fontSize: 12, fontWeight: 700, color: r === top ? "#E0B458" : C.muted }}>{Math.round(r.similarity * 100)}%</span>
+                <span style={{ fontSize: 12, fontWeight: 700, color: r === top ? "#B79DFF" : C.muted }}>{Math.round(r.similarity * 100)}%</span>
               </div>
-              <div style={{ height: 5, borderRadius: 99, background: "rgba(237,232,220,0.07)", margin: "5px 0" }}>
-                <div style={{ width: Math.round(r.similarity * 100) + "%", height: "100%", borderRadius: 99, background: r === top ? "#E0B458" : C.muted, opacity: 0.8 }} />
+              <div style={{ height: 5, borderRadius: 99, background: "rgba(255,255,255,0.07)", margin: "5px 0" }}>
+                <div style={{ width: Math.round(r.similarity * 100) + "%", height: "100%", borderRadius: 99, background: r === top ? "#B79DFF" : C.muted, opacity: 0.8 }} />
               </div>
               <div style={{ fontSize: 10, color: C.faint, lineHeight: 1.4 }}>{r.note}</div>
             </button>
@@ -952,7 +966,7 @@
             <b style={{ color: C.text }}>Nearest analogue: {top.label}.</b> Per-dimension gap (smaller = more alike):
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 6 }}>
               {top.per.map((p) => (
-                <span key={p.k} style={{ fontSize: 10, color: C.muted, background: "rgba(237,232,220,0.04)", borderRadius: 5, padding: "3px 7px" }}>
+                <span key={p.k} style={{ fontSize: 10, color: C.muted, background: "rgba(255,255,255,0.04)", borderRadius: 5, padding: "3px 7px" }}>
                   {p.label}: {p.gap == null ? "n/a" : "Δ" + p.gap.toFixed(2)}
                 </span>
               ))}
@@ -967,7 +981,7 @@
         </p>
         {goToCrisis && top.explorer && (
           <button onClick={() => goToCrisis(top.explorer)} style={{ marginTop: 10, cursor: "pointer", fontSize: 12, fontWeight: 700,
-            color: "#0E1526", background: "#E0B458", border: "none", borderRadius: 7, padding: "7px 12px" }}>
+            color: "#1E222A", background: "#B79DFF", border: "none", borderRadius: 7, padding: "7px 12px" }}>
             Open the atlas → {top.label} ›
           </button>
         )}
@@ -1089,7 +1103,7 @@
   // published 0..100 range or with an unknown rating is dropped, not rendered; previous_*
   // values are 0-100 or null, and null means "no observation", never zero.
   const FG_RATINGS = ["extreme fear", "fear", "neutral", "greed", "extreme greed"];
-  const FG_COLORS = { "extreme fear": "#E05252", "fear": "#C0564A", "neutral": "#C7CBD6", "greed": "#7fbf94", "extreme greed": "#5AA9A3" };
+  const FG_COLORS = { "extreme fear": "#FF6B8A", "fear": "#C0564A", "neutral": "#C3C9D4", "greed": "#29C7E8", "extreme greed": "#5AA9A3" };
   const FG_ZONES = [25, 45, 55, 75]; // zone band edges on the 0-100 axis
   function validFearGreed(m) {
     if (!(m && m.available && isNum(m.value) && m.value >= 0 && m.value <= 100)) return false;
@@ -1154,7 +1168,7 @@
     const det = m.detail || {};
     const rating = det.rating || null;
     const col = (rating && FG_COLORS[rating]) || C.dim;
-    const zoneCols = ["#5AA9A3", "#7fbf94", "#9AA3B5", "#C0564A", "#E05252"]; // flipped: red on the right (matches the regime gauge)
+    const zoneCols = ["#5AA9A3", "#29C7E8", "#8A919E", "#C0564A", "#FF6B8A"]; // flipped: red on the right (matches the regime gauge)
     const edges = [0].concat(FG_ZONES, [100]);
     const deltas = [["prev close", det.previous_close], ["1w", det.previous_1_week], ["1m", det.previous_1_month], ["1y", det.previous_1_year]]
       .filter((p) => isNum(p[1])); // null ≠ zero: a null comparison is skipped, never shown as 0
@@ -1179,7 +1193,7 @@
           <span style={{ fontSize: 10.5, color: C.muted }}>CNN Fear &amp; Greed</span>
           <b style={{ fontSize: 13, color: col, fontVariantNumeric: "tabular-nums" }}>{m.value.toFixed(1)}</b>
           {rating ? <span style={{ fontSize: 10.5, color: col, fontStyle: "italic" }}>{rating}</span> : null}
-          {m.stale ? <span style={{ fontSize: 10, color: "#E8853D" }}>·stale</span> : null}
+          {m.stale ? <span style={{ fontSize: 10, color: "#2E86E8" }}>·stale</span> : null}
         </div>
         <div style={{ position: "relative", height: 8, borderRadius: 4, overflow: "hidden", display: "flex" }}>
           {zoneCols.map((zc, i) => (
@@ -1198,7 +1212,7 @@
         {segs.length > 0 && (
           <svg viewBox="0 0 100 100" preserveAspectRatio="none" style={{ display: "block", width: "100%", height: 34, marginTop: 4 }}>
             {FG_ZONES.map((z) => (
-              <line key={z} x1="0" x2="100" y1={100 - z} y2={100 - z} stroke="rgba(237,232,220,0.10)" strokeWidth="0.8" vectorEffect="non-scaling-stroke" />
+              <line key={z} x1="0" x2="100" y1={100 - z} y2={100 - z} stroke="rgba(255,255,255,0.10)" strokeWidth="0.8" vectorEffect="non-scaling-stroke" />
             ))}
             {segs.map((d, i) => (
               <polyline key={i} points={d} fill="none" stroke={col} strokeWidth="1.4" vectorEffect="non-scaling-stroke" />
@@ -1232,9 +1246,9 @@
     ].filter((p) => p[1]);
     const staticLines = Object.keys(AI_MAP).filter((k) => !live.live[k]);
     return (
-      <div style={{ ...BS.panel, padding: "10px 14px", marginTop: 10, borderLeft: "3px solid #7fbf94" }}>
+      <div style={{ ...BS.panel, padding: "10px 14px", marginTop: 10, borderLeft: "3px solid #29C7E8" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 6 }}>
-          <span style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: "0.1em", color: "#7fbf94" }}>LIVE BACKFILL</span>
+          <span style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: "0.1em", color: "#29C7E8" }}>LIVE BACKFILL</span>
           <span style={{ fontSize: 11, color: C.dim }}>
             series re-anchored to <b>{live.anchorMonth}</b>{live.anchorPartial ? " (month in progress — t0 is month-to-date)" : ""} via the bubblegauge feed{live.serviceVersion ? " " + live.serviceVersion : ""}{DEMO ? " · demo fixture" : ""}
           </span>
@@ -1245,7 +1259,7 @@
             {pills.map((p) => (
               <span key={p[0]} title={p[1].title} style={{ fontSize: 10.5, color: C.dim, whiteSpace: "nowrap" }}>
                 <span style={{ color: C.muted }}>{p[0]}</span> <b style={{ color: C.text, fontVariantNumeric: "tabular-nums" }}>{p[1].text}</b>
-                {p[1].stale ? <span style={{ color: "#E8853D" }}> ·stale</span> : null}
+                {p[1].stale ? <span style={{ color: "#2E86E8" }}> ·stale</span> : null}
               </span>
             ))}
           </div>
@@ -1277,7 +1291,7 @@
     const det = m.detail || {};
     const rating = det.rating || null;
     const col = (rating && FG_COLORS[rating]) || C.dim;
-    const zoneCols = ["#5AA9A3", "#7fbf94", "#9AA3B5", "#C0564A", "#E05252"]; // flipped: red on the right (matches the regime gauge)
+    const zoneCols = ["#5AA9A3", "#29C7E8", "#8A919E", "#C0564A", "#FF6B8A"]; // flipped: red on the right (matches the regime gauge)
     const edges = [0].concat(FG_ZONES, [100]);
     // CNN's own reference readings — informational text only; the ARROW's source is the observed
     // snapshot series below (fgSeriesTrend), NOT these. null is skipped, never a 0.
@@ -1296,7 +1310,7 @@
           <span style={{ ...BS.eyebrow, color: C.muted }}>CNN Fear &amp; Greed</span>
           <b style={{ ...BS.serif, fontSize: 20, fontWeight: 700, color: col, fontVariantNumeric: "tabular-nums" }}>{m.value.toFixed(1)}</b>
           {rating ? <span style={{ fontSize: 11, color: col, fontStyle: "italic" }}>{rating}</span> : null}
-          {m.stale ? <span style={{ fontSize: 10, color: "#E8853D" }}>·stale</span> : null}
+          {m.stale ? <span style={{ fontSize: 10, color: "#2E86E8" }}>·stale</span> : null}
         </div>
         <div style={{ position: "relative", height: 8, borderRadius: 4, overflow: "hidden", display: "flex", flex: "1 1 160px", minWidth: 120, maxWidth: 260 }}>
           {zoneCols.map((zc, i) => (
@@ -1372,12 +1386,12 @@
           onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); reopen(); } }}
           style={{ position: "fixed", top: "calc(env(safe-area-inset-top,0px) + 10px)", right: 12, zIndex: 900,
             width: 40, height: 40, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
-          <div style={{ width: 36, height: 36, borderRadius: 999, border: "1px solid rgba(224,180,88,0.5)",
+          <div style={{ width: 36, height: 36, borderRadius: 999, border: "1px solid rgba(183,157,255,0.5)",
             background: "rgba(11,17,31,0.72)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 2px 10px rgba(0,0,0,0.35)" }}>
             <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M6.34 18.16 A8 8 0 1 1 17.66 18.16" fill="none" stroke="rgba(224,180,88,0.3)" strokeWidth="2" strokeLinecap="round" />
-              <path d="M6.34 18.16 A8 8 0 0 1 8.37 5.37" fill="none" stroke="#E0B458" strokeWidth="2" strokeLinecap="round" />
-              <circle cx="8.37" cy="5.37" r="1.9" fill="#E0B458" />
+              <path d="M6.34 18.16 A8 8 0 1 1 17.66 18.16" fill="none" stroke="rgba(183,157,255,0.3)" strokeWidth="2" strokeLinecap="round" />
+              <path d="M6.34 18.16 A8 8 0 0 1 8.37 5.37" fill="none" stroke="#B79DFF" strokeWidth="2" strokeLinecap="round" />
+              <circle cx="8.37" cy="5.37" r="1.9" fill="#B79DFF" />
             </svg>
           </div>
         </div>
@@ -1407,7 +1421,7 @@
         " L" + (bx - nx * AHH).toFixed(1) + " " + (by - ny * AHH).toFixed(1) + " Z";
     })();
     // arc arrowhead takes the colour of the arc END it heads toward: rising→red (100), falling→blue (0).
-    const arcArrowColor = regT ? (t >= tRecent ? "#E05252" : "#5B8DEF") : null;
+    const arcArrowColor = regT ? (t >= tRecent ? "#FF6B8A" : "#29C7E8") : null;
     const mx = (live && live.metrics) || null;
     const fg = mx && mx.fear_greed, fgOk = validFearGreed(fg);
     const fgCol = fgOk ? ((fg.detail && FG_COLORS[fg.detail.rating]) || C.dim) : C.dim;
@@ -1418,11 +1432,11 @@
     const trend = d.trend_states;
     const bandBlurb = { hold: "Structural risk present, not acute.", trim: "Fragility elevated — the trend rule is the trigger.", "de-risk": "Fragility high, or a hard override fired." }[d.action_band] || "Not scored — inputs degraded.";
     const chips = [
-      ["CAPE", fmtMetric(mx, "cape", (v) => v.toFixed(1)), "#E05252"],
-      ["Top-10", fmtMetric(mx, "sp500_top10_weight_pct", (v) => v.toFixed(1) + "%"), "#E0B458"],
-      ["HY OAS", fmtMetric(mx, "hy_oas_bps", (v) => Math.round(v) + " bp"), "#7fbf94"],
-      ["Gold", fmtMetric(mx, "gold_spot", (v) => "$" + Math.round(v).toLocaleString("en-US")), "#E0B458"],
-      ["BTC", fmtMetric(mx, "btc_spot", (v) => "$" + Math.round(v / 1000) + "k"), "#E05252"],
+      ["CAPE", fmtMetric(mx, "cape", (v) => v.toFixed(1)), "#FF6B8A"],
+      ["Top-10", fmtMetric(mx, "sp500_top10_weight_pct", (v) => v.toFixed(1) + "%"), "#B79DFF"],
+      ["HY OAS", fmtMetric(mx, "hy_oas_bps", (v) => Math.round(v) + " bp"), "#29C7E8"],
+      ["Gold", fmtMetric(mx, "gold_spot", (v) => "$" + Math.round(v).toLocaleString("en-US")), "#B79DFF"],
+      ["BTC", fmtMetric(mx, "btc_spot", (v) => "$" + Math.round(v / 1000) + "k"), "#FF6B8A"],
     ].filter((c) => c[1]);
     const goldTtm = fmtMetric(mx, "gold_ttm_pct", (v) => (v > 0 ? "+" : "") + v.toFixed(1) + "%");
     const btcDd = fmtMetric(mx, "btc_drawdown_pct", (v) => v.toFixed(0) + "%");
@@ -1435,12 +1449,12 @@
         <div style={{ minHeight: "100dvh", display: "flex", flexDirection: "column", position: "relative",
           padding: "calc(env(safe-area-inset-top,0px) + 8px) 0 calc(env(safe-area-inset-bottom,0px) + 18px)" }}>
           <div aria-hidden="true" style={{ position: "absolute", top: 70, left: 0, right: 0, height: 340, pointerEvents: "none",
-            background: "radial-gradient(circle at 50% 42%,rgba(224,180,88,0.13),rgba(224,180,88,0.04) 42%,transparent 66%)" }} />
+            background: "radial-gradient(circle at 50% 42%,rgba(183,157,255,0.13),rgba(183,157,255,0.04) 42%,transparent 66%)" }} />
           <div role="button" aria-label="Close" tabIndex={0} onClick={close}
             onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); close(); } }}
             style={{ position: "absolute", top: "calc(env(safe-area-inset-top,0px) + 10px)", right: 12, width: 44, height: 44,
               display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", zIndex: 5 }}>
-            <div style={{ width: 32, height: 32, borderRadius: 999, border: "1px solid rgba(237,232,220,0.14)",
+            <div style={{ width: 32, height: 32, borderRadius: 999, border: "1px solid rgba(255,255,255,0.14)",
               display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(11,17,31,0.5)" }}>
               <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M1 1 L11 11 M11 1 L1 11" stroke={C.muted} strokeWidth="1.4" strokeLinecap="round" /></svg>
             </div>
@@ -1451,21 +1465,21 @@
               Where we stand<br /><span style={{ color: C.dim }}>on the AI bubble</span>
             </div>
             <div style={{ fontSize: 11, color: C.faint, marginTop: 8, display: "flex", alignItems: "center", gap: 7, flexWrap: "wrap" }}>
-              <span style={{ width: 5, height: 5, borderRadius: 999, background: "#7fbf94", display: "inline-block" }} />
+              <span style={{ width: 5, height: 5, borderRadius: 999, background: "#29C7E8", display: "inline-block" }} />
               {(live && live.anchorPartial ? "Month-to-date · " : "") + (splRel(meta.computed_at) || "live")}
-              {DEMO ? <span style={{ border: "1px solid rgba(237,232,220,0.14)", borderRadius: 999, padding: "1px 6px", fontSize: 9, letterSpacing: "0.08em", color: C.muted, textTransform: "uppercase" }}>demo</span> : null}
+              {DEMO ? <span style={{ border: "1px solid rgba(255,255,255,0.14)", borderRadius: 999, padding: "1px 6px", fontSize: 9, letterSpacing: "0.08em", color: C.muted, textTransform: "uppercase" }}>demo</span> : null}
             </div>
           </div>
           <div style={{ position: "relative", marginTop: 4, display: "flex", justifyContent: "center" }}>
             <svg viewBox="0 0 390 258" width="100%" style={{ maxWidth: 390, height: "auto", display: "block" }}
               aria-label={"Regime score " + Math.round(s) + " of 100, action band " + band.label.toLowerCase()}>
               <defs><filter id="splSoft" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur stdDeviation="2.4" /></filter></defs>
-              <circle cx="195" cy="150" r="140" fill="none" stroke="rgba(237,232,220,0.05)" strokeWidth="1" />
-              <circle cx="195" cy="150" r="96" fill="none" stroke="rgba(237,232,220,0.045)" strokeWidth="1" />
-              <path d={splArc(0, 1)} fill="none" stroke="rgba(237,232,220,0.07)" strokeWidth="11" strokeLinecap="round" />
-              <path d={splArc(0, 0.45)} fill="none" stroke="#5B8DEF" strokeOpacity="0.28" strokeWidth="11" strokeLinecap="round" />
-              <path d={splArc(0.45, 0.6)} fill="none" stroke="#E0B458" strokeOpacity="0.3" strokeWidth="11" />
-              <path d={splArc(0.6, 1)} fill="none" stroke="#E05252" strokeOpacity="0.28" strokeWidth="11" strokeLinecap="round" />
+              <circle cx="195" cy="150" r="140" fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="1" />
+              <circle cx="195" cy="150" r="96" fill="none" stroke="rgba(255,255,255,0.045)" strokeWidth="1" />
+              <path d={splArc(0, 1)} fill="none" stroke="rgba(255,255,255,0.07)" strokeWidth="11" strokeLinecap="round" />
+              <path d={splArc(0, 0.45)} fill="none" stroke="#29C7E8" strokeOpacity="0.28" strokeWidth="11" strokeLinecap="round" />
+              <path d={splArc(0.45, 0.6)} fill="none" stroke="#B79DFF" strokeOpacity="0.3" strokeWidth="11" />
+              <path d={splArc(0.6, 1)} fill="none" stroke="#FF6B8A" strokeOpacity="0.28" strokeWidth="11" strokeLinecap="round" />
               <path d={splArc(0, t)} fill="none" stroke={band.color} strokeOpacity="0.22" strokeWidth="11" strokeLinecap="round" filter="url(#splSoft)" />
               <path d={splArc(0, t)} fill="none" stroke={band.color} strokeWidth="4.5" strokeLinecap="round" />
               {regT && tHi - tLo > 0.012 && (
@@ -1502,13 +1516,13 @@
           </div>
           <div style={{ margin: "12px 26px 0", display: "flex", alignItems: "center", gap: 14, fontSize: 11, color: C.muted, flexWrap: "wrap" }}>
             <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
-              <span style={{ width: 6, height: 6, borderRadius: 999, background: d.red_flag_count > 0 ? "#E0B458" : "#7fbf94" }} />
+              <span style={{ width: 6, height: 6, borderRadius: 999, background: d.red_flag_count > 0 ? "#B79DFF" : "#29C7E8" }} />
               Red-flags <span style={{ color: C.text, fontVariantNumeric: "tabular-nums" }}>{d.red_flag_count} / 4</span>
             </span>
             {trend && (
               <span style={{ display: "inline-flex", alignItems: "center", gap: 14 }}>
-                <span style={{ color: "rgba(237,232,220,0.14)" }}>|</span>
-                <span>Faber trend{" "}<span style={{ color: trend.SPY.faber_10mo === "IN" ? "#7fbf94" : "#E05252" }}>SPY {trend.SPY.faber_10mo}</span> · <span style={{ color: trend.QQQ.faber_10mo === "IN" ? "#7fbf94" : "#E05252" }}>QQQ {trend.QQQ.faber_10mo}</span></span>
+                <span style={{ color: "rgba(255,255,255,0.14)" }}>|</span>
+                <span>Faber trend{" "}<span style={{ color: trend.SPY.faber_10mo === "IN" ? "#29C7E8" : "#FF6B8A" }}>SPY {trend.SPY.faber_10mo}</span> · <span style={{ color: trend.QQQ.faber_10mo === "IN" ? "#29C7E8" : "#FF6B8A" }}>QQQ {trend.QQQ.faber_10mo}</span></span>
               </span>
             )}
           </div>
@@ -1518,7 +1532,7 @@
                 <div style={{ ...BS.eyebrow }}>CNN Fear &amp; Greed</div>
                 <div style={{ ...BS.serif, fontSize: 15, color: fgCol, fontVariantNumeric: "tabular-nums" }}>{fg.value.toFixed(1)}{fg.detail && fg.detail.rating ? " · " + fg.detail.rating : ""}</div>
               </div>
-              <div style={{ position: "relative", height: 6, borderRadius: 999, marginTop: 9, background: "linear-gradient(90deg,#5AA9A3,#7fbf94,#9AA3B5,#C0564A,#E05252)" }}>
+              <div style={{ position: "relative", height: 6, borderRadius: 999, marginTop: 9, background: "linear-gradient(90deg,#5AA9A3,#29C7E8,#8A919E,#C0564A,#FF6B8A)" }}>
                 {fgT && <TrendTail pts={fgT} flip={true} barH={6} />}
                 <div style={{ position: "absolute", top: -3, left: (100 - fg.value) + "%", transform: "translateX(-50%)", width: 2, height: 12, borderRadius: 2, background: C.text, boxShadow: "0 0 0 2px " + C.bg }} />
               </div>
@@ -1535,8 +1549,8 @@
                   <span style={{ fontSize: 11, color: C.muted }}>{c[0]}</span>
                   <span style={{ fontSize: 12, color: C.text, fontVariantNumeric: "tabular-nums" }}>
                     {c[1].text}
-                    {c[0] === "Gold" && goldTtm ? <span style={{ color: "#7fbf94" }}> {goldTtm.text}</span> : null}
-                    {c[0] === "BTC" && btcDd ? <span style={{ color: "#E05252" }}> {btcDd.text}</span> : null}
+                    {c[0] === "Gold" && goldTtm ? <span style={{ color: "#29C7E8" }}> {goldTtm.text}</span> : null}
+                    {c[0] === "BTC" && btcDd ? <span style={{ color: "#FF6B8A" }}> {btcDd.text}</span> : null}
                   </span>
                 </div>
               ))}
@@ -1569,7 +1583,7 @@
     }
     const staticKs = ks.filter(function (k) { return !live.live[k]; });
     if (!staticKs.length) {
-      return <Pill color="#7fbf94" title={"2026 lines re-anchored from the bubblegauge feed" + (live.anchorPartial ? " — " + live.anchorMonth + " is month-to-date" : "")}>{pre}LIVE · {live.anchorMonth}{live.anchorPartial ? " (mtd)" : ""}</Pill>;
+      return <Pill color="#29C7E8" title={"2026 lines re-anchored from the bubblegauge feed" + (live.anchorPartial ? " — " + live.anchorMonth + " is month-to-date" : "")}>{pre}LIVE · {live.anchorMonth}{live.anchorPartial ? " (mtd)" : ""}</Pill>;
     }
     return <Pill color="#d9b45c" title={"Feed partially available — static Jul 2026 snapshot for: " + staticKs.join(", ")}>{pre}PARTLY LIVE · {live.anchorMonth}</Pill>;
   }
@@ -1654,32 +1668,353 @@
     return w;
   }
 
+  // --- full-screen overview parts (DR-011) -------------------------------------------------
+  // Recharts is a global from ./vendor, loaded before this bundle. Read it lazily so the module
+  // still evaluates (and every other surface still works) if the vendor tag is ever absent.
+  function rc() { try { return typeof Recharts !== "undefined" ? Recharts : null; } catch (e) { return null; } }
+
+  // Small progress ring. v in [0,1].
+  // Shared gradient + glow defs. Every stroke in the overview fades along a gradient rather than
+  // sitting flat — that fade is what reads as "lit" instead of "drawn".
+  function Defs() {
+    const g = (id, a, b, oa, ob) => (
+      <linearGradient key={id} id={id} x1="0" y1="1" x2="1" y2="0">
+        <stop offset="0%" stopColor={a} stopOpacity={oa} /><stop offset="100%" stopColor={b} stopOpacity={ob} />
+      </linearGradient>
+    );
+    return (
+      <defs>
+        {g("bgArc", C.cyan, C.violet, 1, 1)}
+        {g("bgV", C.indigo, C.violet, 0.12, 1)}
+        {g("bgC", C.blue, C.cyan, 0.12, 1)}
+        <radialGradient id="bgHalo"><stop offset="0%" stopColor={C.violet} stopOpacity="0.30" /><stop offset="100%" stopColor={C.violet} stopOpacity="0" /></radialGradient>
+        <filter id="bgGlow" x="-70%" y="-70%" width="240%" height="240%">
+          <feGaussianBlur stdDeviation="4.5" result="b" /><feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge>
+        </filter>
+        <filter id="bgSoft" x="-70%" y="-70%" width="240%" height="240%">
+          <feGaussianBlur stdDeviation="2" result="b" /><feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge>
+        </filter>
+      </defs>
+    );
+  }
+
+  // The centrepiece: a 270-degree score arc, with every weighted indicator orbiting it as a lit node
+  // — size from its weight, brightness from its sub-score. Hover any node for its name and reading.
+  const GA0 = 135, GSW = 270;
+  function gpol(r, deg) { const a = deg * Math.PI / 180; return [160 + r * Math.cos(a), 156 + r * Math.sin(a)]; }
+  function garc(r, t0, t1) {
+    const p0 = gpol(r, GA0 + t0 * GSW), p1 = gpol(r, GA0 + t1 * GSW);
+    return "M" + p0[0].toFixed(1) + " " + p0[1].toFixed(1) + " A" + r + " " + r + " 0 " +
+      ((t1 - t0) * GSW > 180 ? 1 : 0) + " 1 " + p1[0].toFixed(1) + " " + p1[1].toFixed(1);
+  }
+  function ConstellationGauge({ d, b }) {
+    const v = Math.max(0, Math.min(100, +d.headline_median)), t = v / 100;
+    const iq = pair(d.iqr) ? [Math.max(0, Math.min(100, d.iqr[0])) / 100, Math.max(0, Math.min(100, d.iqr[1])) / 100] : null;
+    const zones = [[0.225, "HOLD", BAND.hold.color], [0.525, "TRIM", BAND.trim.color], [0.80, "DE-RISK", BAND["de-risk"].color]];
+    return (
+      <svg viewBox="-6 0 332 268" preserveAspectRatio="xMidYMid meet" style={{ width: "100%", height: "100%", display: "block" }}
+        role="img" aria-label={"Regime score " + Math.round(v) + " of 100, action band " + b.label.toLowerCase() +
+          (iq ? ", middle half of the model's range " + Math.round(d.iqr[0]) + " to " + Math.round(d.iqr[1]) : "")}>
+        <Defs />
+        <circle cx="160" cy="156" r="118" fill="url(#bgHalo)" />
+        <path d={garc(100, 0, 1)} fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="15" strokeLinecap="round" />
+        <path d={garc(100, 0, 0.45)} fill="none" stroke={BAND.hold.color} strokeWidth="15" strokeOpacity="0.13" />
+        <path d={garc(100, 0.45, 0.6)} fill="none" stroke={BAND.trim.color} strokeWidth="15" strokeOpacity="0.15" />
+        <path d={garc(100, 0.6, 1)} fill="none" stroke={BAND["de-risk"].color} strokeWidth="15" strokeOpacity="0.13" />
+        {iq && <path d={garc(100, iq[0], iq[1])} fill="none" stroke={C.text} strokeWidth="15" strokeOpacity="0.16" />}
+        <path d={garc(100, 0, t)} fill="none" stroke="url(#bgArc)" strokeWidth="15" strokeLinecap="round" filter="url(#bgGlow)" />
+        {zones.map(function (z) {
+          const p = gpol(126, GA0 + z[0] * GSW);
+          return <text key={z[1]} x={p[0].toFixed(1)} y={p[1].toFixed(1)} textAnchor="middle" fontSize="9"
+            letterSpacing="1.3" fill={z[2]} opacity="0.75">{z[1]}</text>;
+        })}
+        <text x="160" y="150" textAnchor="middle" fontSize="56" fontWeight="700" fill={C.text} style={{ fontVariantNumeric: "tabular-nums" }}>{Math.round(v)}</text>
+        <text x="160" y="170" textAnchor="middle" fontSize="10" fill={C.faint}>of 100</text>
+        <text x="160" y="192" textAnchor="middle" fontSize="13" letterSpacing="2.4" fill={b.color} fontWeight="700">{b.label}</text>
+        {iq && <text x="160" y="212" textAnchor="middle" fontSize="10" fill={C.muted}>{"middle half " + Math.round(d.iqr[0]) + "–" + Math.round(d.iqr[1])}</text>}
+      </svg>
+    );
+  }
+
+  // Night-sky wash. Three slow, blurred lights — the composition's only ambient device.
+  function Aurora() {
+    const l = (top, left, w, h, col, dur, rev) => ({
+      position: "absolute", top: top, left: left, width: w, height: h, borderRadius: "50%",
+      background: "radial-gradient(closest-side," + col + ", transparent 72%)", filter: "blur(34px)",
+      animation: "bgDrift " + dur + "s ease-in-out infinite" + (rev ? " reverse" : ""),
+    });
+    return (
+      <div aria-hidden="true" style={{ position: "absolute", inset: 0, overflow: "hidden", pointerEvents: "none", zIndex: 0 }}>
+        <div style={l("-34%", "-10%", "66%", "86%", "rgba(41,199,232,0.30)", 26)} />
+        <div style={l("-28%", "30%", "62%", "80%", "rgba(183,157,255,0.32)", 34, true)} />
+        <div style={l("-22%", "62%", "58%", "74%", "rgba(108,79,224,0.28)", 44)} />
+        <div style={l("46%", "8%", "52%", "70%", "rgba(41,199,232,0.14)", 38, true)} />
+      </div>
+    );
+  }
+
+  // Keyframes cannot be expressed in inline styles; inject once, and honour reduced-motion.
+  function ensureCss() {
+    try {
+      if (typeof document === "undefined" || document.getElementById("bg-css")) return;
+      const el = document.createElement("style");
+      el.id = "bg-css";
+      el.textContent =
+        "@keyframes bgRise{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}" +
+        "@keyframes bgDrift{0%{transform:translate3d(-5%,0,0) scale(1.04)}50%{transform:translate3d(5%,-3%,0) scale(1.14)}100%{transform:translate3d(-5%,0,0) scale(1.04)}}" +
+        ".bgr{animation:bgRise .66s cubic-bezier(.2,.7,.2,1) both}" +
+        "@media(prefers-reduced-motion:reduce){.bgr,[style*=bgDrift]{animation:none!important}}";
+      document.head.appendChild(el);
+    } catch (e) {}
+  }
+
+  // A 61-point monthly series as a 24px sparkline.
+  function Spark({ pts, color, h }) {
+    const v = (pts || []).map(function (p) {
+      return Array.isArray(p) ? p[1] : (p && p.value);
+    }).filter(isNum);
+    if (v.length < 3) return null;
+    let lo = v[0], hi = v[0];
+    for (const x of v) { if (x < lo) lo = x; if (x > hi) hi = x; }
+    const rng = hi - lo || 1;
+    const dd = v.map((x, i) => (i / (v.length - 1) * 100).toFixed(1) + "," + (25 - (x - lo) / rng * 23).toFixed(1)).join(" ");
+    return (
+      <svg viewBox="0 0 100 27" preserveAspectRatio="none" aria-hidden="true" style={{ width: "100%", height: h || 22, marginTop: 7, display: "block" }}>
+        <polyline points={dd} fill="none" stroke={color} strokeWidth="1.6" vectorEffect="non-scaling-stroke" opacity="0.9" />
+      </svg>
+    );
+  }
+
+  // The live market readings, each with a stated job. Six, not thirty-five.
+  // Generic formatter for the long tail, driven by the feed's own unit field.
+  function fmtAny(m) {
+    if (!m || !m.available || !isNum(m.value)) return null;
+    const u = m.unit || "", v = m.value;
+    if (u === "pct") return v.toFixed(1) + "%";
+    if (u === "bps") return Math.round(v) + " bp";
+    if (u === "USD") return "$" + (Math.abs(v) >= 1000 ? Math.round(v).toLocaleString("en-US") : v.toFixed(2));
+    if (u === "USD_mn") return "$" + (v / 1e6).toFixed(2) + "tn";
+    if (u === "pp") return v.toFixed(1) + "pp";
+    return Math.abs(v) >= 100 ? v.toFixed(1) : v.toFixed(2);
+  }
+
+  function LiveTiles({ live }) {
+    const [open, setOpen] = useState(false);
+    if (!live) return null;
+    const mx = live.metrics || {}, an = live.a || {};
+    const num = (id) => (mx[id] && mx[id].available && isNum(mx[id].value) ? mx[id].value : null);
+    const fg = live.fgSeries && Array.isArray(live.fgSeries.points) ? live.fgSeries.points : null;
+    const T = [
+      { id: "cape", k: "CAPE", v: num("cape"), f: (x) => x.toFixed(1), why: "valuation", col: C.violet },
+      { id: "sp500_top10_weight_pct", k: "Top-10 weight", v: num("sp500_top10_weight_pct"), f: (x) => x.toFixed(1) + "%", why: "concentration", col: C.violet },
+      { id: "hy_oas_bps", k: "HY OAS", v: num("hy_oas_bps"), f: (x) => Math.round(x) + " bp", why: "credit stress", col: C.cyan,
+        d: num("hy_oas_52w_change_bps") },
+      { id: "gold_ttm_pct", k: "Gold 12m", v: num("gold_ttm_pct"), f: (x) => (x > 0 ? "+" : "") + x.toFixed(1) + "%", why: "haven bid", col: C.violet, s: an.au, sl: "5y price" },
+      { id: "btc_drawdown_pct", k: "BTC vs ATH", v: num("btc_drawdown_pct"), f: (x) => x.toFixed(0) + "%", why: "risk appetite", col: C.blue, s: an.btc, sl: "5y price" },
+    ].filter((t) => isNum(t.v));
+    if (!T.length) return null;
+    const shown = {}; T.forEach((t) => { shown[t.id] = 1; });
+    const rest = Object.keys(mx).filter(function (k) { return !shown[k] && fmtAny(mx[k]) !== null; });
+    return (
+      <div style={{ display: "flex", flexDirection: "column", gap: 10, flex: "0 0 auto" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(" + T.length + ",minmax(0,1fr))", gap: 12 }}>
+        {T.map(function (t, i) {
+          return (
+            <div key={t.k} className="bgr" style={{ ...HS.card, animationDelay: (0.18 + i * 0.05).toFixed(2) + "s", padding: "12px 14px" }}>
+              <div style={{ ...BS.eyebrow, fontSize: 9.5 }}>{t.k}</div>
+              <div style={{ ...BS.serif, fontSize: 21, fontWeight: 700, color: C.text, marginTop: 3, fontVariantNumeric: "tabular-nums" }}>{t.f(t.v)}</div>
+              <div style={{ fontSize: 9.5, color: C.faint, marginTop: 1 }}>
+                {t.why}{isNum(t.d) ? " · " + (t.d > 0 ? "+" : "") + Math.round(t.d) + "bp 52w" : ""}
+              </div>
+              {t.s ? <React.Fragment><Spark pts={t.s} color={t.col} />
+                {t.sl && <div style={{ fontSize: 8.5, color: C.faint, marginTop: -2 }}>{t.sl}</div>}</React.Fragment>
+                : <div aria-hidden="true" style={{ height: 22, marginTop: 7 }} />}
+            </div>
+          );
+        })}
+      </div>
+      {rest.length > 0 && (
+        <div>
+          <button type="button" onClick={() => setOpen(!open)} aria-expanded={open}
+            style={{ ...HS.link, color: C.muted, fontSize: 10, letterSpacing: "0.1em", textTransform: "uppercase" }}>
+            {(open ? "Hide" : "Show") + " all " + (rest.length + T.length) + " live readings " + (open ? "▴" : "▾")}
+          </button>
+          {open && (
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(150px,1fr))", gap: "6px 18px", marginTop: 8 }}>
+              {rest.map(function (k) {
+                const m = mx[k];
+                return (
+                  <div key={k} style={{ display: "flex", alignItems: "baseline", gap: 8, fontSize: 10.5, minWidth: 0 }}
+                    title={(m.name || k) + (m.source ? " · " + m.source : "") + (m.as_of ? " · as of " + m.as_of : "")}>
+                    <span style={{ color: C.muted, flex: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{k.replace(/_/g, " ")}</span>
+                    <span style={{ color: C.text, fontVariantNumeric: "tabular-nums" }}>{fmtAny(m)}</span>
+                    {m.stale && <span style={{ color: "#E8853D", fontSize: 9 }}>stale</span>}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+      </div>
+    );
+  }
+
+  // Regime history: the 5-95 band, the IQR band, the median line, and the two action thresholds.
+  function HistoryArea({ hist, b }) {
+    const R = rc();
+    const arr = hist && hist.json && Array.isArray(hist.json.data) ? hist.json.data : null;
+    if (!R || !arr || arr.length < 2) return null;
+    const rows = arr.filter((r) => r && isNum(r.median)).map(function (r) {
+      const o = { t: String(r.computed_at || "").slice(5, 10), median: r.median };
+      if (pair(r.iqr)) o.iqr = [r.iqr[0], r.iqr[1]];
+      if (pair(r.band_5_95)) o.outer = [r.band_5_95[0], r.band_5_95[1]];
+      return o;
+    });
+    return (
+      <R.ResponsiveContainer width="100%" height="100%">
+        <R.ComposedChart data={rows} margin={{ top: 6, right: 6, bottom: 0, left: 0 }}>
+          <defs>
+            <linearGradient id="bgOuter" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor={C.violet} stopOpacity="0.34" />
+              <stop offset="100%" stopColor={C.violet} stopOpacity="0.03" />
+            </linearGradient>
+            <linearGradient id="bgIqr" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor={C.blue} stopOpacity="0.62" />
+              <stop offset="100%" stopColor={C.blue} stopOpacity="0.10" />
+            </linearGradient>
+          </defs>
+          <R.ReferenceArea y1={60} y2={100} fill={BAND["de-risk"].color} fillOpacity={0.07} />
+          <R.ReferenceArea y1={45} y2={60} fill={BAND.trim.color} fillOpacity={0.07} />
+          <R.CartesianGrid stroke="rgba(255,255,255,0.05)" vertical={false} />
+          <R.XAxis dataKey="t" tick={{ fill: C.faint, fontSize: 9.5 }} axisLine={false} tickLine={false} minTickGap={26} />
+          <R.YAxis domain={[0, 100]} ticks={[0, 45, 60, 100]} tick={{ fill: C.faint, fontSize: 9.5 }} axisLine={false} tickLine={false} width={30} />
+          <R.ReferenceLine y={45} stroke={BAND.trim.color} strokeDasharray="3 4" strokeOpacity="0.7" />
+          <R.ReferenceLine y={60} stroke={BAND["de-risk"].color} strokeDasharray="3 4" strokeOpacity="0.7" />
+          <R.Area dataKey="outer" stroke="none" fill="url(#bgOuter)" isAnimationActive={false} />
+          <R.Area dataKey="iqr" stroke="none" fill="url(#bgIqr)" isAnimationActive={false} />
+          <R.Line dataKey="median" stroke={C.cyan} strokeWidth={2} dot={false} isAnimationActive={false} />
+        </R.ComposedChart>
+      </R.ResponsiveContainer>
+    );
+  }
+
+  // Last seven readings as bars, each tinted by the band that reading was in.
+  // Fear & Greed gets its own panel, not a tile: it rides a SEPARATE 0-100 sentiment axis and is
+  // deliberately NOT an input to the regime score. Same boundary gate as every other F&G surface.
+  function FearGreedPanel({ live }) {
+    const m = live && live.metrics && live.metrics.fear_greed;
+    if (!validFearGreed(m)) return null;
+    const det = m.detail || {}, rating = det.rating || null;
+    const col = (rating && FG_COLORS[rating]) || C.dim;
+    const v = Math.max(0, Math.min(100, m.value));
+    const ser = live.fgSeries && live.fgSeries.available && Array.isArray(live.fgSeries.points) ? live.fgSeries.points : null;
+    const refs = [["prev", det.previous_close], ["1w", det.previous_1_week], ["1m", det.previous_1_month]]
+      .filter((r) => isNum(r[1]));
+    return (
+      <div className="bgr" style={{ ...HS.card, animationDelay: ".18s", borderTop: "2px solid " + col }}>
+        <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
+          <p style={HS.ttl}>Fear &amp; Greed</p>
+          <span style={{ fontSize: 9.5, color: C.faint }}>own axis · not scored</span>
+        </div>
+        <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginTop: 6 }}>
+          <span style={{ ...BS.serif, fontSize: 34, fontWeight: 700, color: col, fontVariantNumeric: "tabular-nums" }}>{v.toFixed(1)}</span>
+          {rating && <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.1em", color: col, textTransform: "uppercase" }}>{rating}</span>}
+          {refs.length > 0 && <span style={{ marginLeft: "auto", fontSize: 10, color: C.muted, fontVariantNumeric: "tabular-nums" }}>
+            {refs.map((r) => r[0] + " " + Math.round(r[1])).join(" · ")}</span>}
+        </div>
+        <div style={{ position: "relative", height: 10, borderRadius: 99, marginTop: 10,
+          background: "linear-gradient(90deg,#FF6B8A," + C.violet + "," + C.blue + "," + C.cyan + ")" }}>
+          <div style={{ position: "absolute", top: -4, left: v + "%", transform: "translateX(-50%)", width: 3, height: 18,
+            borderRadius: 2, background: C.text, boxShadow: "0 0 0 2px " + C.panel }} />
+        </div>
+        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 9, color: C.faint, marginTop: 5 }}>
+          <span>0 · extreme fear</span><span>100 · extreme greed</span>
+        </div>
+        {ser && (
+          <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column", justifyContent: "flex-end", marginTop: 10 }}>
+            <div style={{ fontSize: 9, color: C.faint, marginBottom: 2 }}>observed snapshots</div>
+            <Spark pts={ser} color={col} h={"100%"} />
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // The nine weighted indicators behind the score, heaviest first.
+  function IndicatorTable({ d }) {
+    const rows = [];
+    for (const bk of ["block_S", "block_D"]) {
+      const blk = d[bk];
+      if (!blk || !blk.indicators) continue;
+      for (const id of Object.keys(blk.indicators)) {
+        const r = blk.indicators[id];
+        if (!r || !isNum(r.sub_score) || r.dropped) continue; // a dropped input is not evidence
+        rows.push({ id: id, name: regOf(id).name, sub: r.sub_score, w: r.weight, blk: bk === "block_S" ? "S" : "D",
+          flag: r.stale ? "stale" : r.fallback_used ? "fallback" : null });
+      }
+    }
+    if (!rows.length) return null;
+    // rank by contribution (weight x sub-score), not by weight: the heaviest input can be the
+    // calmest one, and heading the table with it contradicts the judgment line on the same screen.
+    rows.sort((a, b) => (b.w || 0) * (b.sub || 0) - (a.w || 0) * (a.sub || 0));
+    return (
+      <div style={{ overflow: "auto", flex: 1, minHeight: 0, marginTop: 8,
+        WebkitMaskImage: "linear-gradient(180deg,#000 calc(100% - 26px),transparent)",
+        maskImage: "linear-gradient(180deg,#000 calc(100% - 26px),transparent)" }}>
+        <table style={HS.tbl}>
+          <thead><tr>
+            <th style={HS.th}>Indicator</th><th style={HS.th}>Block</th>
+            <th style={{ ...HS.th, textAlign: "right", paddingRight: 14 }} title="share within its own block, not of the whole score">Wt in block</th>
+            <th style={{ ...HS.th, width: "34%" }}>Sub-score</th>
+          </tr></thead>
+          <tbody>
+            {rows.map(function (r) {
+              const col = r.blk === "S" ? C.violet : C.cyan;
+              return (
+                <tr key={r.id}>
+                  <td style={{ ...HS.td, color: C.text, whiteSpace: "normal" }}>{r.name}
+                    {r.flag && <span style={{ color: "#E8853D", fontSize: 9.5 }}> · {r.flag}</span>}</td>
+                  <td style={{ ...HS.td, color: col, fontWeight: 700 }}>{r.blk}</td>
+                  <td style={{ ...HS.td, textAlign: "right" }}>{isNum(r.w) ? Math.round(r.w * 100) + "%" : "—"}</td>
+                  <td style={HS.td}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <span style={{ flex: 1, height: 5, background: "rgba(255,255,255,0.07)", borderRadius: 99, minWidth: 40 }}>
+                        <span style={{ display: "block", width: Math.round(r.sub * 100) + "%", height: "100%", background: col, borderRadius: 99 }} />
+                      </span>
+                      <span style={{ color: C.text, minWidth: 26, textAlign: "right" }}>{Math.round(r.sub * 100)}</span>
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    );
+  }
+
   function Hero({ d, meta, hist, goToDetail }) {
     const b = bandOf(d.action_band);
-    const supp = d.action_band === "suppressed (block degraded)";
-    const v = Math.max(0, Math.min(100, +d.headline_median));
+    const live = useAiLive(); // the market readings scattered across the page, gathered here
+    useEffect(function () { ensureCss(); }, []);
     const verdict = verdictOf(d), dist = distanceOf(d);
     const regT = regimeTrend(hist, d.headline_median);
     const run = runOf(hist, d.action_band);
-    const nx = d.action_band === "hold" ? 45 : 60;
-    const L = Math.min(v, nx), W = Math.abs(nx - v);
     const tr = d.trend_states || {};
     const S = d.block_S && isNum(d.block_S.value) ? d.block_S.value : null;
     const D = d.block_D && isNum(d.block_D.value) ? d.block_D.value : null;
-    const shape = S === null || D === null ? ""
-      : S >= 0.6 ? (D >= 0.4 ? "Expensive, and starting to turn." : "Expensive, but not yet unwinding.")
-      : (D >= 0.4 ? "Not extreme, but the flows are turning." : "Neither stretched nor turning.");
     const dlt = regT ? Math.round(regT[2] - regT[0]) : null;
-    const runTxt = run === null ? "" : run >= 3 ? b.label + " for the last " + run + " readings"
-      : run === 0 ? "Changed to " + b.label + " this reading"
-      : "Changed to " + b.label + " " + run + (run === 1 ? " reading" : " readings") + " ago";
-    const dirTxt = dlt === null ? "" : (dlt > 0 ? "▲ +" + dlt : dlt < 0 ? "▼ " + dlt : "→ no change") + " over the last 3 readings";
-    const meta2 = [runTxt, dirTxt].filter(Boolean).join(" · ");
+    const runTxt = run === null ? "" : run >= 3 ? b.label + " for " + run + " readings"
+      : run === 0 ? "changed to " + b.label + " this reading"
+      : "changed to " + b.label + " " + run + (run === 1 ? " reading" : " readings") + " ago";
+    const dirTxt = dlt === null ? "" : (dlt > 0 ? "▲ +" + dlt : dlt < 0 ? "▼ " + dlt : "→ no change") + " over 3 readings";
     const flags = d.red_flag_detail || {};
-    const fired = Object.keys(flags).filter(function (k) { return flags[k]; });
+    const legend = [["Structure", S, C.violet], ["Dynamics", D, C.cyan]];
     return (
-      <section aria-labelledby="bg-hero-h" style={{ ...BS.panel, borderTop: "2px solid " + b.color, padding: "16px 20px 14px", margin: "0 0 16px" }}>
-        <div style={HS.head}>
+      <section aria-labelledby="bg-hero-h" style={HS.screen}>
+        <Aurora />
+        <div style={{ ...HS.bar, ...HS.lift }}>
           <span style={BS.eyebrow}>AI bubble regime</span>
           <Freshness computedAt={meta.computed_at} />
           {meta.coverage && meta.coverage.degraded && <CoverageChip coverage={meta.coverage} />}
@@ -1687,90 +2022,64 @@
           <button type="button" onClick={goToDetail} style={{ ...HS.link, color: b.color }}>Open the full breakdown ›</button>
         </div>
 
-        <div style={HS.grid}>
-          <div style={HS.left}>
-            <h2 id="bg-hero-h" style={{ ...BS.serif, ...HS.prose, fontSize: 26, lineHeight: 1.16, fontWeight: 600, margin: 0, color: C.text, letterSpacing: "-0.005em" }}>{verdict.lead}</h2>
-            <p style={{ ...HS.prose, fontSize: 15, lineHeight: 1.5, color: C.dim, margin: "9px 0 0" }}>{verdict.detail}{dist ? " " + dist : ""}</p>
+        <div style={{ ...HS.r1, ...HS.lift }}>
+          <div className="bgr" style={HS.card}>
+            <h2 id="bg-hero-h" style={{ ...BS.serif, fontSize: 23, lineHeight: 1.18, fontWeight: 600, margin: 0, color: C.text, maxWidth: "58ch" }}>{verdict.lead}</h2>
+            <p style={{ fontSize: 13, lineHeight: 1.5, color: C.dim, margin: "6px 0 8px", maxWidth: "72ch" }}>{verdict.detail}{dist ? " " + dist : ""}</p>
+            <div style={{ flex: 1, minHeight: 120 }}><HistoryArea hist={hist} b={b} /></div>
           </div>
-
-          <div style={HS.right}>
-            <div style={BS.eyebrow}>Regime score</div>
-            <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginTop: 5 }}>
-              <span style={{ ...BS.serif, fontSize: 26, fontWeight: 700, color: b.color, fontVariantNumeric: "tabular-nums" }}>{Math.round(d.headline_median)}</span>
-              <span style={{ fontSize: 12.5, color: C.faint }}>/100</span>
-              <span style={{ marginLeft: "auto", fontSize: 10.5, fontWeight: 800, letterSpacing: "0.09em", color: b.color, padding: "2px 8px", borderRadius: 5, background: b.zone }}>{b.label}</span>
+          <div className="bgr" style={{ ...HS.card, alignItems: "center", animationDelay: ".06s" }}>
+            <p style={{ ...HS.ttl, alignSelf: "flex-start" }}>Where we stand</p>
+            <div style={{ position: "relative", flex: 1, width: "100%", minHeight: 90, margin: "4px 0" }}>
+              <div style={{ position: "absolute", inset: 0 }}><ConstellationGauge d={d} b={b} /></div>
             </div>
-            <div style={{ marginTop: 9 }}>
-              <GaugeBar value={d.headline_median} iqr={d.iqr} band={d.action_band} height={14} trend={regT} />
+            <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: 5 }}>
+              {legend.map(function (l) {
+                return (
+                  <div key={l[0]} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 11.5 }}>
+                    <span style={{ width: 9, height: 9, borderRadius: 3, background: l[2] }} />
+                    <span style={{ color: C.dim, flex: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{l[0]}</span>
+                    <span style={{ color: C.text, fontWeight: 600, fontVariantNumeric: "tabular-nums" }}>{isNum(l[1]) ? Math.round(l[1] * 100) : "—"}</span>
+                  </div>
+                );
+              })}
+              {(runTxt || dirTxt) && <div style={{ fontSize: 10.5, color: C.muted, borderTop: "1px solid " + C.line, paddingTop: 6, marginTop: 1 }}>{[runTxt, dirTxt].filter(Boolean).join(" · ")}</div>}
             </div>
-            <div aria-hidden="true" style={HS.brk}>
-              {!supp && W >= 1 && (
-                <React.Fragment>
-                  <div style={{ position: "absolute", left: L + "%", width: W + "%", top: 3, height: 1, background: "rgba(237,232,220,0.40)" }} />
-                  <div style={{ position: "absolute", left: L + "%", top: 0, width: 1, height: 7, background: "rgba(237,232,220,0.40)" }} />
-                  <div style={{ position: "absolute", left: L + W + "%", top: 0, width: 1, height: 7, background: "rgba(237,232,220,0.40)" }} />
-                </React.Fragment>
-              )}
-            </div>
-            <div aria-hidden="true" style={HS.scale}>
-              <span style={{ position: "absolute", left: 0 }}>0</span>
-              <span style={{ position: "absolute", left: "45%", transform: "translateX(-50%)" }}>45</span>
-              <span style={{ position: "absolute", left: "60%", transform: "translateX(-50%)" }}>60</span>
-              <span style={{ position: "absolute", right: 0 }}>100</span>
-            </div>
-            {meta2 && <div style={{ fontSize: 10.5, color: C.muted, marginTop: 8 }}>{meta2}</div>}
           </div>
         </div>
 
-        <div style={HS.rail}>
-          {tr.SPY && tr.QQQ && (
-            <div style={HS.cell}>
-              <div style={BS.eyebrow}>Trigger</div>
-              <div style={{ ...HS.val, display: "flex", gap: 12 }}>
-                {["SPY", "QQQ"].map(function (k) {
-                  const st = tr[k] && tr[k].faber_10mo;
-                  return <span key={k} style={{ fontWeight: 700, color: st === "OUT" ? "#E05252" : "#7fbf94" }}>{(st === "OUT" ? "▼ " : "▲ ") + k + " " + st}</span>;
-                })}
-              </div>
-              <div style={HS.cap}>Faber&apos;s 10-month rule — what times the move.</div>
-            </div>
-          )}
-          <div style={HS.cell}>
-            <div style={BS.eyebrow}>Override</div>
-            <div style={{ ...HS.val, display: "flex", alignItems: "center", gap: 8 }}>
-              <span role="img" aria-label={d.red_flag_count + " of 4 override flags fired"} title={fired.map(function (k) { return REDFLAG_COPY[k]; }).join(" · ") || "no override flags fired"}
-                style={{ display: "inline-flex", gap: 5 }}>
-                {Object.keys(flags).map(function (k) {
-                  return <span key={k} style={{ width: 7, height: 7, borderRadius: 99, background: flags[k] ? "#E05252" : "transparent", border: "1px solid " + (flags[k] ? "#E05252" : "rgba(237,232,220,0.25)") }} />;
-                })}
-              </span>
-              <span>{d.red_flag_count} of 4 fired</span>
-            </div>
-            <div style={HS.cap}>3 of 4 floors the score at 70, whatever else says.</div>
+        <div style={{ ...HS.r2, ...HS.lift }}>
+          <div className="bgr" style={{ ...HS.card, animationDelay: ".12s" }}>
+            <p style={HS.ttl}>What is driving it</p>
+            <IndicatorTable d={d} />
           </div>
-          {shape && (
-            <div style={HS.cell}>
-              <div style={BS.eyebrow}>Shape of risk</div>
-              <div style={{ marginTop: 3 }}>
-                {[["Structure", S], ["Dynamics", D]].map(function (r) {
-                  return (
-                    <div key={r[0]} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12.5, color: C.text, lineHeight: 1.6 }}>
-                      <span style={{ minWidth: 88 }}>{r[0]} {Math.round(r[1] * 100)}</span>
-                      <span style={HS.track}><span style={{ display: "block", width: Math.round(r[1] * 100) + "%", height: "100%", borderRadius: 99, background: "rgba(237,232,220,0.55)" }} /></span>
-                    </div>
-                  );
-                })}
-              </div>
-              <div style={HS.cap}>{shape}</div>
-            </div>
-          )}
+          <FearGreedPanel live={live} />
+        </div>
+
+        <div style={HS.lift}><LiveTiles live={live} /></div>
+
+        <div className="bgr" style={{ ...HS.card, ...HS.lift, animationDelay: ".5s", flex: "0 0 auto", flexDirection: "row", alignItems: "center", gap: 26, flexWrap: "wrap" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 11.5 }}>
+            <span style={{ ...BS.eyebrow, minWidth: 58 }}>Trigger</span>
+            {["SPY", "QQQ"].map(function (k) {
+              const st = tr[k] && tr[k].faber_10mo;
+              return st ? <span key={k} style={{ fontWeight: 700, color: st === "OUT" ? BAND["de-risk"].color : C.cyan }}>{(st === "OUT" ? "▼ " : "▲ ") + k + " " + st}</span> : null;
+            })}
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 11.5 }}>
+            <span style={{ ...BS.eyebrow, minWidth: 62 }}>Override</span>
+            <span role="img" aria-label={d.red_flag_count + " of 4 override flags fired"}
+              title={Object.keys(flags).filter((k) => flags[k]).map((k) => REDFLAG_COPY[k]).join(" · ") || "no override flags fired"}
+              style={{ display: "inline-flex", gap: 5 }}>
+              {Object.keys(flags).map(function (k) {
+                return <span key={k} style={{ width: 8, height: 8, borderRadius: 99, background: flags[k] ? BAND["de-risk"].color : "transparent", border: "1px solid " + (flags[k] ? BAND["de-risk"].color : "rgba(255,255,255,0.22)") }} />;
+              })}
+            </span>
+            <span style={{ color: C.text }}>{d.red_flag_count} of 4 fired</span>
+          </div>
           {d.judgment_call && d.judgment_call.text && (
-            <div style={HS.note}>
-              <div style={BS.eyebrow}>Analyst note</div>
-              <div style={{ ...BS.serif, fontStyle: "italic", fontSize: 12.5, lineHeight: 1.55, color: C.dim, marginTop: 3 }}>
-                {d.judgment_call.text.length > 160 ? d.judgment_call.text.slice(0, 160) + "…" : d.judgment_call.text}
-                {d.judgment_call.stale || d.judgment_call.error_class ? <span style={{ color: C.faint }}> · stale</span> : null}
-              </div>
+            <div style={{ ...BS.serif, fontStyle: "italic", fontSize: 11.5, lineHeight: 1.5, color: C.muted, flex: "1 1 260px", minWidth: 0, borderLeft: "1px solid " + C.line, paddingLeft: 20 }}>
+              {d.judgment_call.text.length > 170 ? d.judgment_call.text.slice(0, 170) + "…" : d.judgment_call.text}
             </div>
           )}
         </div>
@@ -1785,7 +2094,7 @@
     const on = wide && !s.loading && !s.notReady && !s.error && !!s.json;
     return (
       <React.Fragment>
-        <div style={on ? HS.off : undefined}><Strip goToDetail={goToDetail} /></div>
+        <div style={on ? HS.off : HS.stripWrap}><Strip goToDetail={goToDetail} /></div>
         {on && <Hero d={s.json.data} meta={s.json.meta || {}} hist={hist} goToDetail={goToDetail} />}
       </React.Fragment>
     );
