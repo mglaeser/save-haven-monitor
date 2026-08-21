@@ -24,11 +24,19 @@
   .glow{position:absolute;inset:0;pointer-events:none;
     background:radial-gradient(80% 60% at 50% 0%,rgba(224,180,88,0.12),rgba(224,180,88,0.03) 55%,transparent 78%)}
   .row{position:relative;z-index:1}
-  .head{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:5px}
-  .lab{font-size:8px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted)}
-  .score{font-family:var(--serif);font-size:30px;line-height:0.8;font-variant-numeric:tabular-nums}
+  /* Heads MUST stay one line: .wrap is a fixed 168px box with overflow:hidden, so a wrapped
+     head steals a row from the layout and pushes .foot (freshness) out of the widget. nowrap makes
+     that impossible; overflow+ellipsis+min-width:0 then degrades an over-long value gracefully
+     (score 100 + DE-RISK, or an over-long F&G rating) instead of clipping mid-glyph. */
+  .head{display:flex;justify-content:space-between;align-items:flex-end;gap:4px;margin-bottom:5px}
+  .lab{font-size:8px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);white-space:nowrap;flex:none}
+  .score{font-family:var(--serif);font-size:30px;line-height:0.8;font-variant-numeric:tabular-nums;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
   .score .band{font-size:12px;letter-spacing:0.12em;margin-left:5px}
-  .fgval{font-family:var(--serif);font-size:15px;font-variant-numeric:tabular-nums}
+  .fgval{font-family:var(--serif);font-size:15px;font-variant-numeric:tabular-nums;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;text-align:right}
+  .fgval .rating{font-size:8px;letter-spacing:0.02em;margin-left:3px}
+  #fgblock .lab{letter-spacing:0.05em} /* 12-char label vs REGIME's 6 — buy width back for the rating */
   .bar{position:relative;height:9px;border-radius:999px}
   .bar.reg{background:linear-gradient(90deg,#5B8DEF 0 45%,#E0B458 45% 60%,#E05252 60% 100%);opacity:0.9}
   .bar.fg{background:linear-gradient(90deg,#5AA9A3,#7fbf94,#9AA3B5,#C0564A,#E05252)}  /* flipped */
@@ -89,6 +97,9 @@ var DEMO = !!ACT.demo;
 var BAND={hold:{label:"HOLD",color:"#5B8DEF"},trim:{label:"TRIM",color:"#E0B458"},"de-risk":{label:"DE-RISK",color:"#E05252"}};
 function bandOf(b){return BAND[b]||BAND.hold;}
 var FG_COLORS={"extreme fear":"#E05252","fear":"#C0564A","neutral":"#9AA3B5","greed":"#7fbf94","extreme greed":"#5AA9A3"};
+var FG_RATINGS=["extreme fear","fear","neutral","greed","extreme greed"]; // same enum the dashboard validates against
+function fgRating(r){return FG_RATINGS.indexOf(r)!==-1?r:null;} // array lookup: never reaches Object.prototype
+var FG_SHORT={"extreme greed":"extr. greed","extreme fear":"extr. fear"}; // display-only: full rating still drives FG_COLORS
 var GREEN="#7fbf94", RED="#C0564A";
 
 var SAMPLE={score:40,band:"hold",iqr:[34,47],redFlags:0,spy:"IN",qqq:"IN",
@@ -150,8 +161,11 @@ function render(){
   if(d.fg&&num(d.fg.value)){
     fgblock.style.display="";
     var fv=document.getElementById("fgval");
-    fv.textContent=(Math.round(d.fg.value*10)/10)+(d.fg.rating?" · "+d.fg.rating:"");
-    fv.style.color=FG_COLORS[d.fg.rating]||"#9AA3B5";
+    fv.textContent="";
+    fv.appendChild(document.createTextNode(Math.round(d.fg.value*10)/10));
+    var rt=fgRating(d.fg.rating); // off-enum -> no rating text, neutral colour (never a stale one)
+    if(rt) fv.appendChild(span("rating",FG_SHORT[rt]||rt)); // small span, same shape as score+band
+    fv.style.color=(rt&&FG_COLORS[rt])||"#9AA3B5";
     document.getElementById("fgmk").style.left=(100-clamp(d.fg.value))+"%";
   } else { fgblock.style.display="none"; }
   // dense metric grid — every remaining number
@@ -159,7 +173,10 @@ function render(){
   if(num(d.cape)) g.appendChild(cell("CAPE",Math.round(d.cape)+""));
   if(num(d.goldTtm)) g.appendChild(cell("Gold",(d.goldTtm>0?"+":"")+Math.round(d.goldTtm)+"%",GREEN));
   if(num(d.btcDd)) g.appendChild(cell("BTC",Math.round(d.btcDd)+"%",RED));
-  if(d.iqr&&d.iqr.length===2) g.appendChild(cell("IQR",d.iqr[0]+"–"+d.iqr[1]));
+  // Guard BOTH bounds with num() before rounding — mirrors the dashboard's pair() (src/bubblegauge.tsx:275).
+  // Math.round(null) is 0, so a null bound would otherwise print a fabricated "IQR 0–0" interval.
+  if(Array.isArray(d.iqr)&&d.iqr.length===2&&num(d.iqr[0])&&num(d.iqr[1]))
+    g.appendChild(cell("IQR",Math.round(d.iqr[0])+"–"+Math.round(d.iqr[1]))); // round like every other cell: live IQR is float
   if(num(d.redFlags)) g.appendChild(cell("Flags",d.redFlags+"/4",d.redFlags>0?"#E0B458":GREEN));
   if(d.spy&&d.qqq){ var tc=(d.spy==="IN"&&d.qqq==="IN")?GREEN:(d.spy==="OUT"&&d.qqq==="OUT")?RED:"#E0B458";
     g.appendChild(cell("Trend",d.spy+"·"+d.qqq,tc)); }

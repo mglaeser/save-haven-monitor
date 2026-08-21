@@ -16,11 +16,11 @@
     },
     {
       "file": "widget.html",
-      "sha256": "078acb5cb0c9ec9b645ba39d3e21a76497456da6711cf1c2d85fa9bf3de3e099",
+      "sha256": "dd3cbf51143951ba4688ebc3e8e1f2658075e66ceddec43cb1decc21b0595ad4",
       "role": "served self-contained iOS JS-Widget (WidgetWeb spec) — stateless; gated ?status-api fetch to the constructed API_BASE only; no cookies/localStorage/vendors",
-      "derives_from_spec": "DR-008 (widget served from Pages) + INTEGRATION_NOTES (gating) + github.com/Villy21/JsWidget spec",
-      "test_evidence": "verify/tests/62-security-surface (in SERVED: gated fetch, no cookie/localStorage/telemetry/AI-client), 61-provenance (this hash)",
-      "adversarial_verification": "driven end-to-end at the iOS widget sizes (sample + live map); frozen acceptance unaffected (widget not in the atlas suite)",
+      "derives_from_spec": "DR-008 (widget served from Pages) + DR-009 (fixed-box geometry invariant) + INTEGRATION_NOTES (gating) + github.com/Villy21/JsWidget spec",
+      "test_evidence": "verify/tests/62-security-surface (in SERVED: gated fetch, no cookie/localStorage/telemetry/AI-client), 61-provenance (this hash), 72-widget-layout (head nowrap+ellipsis standing control, IQR num() guard, F&G rating whitelist)",
+      "adversarial_verification": "three-lens adversarial pass over the 168px geometry (layout overflow / render path / governance): caught and fixed Math.round(null) fabricating an 'IQR 0-0' interval from a null bound, and an Object.prototype key hit (FG_SHORT['constructor']) on an unvalidated rating; head-wrap regression now pinned by 72-widget-layout red->green. Geometry verified by metric analysis against the fixed 168x168 box, NOT re-driven on an iOS device. Frozen acceptance unaffected (widget not in the atlas suite).",
       "owning_role": "platform-security"
     },
     {
