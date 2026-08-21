@@ -25,7 +25,7 @@
     },
     {
       "file": "dashboard.js",
-      "sha256": "71da06c06b24199d4e2d29b160bc37e11da0168a9ff0b178b6ac57f271fc01a7",
+      "sha256": "23e172dc71354b183103b2b9c8c8c123d0d1f2f4751cbaa6be5fa044cfd2d67d",
       "role": "served compiled crisis-atlas (esbuild transpile + minify of src/dashboard.tsx, IIFE-wrapped)",
       "derives_from_spec": "rewrite/00-recommendation.md + DR-006 (compiled-ahead)",
       "test_evidence": "verify/tests/66-compiled-fresh (bundle==src) + 30/62/63",
@@ -34,7 +34,7 @@
     },
     {
       "file": "bubblegauge.js",
-      "sha256": "60492a80087e2f2b3da08ceb057175a86d7fd78b435989b81f49505c446f251a",
+      "sha256": "9a21b5bc6d399ebbf306c353918d485a6db3404b03f054f95bc73655425f41f1",
       "role": "served compiled gated integration (esbuild transpile + minify of src/bubblegauge.tsx)",
       "derives_from_spec": "rewrite/00-recommendation.md + DR-006 (compiled-ahead)",
       "test_evidence": "verify/tests/66-compiled-fresh (bundle==src) + 30/62/63",
@@ -43,7 +43,7 @@
     },
     {
       "file": "src/dashboard.tsx",
-      "sha256": "7ea655bdc6392a66ad4c44ed113cc9927a3982f599a24c1923fc3079e7dcd897",
+      "sha256": "a6ea80f20123df610747ad0cd1bdae2199246f736804ea90070c72da33ac6155",
       "role": "SOURCE of dashboard.js (view + math; imports ./data)",
       "derives_from_spec": "rewrite/00-recommendation.md + DR-006 (module migration)",
       "test_evidence": "verify/tests/*",
@@ -52,11 +52,11 @@
     },
     {
       "file": "src/bubblegauge.tsx",
-      "sha256": "90a16f7f4557208ce62b6513b83ad3958d1efc14b90c7fe7c9770fc4eb60d0f9",
+      "sha256": "abd807e5d7238becf8c66b368d857543cb6f1901cee6c1617ecb74bd55b025fe",
       "role": "SOURCE of bubblegauge.js (gated integration)",
-      "derives_from_spec": "rewrite/00-recommendation.md + DR-006 (module migration)",
-      "test_evidence": "verify/tests/*",
-      "adversarial_verification": "frozen acceptance suite (35/0 against the modularized bundle) + Track C seeds",
+      "derives_from_spec": "rewrite/00-recommendation.md + DR-006 (module migration) + DR-010 (desktop overview hero)",
+      "test_evidence": "verify/tests/*; 73-overview-verdict (verdict/distance/persistence contract, executed against the shipped functions)",
+      "adversarial_verification": "design panel of 3 independent directions scored by 3 lenses (clarity/craft/buildable), synthesized; the fetch in-flight map and the mounted-but-hidden Strip were both adopted from that review to hold egress and the frozen acceptance assertion invariant. Verified by executing verdictOf/distanceOf/runOf against a table (73-overview-verdict, red->green); NOT driven in a real browser at 1024-1600px.",
       "owning_role": "platform-security"
     },
     {

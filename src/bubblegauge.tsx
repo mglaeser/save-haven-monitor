@@ -86,6 +86,24 @@
     panel: { background: C.panel, border: "1px solid " + C.line, borderRadius: 10 },
     eyebrow: { fontSize: 10.5, letterSpacing: "0.18em", textTransform: "uppercase", color: C.muted },
   };
+  // Static style objects for the desktop hero, hoisted so they are allocated once, not per render.
+  const HS = {
+    off: { display: "none" },
+    head: { display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" },
+    grid: { display: "grid", gridTemplateColumns: "minmax(0,1fr) 300px", gap: 26, alignItems: "start", marginTop: 12 },
+    left: { minWidth: 0 },
+    right: { minWidth: 0, borderLeft: "1px solid " + C.line, paddingLeft: 26 },
+    prose: { maxWidth: "58ch" },
+    rail: { display: "flex", flexWrap: "wrap", gap: "12px 30px", alignItems: "flex-start", borderTop: "1px solid " + C.line, marginTop: 14, paddingTop: 12 },
+    cell: { flex: "0 0 auto" },
+    note: { flex: "1 1 250px", minWidth: 0, marginLeft: "auto", borderLeft: "1px solid " + C.line, paddingLeft: 22 },
+    cap: { fontSize: 9.5, color: C.faint, lineHeight: 1.5, marginTop: 4 },
+    val: { fontSize: 12.5, color: C.text, marginTop: 3 },
+    link: { background: "transparent", border: "none", padding: 0, cursor: "pointer", fontSize: 11, fontWeight: 700, fontFamily: "inherit" },
+    track: { width: 54, height: 4, background: "rgba(237,232,220,0.07)", borderRadius: 99 },
+    brk: { position: "relative", height: 7, marginTop: 3 },
+    scale: { position: "relative", height: 12, fontSize: 9.5, color: C.faint, fontVariantNumeric: "tabular-nums" },
+  };
 
   // Action-band semantics — reuse the dashboard's stress palette, never clickbait red.
   const BAND = {
@@ -287,6 +305,10 @@
   }
 
   const cache = {}; // path -> { t, json }
+  // In-flight map. cache[] only dedupes COMPLETED responses, so two components mounting in the
+  // same tick both miss it and both fetch. The desktop hero and the (hidden) Strip read the same
+  // two endpoints, so without this the page would double its requests on load and on every focus.
+  const inflight = {}; // path -> Promise
   const TTL = 25 * 60 * 1000;
 
   function bgFetch(path, opts) {
@@ -295,9 +317,10 @@
     if (!opts.noCache && cache[path] && now - cache[path].t < (opts.ttl || TTL)) {
       return Promise.resolve({ status: 200, json: cache[path].json, fromCache: true });
     }
+    if (inflight[path]) return inflight[path];
     const ctrl = new AbortController();
     const to = setTimeout(() => ctrl.abort(), opts.timeout || 6000);
-    return fetch(API_BASE + path, { signal: ctrl.signal, headers: { accept: "application/json" } })
+    const req = fetch(API_BASE + path, { signal: ctrl.signal, headers: { accept: "application/json" } })
       .then((r) => {
         clearTimeout(to);
         if (r.status === 503) return { status: 503, json: null }; // warming up, not an error
@@ -305,6 +328,10 @@
         return r.json().then((j) => { cache[path] = { t: now, json: j }; return { status: 200, json: j }; });
       })
       .catch((e) => { clearTimeout(to); return { status: 0, json: null, error: String(e && e.message || e) }; });
+    inflight[path] = req;
+    const done = function () { delete inflight[path]; };
+    req.then(done, done);
+    return req;
   }
 
   // Generic hook: {loading, notReady, error, json}
@@ -1548,6 +1575,225 @@
   }
   function LiveBadge(props) { return <Boundary fallback={null}><LiveBadgeInner keys={props.keys} label={props.label} /></Boundary>; }
 
+  /* ============================================================
+     5E · Desktop overview hero — derived from DR-010
+     A full-width inline hero above the atlas. Renders ONLY when the ?status-api gate is on AND the
+     viewport is >= 1024px AND the score API is connected; otherwise zero footprint. At desktop
+     widths it SUPERSEDES the compact Strip, but the Strip stays MOUNTED and hidden: the frozen
+     acceptance suite (acceptance/tests/02-integration) asserts its role/tabindex by attribute at a
+     1280px viewport and performs no visibility check, so hiding it keeps that assertion true.
+     Reads EIGHT score fields and deliberately never calls useAiLive(), so it adds no egress.
+     ============================================================ */
+
+  // The threshold this band is measured against. de-risk is read downward, from 60.
+  function verdictOf(d) {
+    const tr = d.trend_states || {};
+    const out = ["SPY", "QQQ"].filter(function (k) { return tr[k] && tr[k].faber_10mo === "OUT"; });
+    const names = out.join(" and ");
+    const ovr = d.override_fired ? ", and a hard override has fired" : "";
+    const b = d.action_band;
+    if (b === "suppressed (block degraded)") return { lead: "Not scored today.", detail: COPY.bandOneLiner[b] };
+    if (b === "de-risk") return out.length
+      ? { lead: "De-risk now — " + names + " has broken trend.",
+          detail: "Fragility is high" + ovr + " and the 10-month rule has flipped on " + names + "." }
+      : { lead: "De-risk is warranted; the trigger has not fired.",
+          detail: "Fragility is high" + ovr + ". Both 10-month trend rules are still intact, so the rule says watch, not sell." };
+    if (b === "trim") return out.length
+      ? { lead: "Trim now — the trigger has fired on " + names + ".",
+          detail: "Fragility is elevated" + ovr + " and " + names + " has closed below its 10-month average. This is the combination the ladder treats as actionable." }
+      : { lead: "Trim is warranted — but nothing forces action today.",
+          detail: "Fragility is elevated" + ovr + ", so the ceiling on risk is lower. Both 10-month trend rules are intact, and that rule is what actually times a sale." };
+    return out.length // bandOf() also falls back to hold for an unknown band
+      ? { lead: "The score says hold — but the trend rule has broken.",
+          detail: names + " has closed below its 10-month average. The score is a ceiling, the trend rule is the trigger, and the trigger has moved first." }
+      : { lead: "No action indicated.",
+          detail: "Structural risk is present but not acute" + ovr + ", and both 10-month trend rules are intact." };
+  }
+
+  // Distance to the line that would change the verdict. The IQR clause fires ONLY when the interval
+  // already crosses a threshold the point estimate has not — i.e. exactly when a bare point estimate
+  // would mislead. Withheld entirely for a suppressed band: distance to a withheld line is noise.
+  function distanceOf(d) {
+    if (d.action_band === "suppressed (block degraded)" || !isNum(d.headline_median)) return "";
+    const nx = d.action_band === "hold" ? 45 : 60;
+    const v = Math.round(Math.max(0, Math.min(100, d.headline_median)));
+    const gap = Math.abs(nx - v), unit = gap === 1 ? " point" : " points";
+    const line = d.action_band === "hold" ? "trim" : "de-risk";
+    const base = gap === 0 ? "It sits exactly on the " + line + " line at " + nx + "."
+      : d.action_band === "de-risk" ? gap + unit + " above the de-risk line at 60."
+      : gap + unit + " below the " + line + " line at " + nx + ".";
+    let clause = "";
+    if (pair(d.iqr)) {
+      if (d.action_band !== "de-risk" && d.iqr[1] >= nx) clause = " The top of the model's 25–75% range already reaches " + Math.round(d.iqr[1]) + ".";
+      else if (d.action_band === "de-risk" && d.iqr[0] <= 60) clause = " The bottom of that range is back at " + Math.round(d.iqr[0]) + ".";
+    }
+    return base + clause;
+  }
+
+  // How many consecutive readings the current band has held. Turns a base rate ("hold" almost
+  // always) into information: regime STABILITY is the fact, and a break reads loudly without colour.
+  function runOf(hist, band) {
+    const arr = hist && hist.json && Array.isArray(hist.json.data) ? hist.json.data : null;
+    if (!arr || arr.length < 3) return null;
+    let n = 0;
+    for (let i = arr.length - 1; i >= 0; i--) { if (arr[i] && arr[i].action_band === band) n++; else break; }
+    return n;
+  }
+
+  function useWide() {
+    const q = "(min-width: 1024px)";
+    const [w, setW] = useState(function () {
+      try { return !!(window.matchMedia && window.matchMedia(q).matches); } catch (e) { return false; }
+    });
+    useEffect(function () {
+      let mq; try { mq = window.matchMedia(q); } catch (e) { return undefined; }
+      const on = function () { setW(mq.matches); }; on();
+      if (mq.addEventListener) mq.addEventListener("change", on); else if (mq.addListener) mq.addListener(on);
+      return function () { if (mq.removeEventListener) mq.removeEventListener("change", on); else if (mq.removeListener) mq.removeListener(on); };
+    }, []);
+    return w;
+  }
+
+  function Hero({ d, meta, hist, goToDetail }) {
+    const b = bandOf(d.action_band);
+    const supp = d.action_band === "suppressed (block degraded)";
+    const v = Math.max(0, Math.min(100, +d.headline_median));
+    const verdict = verdictOf(d), dist = distanceOf(d);
+    const regT = regimeTrend(hist, d.headline_median);
+    const run = runOf(hist, d.action_band);
+    const nx = d.action_band === "hold" ? 45 : 60;
+    const L = Math.min(v, nx), W = Math.abs(nx - v);
+    const tr = d.trend_states || {};
+    const S = d.block_S && isNum(d.block_S.value) ? d.block_S.value : null;
+    const D = d.block_D && isNum(d.block_D.value) ? d.block_D.value : null;
+    const shape = S === null || D === null ? ""
+      : S >= 0.6 ? (D >= 0.4 ? "Expensive, and starting to turn." : "Expensive, but not yet unwinding.")
+      : (D >= 0.4 ? "Not extreme, but the flows are turning." : "Neither stretched nor turning.");
+    const dlt = regT ? Math.round(regT[2] - regT[0]) : null;
+    const runTxt = run === null ? "" : run >= 3 ? b.label + " for the last " + run + " readings"
+      : run === 0 ? "Changed to " + b.label + " this reading"
+      : "Changed to " + b.label + " " + run + (run === 1 ? " reading" : " readings") + " ago";
+    const dirTxt = dlt === null ? "" : (dlt > 0 ? "▲ +" + dlt : dlt < 0 ? "▼ " + dlt : "→ no change") + " over the last 3 readings";
+    const meta2 = [runTxt, dirTxt].filter(Boolean).join(" · ");
+    const flags = d.red_flag_detail || {};
+    const fired = Object.keys(flags).filter(function (k) { return flags[k]; });
+    return (
+      <section aria-labelledby="bg-hero-h" style={{ ...BS.panel, borderTop: "2px solid " + b.color, padding: "16px 20px 14px", margin: "0 0 16px" }}>
+        <div style={HS.head}>
+          <span style={BS.eyebrow}>AI bubble regime</span>
+          <Freshness computedAt={meta.computed_at} />
+          {meta.coverage && meta.coverage.degraded && <CoverageChip coverage={meta.coverage} />}
+          <span style={{ marginLeft: "auto" }}><EpiChip /></span>
+          <button type="button" onClick={goToDetail} style={{ ...HS.link, color: b.color }}>Open the full breakdown ›</button>
+        </div>
+
+        <div style={HS.grid}>
+          <div style={HS.left}>
+            <h2 id="bg-hero-h" style={{ ...BS.serif, ...HS.prose, fontSize: 26, lineHeight: 1.16, fontWeight: 600, margin: 0, color: C.text, letterSpacing: "-0.005em" }}>{verdict.lead}</h2>
+            <p style={{ ...HS.prose, fontSize: 15, lineHeight: 1.5, color: C.dim, margin: "9px 0 0" }}>{verdict.detail}{dist ? " " + dist : ""}</p>
+          </div>
+
+          <div style={HS.right}>
+            <div style={BS.eyebrow}>Regime score</div>
+            <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginTop: 5 }}>
+              <span style={{ ...BS.serif, fontSize: 26, fontWeight: 700, color: b.color, fontVariantNumeric: "tabular-nums" }}>{Math.round(d.headline_median)}</span>
+              <span style={{ fontSize: 12.5, color: C.faint }}>/100</span>
+              <span style={{ marginLeft: "auto", fontSize: 10.5, fontWeight: 800, letterSpacing: "0.09em", color: b.color, padding: "2px 8px", borderRadius: 5, background: b.zone }}>{b.label}</span>
+            </div>
+            <div style={{ marginTop: 9 }}>
+              <GaugeBar value={d.headline_median} iqr={d.iqr} band={d.action_band} height={14} trend={regT} />
+            </div>
+            <div aria-hidden="true" style={HS.brk}>
+              {!supp && W >= 1 && (
+                <React.Fragment>
+                  <div style={{ position: "absolute", left: L + "%", width: W + "%", top: 3, height: 1, background: "rgba(237,232,220,0.40)" }} />
+                  <div style={{ position: "absolute", left: L + "%", top: 0, width: 1, height: 7, background: "rgba(237,232,220,0.40)" }} />
+                  <div style={{ position: "absolute", left: L + W + "%", top: 0, width: 1, height: 7, background: "rgba(237,232,220,0.40)" }} />
+                </React.Fragment>
+              )}
+            </div>
+            <div aria-hidden="true" style={HS.scale}>
+              <span style={{ position: "absolute", left: 0 }}>0</span>
+              <span style={{ position: "absolute", left: "45%", transform: "translateX(-50%)" }}>45</span>
+              <span style={{ position: "absolute", left: "60%", transform: "translateX(-50%)" }}>60</span>
+              <span style={{ position: "absolute", right: 0 }}>100</span>
+            </div>
+            {meta2 && <div style={{ fontSize: 10.5, color: C.muted, marginTop: 8 }}>{meta2}</div>}
+          </div>
+        </div>
+
+        <div style={HS.rail}>
+          {tr.SPY && tr.QQQ && (
+            <div style={HS.cell}>
+              <div style={BS.eyebrow}>Trigger</div>
+              <div style={{ ...HS.val, display: "flex", gap: 12 }}>
+                {["SPY", "QQQ"].map(function (k) {
+                  const st = tr[k] && tr[k].faber_10mo;
+                  return <span key={k} style={{ fontWeight: 700, color: st === "OUT" ? "#E05252" : "#7fbf94" }}>{(st === "OUT" ? "▼ " : "▲ ") + k + " " + st}</span>;
+                })}
+              </div>
+              <div style={HS.cap}>Faber&apos;s 10-month rule — what times the move.</div>
+            </div>
+          )}
+          <div style={HS.cell}>
+            <div style={BS.eyebrow}>Override</div>
+            <div style={{ ...HS.val, display: "flex", alignItems: "center", gap: 8 }}>
+              <span role="img" aria-label={d.red_flag_count + " of 4 override flags fired"} title={fired.map(function (k) { return REDFLAG_COPY[k]; }).join(" · ") || "no override flags fired"}
+                style={{ display: "inline-flex", gap: 5 }}>
+                {Object.keys(flags).map(function (k) {
+                  return <span key={k} style={{ width: 7, height: 7, borderRadius: 99, background: flags[k] ? "#E05252" : "transparent", border: "1px solid " + (flags[k] ? "#E05252" : "rgba(237,232,220,0.25)") }} />;
+                })}
+              </span>
+              <span>{d.red_flag_count} of 4 fired</span>
+            </div>
+            <div style={HS.cap}>3 of 4 floors the score at 70, whatever else says.</div>
+          </div>
+          {shape && (
+            <div style={HS.cell}>
+              <div style={BS.eyebrow}>Shape of risk</div>
+              <div style={{ marginTop: 3 }}>
+                {[["Structure", S], ["Dynamics", D]].map(function (r) {
+                  return (
+                    <div key={r[0]} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12.5, color: C.text, lineHeight: 1.6 }}>
+                      <span style={{ minWidth: 88 }}>{r[0]} {Math.round(r[1] * 100)}</span>
+                      <span style={HS.track}><span style={{ display: "block", width: Math.round(r[1] * 100) + "%", height: "100%", borderRadius: 99, background: "rgba(237,232,220,0.55)" }} /></span>
+                    </div>
+                  );
+                })}
+              </div>
+              <div style={HS.cap}>{shape}</div>
+            </div>
+          )}
+          {d.judgment_call && d.judgment_call.text && (
+            <div style={HS.note}>
+              <div style={BS.eyebrow}>Analyst note</div>
+              <div style={{ ...BS.serif, fontStyle: "italic", fontSize: 12.5, lineHeight: 1.55, color: C.dim, marginTop: 3 }}>
+                {d.judgment_call.text.length > 160 ? d.judgment_call.text.slice(0, 160) + "…" : d.judgment_call.text}
+                {d.judgment_call.stale || d.judgment_call.error_class ? <span style={{ color: C.faint }}> · stale</span> : null}
+              </div>
+            </div>
+          )}
+        </div>
+      </section>
+    );
+  }
+
+  function OverviewInner({ goToDetail }) {
+    const wide = useWide();
+    const s = useScore();
+    const hist = useHistory();
+    const on = wide && !s.loading && !s.notReady && !s.error && !!s.json;
+    return (
+      <React.Fragment>
+        <div style={on ? HS.off : undefined}><Strip goToDetail={goToDetail} /></div>
+        {on && <Hero d={s.json.data} meta={s.json.meta || {}} hist={hist} goToDetail={goToDetail} />}
+      </React.Fragment>
+    );
+  }
+  function Overview(props) {
+    return <Boundary fallback={<StripBoundary goToDetail={props.goToDetail} />}><OverviewInner goToDetail={props.goToDetail} /></Boundary>;
+  }
+
   /* ---------- expose ---------- */
 
   window.BubbleGauge = {
@@ -1556,6 +1802,7 @@
     apiBase: API_BASE,
     tab: { id: "bubblegauge", label: "AI Regime" },
     Strip: StripBoundary,
+    Overview: Overview,
     FearGreedStrip: FearGreedStrip,
     Splash: Splash,
     DetailTab: DetailTab,
