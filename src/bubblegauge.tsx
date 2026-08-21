@@ -111,7 +111,7 @@
     screen: { fontFamily: SANS, position: "relative", overflow: "hidden", minHeight: "100vh", display: "flex", flexDirection: "column", gap: 12, padding: "14px 20px 20px", background: C.bg },
     lift: { position: "relative", zIndex: 1 },
     bar: { display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" },
-    card: { background: C.panel, borderRadius: 12, padding: "14px 16px", minWidth: 0, overflow: "hidden", display: "flex", flexDirection: "column" },
+    card: { background: C.panel, borderRadius: 12, padding: "14px 16px", minWidth: 0, minHeight: 0, overflow: "hidden", display: "flex", flexDirection: "column" },
     r1: { display: "grid", gridTemplateColumns: "minmax(0,1.62fr) minmax(0,1fr)", gap: 12, flex: "1.15 1 0", minHeight: 0 },
     r2: { display: "grid", gridTemplateColumns: "minmax(0,1.62fr) minmax(0,1fr)", gap: 12, flex: "0.85 1 0", minHeight: 0 },
     r3: { display: "grid", gridTemplateColumns: "minmax(0,1.62fr) minmax(0,1fr)", gap: 12, flex: "0 0 auto" },
@@ -1710,7 +1710,7 @@
     return "M" + p0[0].toFixed(1) + " " + p0[1].toFixed(1) + " A" + r + " " + r + " 0 " +
       ((t1 - t0) * GSW > 180 ? 1 : 0) + " 1 " + p1[0].toFixed(1) + " " + p1[1].toFixed(1);
   }
-  function ConstellationGauge({ d, b }) {
+  function GaugeArt({ d, b }) {
     const v = Math.max(0, Math.min(100, +d.headline_median)), t = v / 100;
     const iq = pair(d.iqr) ? [Math.max(0, Math.min(100, d.iqr[0])) / 100, Math.max(0, Math.min(100, d.iqr[1])) / 100] : null;
     const zones = [[0.225, "HOLD", BAND.hold.color], [0.525, "TRIM", BAND.trim.color], [0.80, "DE-RISK", BAND["de-risk"].color]];
@@ -1731,10 +1731,6 @@
           return <text key={z[1]} x={p[0].toFixed(1)} y={p[1].toFixed(1)} textAnchor="middle" fontSize="9"
             letterSpacing="1.3" fill={z[2]} opacity="0.75">{z[1]}</text>;
         })}
-        <text x="160" y="150" textAnchor="middle" fontSize="56" fontWeight="700" fill={C.text} style={{ fontVariantNumeric: "tabular-nums" }}>{Math.round(v)}</text>
-        <text x="160" y="170" textAnchor="middle" fontSize="10" fill={C.faint}>of 100</text>
-        <text x="160" y="192" textAnchor="middle" fontSize="13" letterSpacing="2.4" fill={b.color} fontWeight="700">{b.label}</text>
-        {iq && <text x="160" y="212" textAnchor="middle" fontSize="10" fill={C.muted}>{"middle half " + Math.round(d.iqr[0]) + "–" + Math.round(d.iqr[1])}</text>}
       </svg>
     );
   }
@@ -1874,6 +1870,13 @@
       if (pair(r.band_5_95)) o.outer = [r.band_5_95[0], r.band_5_95[1]];
       return o;
     });
+    // keep both thresholds on screen, but do not reserve half the plot for a band never reached
+    let lo = 100, hi = 0;
+    rows.forEach(function (r) {
+      const c = [r.median].concat(r.outer || []).concat(r.iqr || []);
+      c.forEach(function (x) { if (isNum(x)) { if (x < lo) lo = x; if (x > hi) hi = x; } });
+    });
+    const yd = [Math.max(0, Math.min(20, Math.floor(lo - 8))), Math.min(100, Math.max(66, Math.ceil(hi + 8)))];
     return (
       <R.ResponsiveContainer width="100%" height="100%">
         <R.ComposedChart data={rows} margin={{ top: 6, right: 6, bottom: 0, left: 0 }}>
@@ -1887,11 +1890,11 @@
               <stop offset="100%" stopColor={C.blue} stopOpacity="0.10" />
             </linearGradient>
           </defs>
-          <R.ReferenceArea y1={60} y2={100} fill={BAND["de-risk"].color} fillOpacity={0.07} />
+          <R.ReferenceArea y1={60} y2={yd[1]} fill={BAND["de-risk"].color} fillOpacity={0.07} />
           <R.ReferenceArea y1={45} y2={60} fill={BAND.trim.color} fillOpacity={0.07} />
           <R.CartesianGrid stroke="rgba(255,255,255,0.05)" vertical={false} />
           <R.XAxis dataKey="t" tick={{ fill: C.faint, fontSize: 9.5 }} axisLine={false} tickLine={false} minTickGap={26} />
-          <R.YAxis domain={[0, 100]} ticks={[0, 45, 60, 100]} tick={{ fill: C.faint, fontSize: 9.5 }} axisLine={false} tickLine={false} width={30} />
+          <R.YAxis domain={yd} ticks={yd[1] > 70 ? [0, 45, 60, 100] : [Math.ceil(yd[0]), 45, 60, Math.floor(yd[1])]} tick={{ fill: C.faint, fontSize: 9.5 }} axisLine={false} tickLine={false} width={30} />
           <R.ReferenceLine y={45} stroke={BAND.trim.color} strokeDasharray="3 4" strokeOpacity="0.7" />
           <R.ReferenceLine y={60} stroke={BAND["de-risk"].color} strokeDasharray="3 4" strokeOpacity="0.7" />
           <R.Area dataKey="outer" stroke="none" fill="url(#bgOuter)" isAnimationActive={false} />
@@ -1946,6 +1949,18 @@
 
   // The nine weighted indicators behind the score, heaviest first.
   function IndicatorTable({ d }) {
+    // Fade the cut edge ONLY when the list actually overflows; an unconditional mask ghosts the
+    // final row and makes live data read as disabled.
+    const box = useRef(null);
+    const [cut, setCut] = useState(false);
+    useEffect(function () {
+      const el = box.current;
+      if (!el) return undefined;
+      const check = function () { setCut(el.scrollHeight > el.clientHeight + 1); };
+      check();
+      let ro; try { ro = new ResizeObserver(check); ro.observe(el); } catch (e) {}
+      return function () { if (ro) ro.disconnect(); };
+    });
     const rows = [];
     for (const bk of ["block_S", "block_D"]) {
       const blk = d[bk];
@@ -1962,9 +1977,9 @@
     // calmest one, and heading the table with it contradicts the judgment line on the same screen.
     rows.sort((a, b) => (b.w || 0) * (b.sub || 0) - (a.w || 0) * (a.sub || 0));
     return (
-      <div style={{ overflow: "auto", flex: 1, minHeight: 0, marginTop: 8,
-        WebkitMaskImage: "linear-gradient(180deg,#000 calc(100% - 26px),transparent)",
-        maskImage: "linear-gradient(180deg,#000 calc(100% - 26px),transparent)" }}>
+      <div ref={box} style={{ overflow: "auto", flex: 1, minHeight: 0, marginTop: 8,
+        WebkitMaskImage: cut ? "linear-gradient(180deg,#000 calc(100% - 26px),transparent)" : undefined,
+        maskImage: cut ? "linear-gradient(180deg,#000 calc(100% - 26px),transparent)" : undefined }}>
         <table style={HS.tbl}>
           <thead><tr>
             <th style={HS.th}>Indicator</th><th style={HS.th}>Block</th>
@@ -1979,7 +1994,7 @@
                   <td style={{ ...HS.td, color: C.text, whiteSpace: "normal" }}>{r.name}
                     {r.flag && <span style={{ color: "#E8853D", fontSize: 9.5 }}> · {r.flag}</span>}</td>
                   <td style={{ ...HS.td, color: col, fontWeight: 700 }}>{r.blk}</td>
-                  <td style={{ ...HS.td, textAlign: "right" }}>{isNum(r.w) ? Math.round(r.w * 100) + "%" : "—"}</td>
+                  <td style={{ ...HS.td, textAlign: "right", paddingRight: 14 }}>{isNum(r.w) ? Math.round(r.w * 100) + "%" : "—"}</td>
                   <td style={HS.td}>
                     <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                       <span style={{ flex: 1, height: 5, background: "rgba(255,255,255,0.07)", borderRadius: 99, minWidth: 40 }}>
@@ -2034,14 +2049,23 @@
           <div className="bgr" style={{ ...HS.card, alignItems: "center", animationDelay: ".06s" }}>
             <p style={{ ...HS.ttl, alignSelf: "flex-start" }}>Where we stand</p>
             <div style={{ position: "relative", flex: 1, width: "100%", minHeight: 90, margin: "4px 0" }}>
-              <div style={{ position: "absolute", inset: 0 }}><ConstellationGauge d={d} b={b} /></div>
+              <div style={{ position: "absolute", inset: 0 }}><GaugeArt d={d} b={b} /></div>
+              <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column",
+                alignItems: "center", justifyContent: "center", pointerEvents: "none", gap: 1 }}>
+                <div style={{ ...BS.serif, fontSize: 46, lineHeight: 1, fontWeight: 700, color: C.text, fontVariantNumeric: "tabular-nums" }}>{Math.round(Math.max(0, Math.min(100, +d.headline_median)))}</div>
+                <div style={{ fontSize: 9.5, color: C.faint }}>of 100</div>
+                <div style={{ fontSize: 12, letterSpacing: "0.18em", color: b.color, fontWeight: 700, marginTop: 3 }}>{b.label}</div>
+                {pair(d.iqr) && <div style={{ fontSize: 9.5, color: C.muted, marginTop: 1 }}>{"middle half " + Math.round(d.iqr[0]) + "–" + Math.round(d.iqr[1])}</div>}
+              </div>
             </div>
             <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: 5 }}>
               {legend.map(function (l) {
                 return (
                   <div key={l[0]} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 11.5 }}>
                     <span style={{ width: 9, height: 9, borderRadius: 3, background: l[2] }} />
-                    <span style={{ color: C.dim, flex: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{l[0]}</span>
+                    <span style={{ color: C.dim, whiteSpace: "nowrap", minWidth: 74 }}>{l[0]}</span>
+                    <span style={{ flex: 1, height: 5, background: "rgba(255,255,255,0.07)", borderRadius: 99, minWidth: 30 }}>
+                      <span style={{ display: "block", width: (isNum(l[1]) ? Math.round(l[1] * 100) : 0) + "%", height: "100%", borderRadius: 99, background: l[2] }} /></span>
                     <span style={{ color: C.text, fontWeight: 600, fontVariantNumeric: "tabular-nums" }}>{isNum(l[1]) ? Math.round(l[1] * 100) : "—"}</span>
                   </div>
                 );

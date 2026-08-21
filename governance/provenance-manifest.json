@@ -34,7 +34,7 @@
     },
     {
       "file": "bubblegauge.js",
-      "sha256": "484f3f6fa4092462ceb3068a0931d9769eab8ac0a5cc7efbb66ca85cf820dc1d",
+      "sha256": "4574378b4fb9a936fec9888c8301015d5438bb18df4c061110bdef5461fb5ad0",
       "role": "served compiled gated integration (esbuild transpile + minify of src/bubblegauge.tsx)",
       "derives_from_spec": "rewrite/00-recommendation.md + DR-006 (compiled-ahead)",
       "test_evidence": "verify/tests/66-compiled-fresh (bundle==src) + 30/62/63",
@@ -52,11 +52,11 @@
     },
     {
       "file": "src/bubblegauge.tsx",
-      "sha256": "d9a584297bbb2f00a75b801bb784d719f62c9b5fdb68c8013bb1ea4301878763",
+      "sha256": "95726dc59ec28268e3c4b6ab7d22cd13700be344c4a0e74dc54cd9331720c8dc",
       "role": "SOURCE of bubblegauge.js (gated integration)",
       "derives_from_spec": "rewrite/00-recommendation.md + DR-006 (module migration) + DR-010 (desktop overview hero) + DR-011 (full-screen console, palette, budget)",
       "test_evidence": "verify/tests/*; 73-overview-verdict (verdict/distance/persistence contract, executed against the shipped functions)",
-      "adversarial_verification": "Built and screenshotted in headless Chromium at 1280x800 / 1440x900 / 1920x1080 and iterated four times against those images; then reviewed by an independent three-lens panel (visual craft / number honesty / a11y+robustness) over the same screenshots and the source. Defects found and fixed this way: section mounted 324px down and inside the 1060px column; clipped y-axis numerals; gauge overflowing its card so the legend was swallowed by overflow:hidden; sparklines reading a live.series field the feed does not expose; a table row sliced at 800px height; and a \"VIX\" legend showing multiplier/2 as a percentage. Verified in a real browser, NOT only by static render.",
+      "adversarial_verification": "A 27-agent review panel over the real screenshots and the source confirmed six defects AFTER the first merge, all fixed here: HS.card had overflow:hidden without minHeight:0 so grid children could not shrink and the r2 cards overran their track at 1280x800; the scroll fade was unconditional and ghosted the final row of live data; the weight gutter sat on the <th> only, so the header hung ~15px off its column and values collided with the bar; gauge captions were <text> inside a meet-scaled SVG (~6px at 1280, oversized at 1920) and are now HTML at fixed size; the chart reserved 55-60% of its plot for a band the score has never reached; and the legend separated label from value by up to 640px with nothing between. Built and screenshotted in headless Chromium at 1280x800 / 1440x900 / 1920x1080 and iterated four times against those images; then reviewed by an independent three-lens panel (visual craft / number honesty / a11y+robustness) over the same screenshots and the source. Defects found and fixed this way: section mounted 324px down and inside the 1060px column; clipped y-axis numerals; gauge overflowing its card so the legend was swallowed by overflow:hidden; sparklines reading a live.series field the feed does not expose; a table row sliced at 800px height; and a \"VIX\" legend showing multiplier/2 as a percentage. Verified in a real browser, NOT only by static render.",
       "owning_role": "platform-security"
     },
     {
