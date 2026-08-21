@@ -36,7 +36,7 @@ import { interp, rebase, fmtM, logPath, ser, zArr, corrArr, xcorrRow, mulberry32
 /* ---------- UI atoms ---------- */
 
 const S = {
-  page: { minHeight: "100vh", background: "#21252D", color: "#FFFFFF", fontFamily: "system-ui, -apple-system, 'Segoe UI', sans-serif" },
+  page: { minHeight: "100vh", background: "#21252D", color: "#FFFFFF", fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Helvetica, Arial, sans-serif" },
   serif: { fontFamily: "Georgia, 'Times New Roman', serif" },
   panel: { background: "#272C35", border: "1px solid rgba(255,255,255,0.09)", borderRadius: 10 },
   eyebrow: { fontSize: 10.5, letterSpacing: "0.18em", textTransform: "uppercase", color: "#8A92A0" },
@@ -77,12 +77,12 @@ function Expl({ children }) {
         width: 17, height: 17, minWidth: 17, borderRadius: 99, padding: 0, lineHeight: "14px",
         border: "1px solid #B79DFF", background: o ? "#B79DFF" : "transparent",
         color: o ? "#21252D" : "#B79DFF", fontSize: 10.5, fontWeight: 700, cursor: "pointer",
-        fontFamily: "Georgia, serif", fontStyle: "italic",
+        fontFamily: "Georgia, 'Times New Roman', serif", fontStyle: "italic",
       }}>i</button>
       {o && (
         <div style={{ flexBasis: "100%", width: "100%", margin: "6px 0 2px", padding: "9px 12px",
           background: "rgba(183,157,255,0.07)", border: "1px solid rgba(183,157,255,0.28)",
-          borderRadius: 8, fontSize: 11.5, color: "#D9DCE4", lineHeight: 1.6 }}>
+          borderRadius: 8, fontSize: 11.5, color: "#C6CCD6", lineHeight: 1.6 }}>
           {children}
         </div>
       )}
@@ -216,7 +216,7 @@ function Explorer() {
               <button key={s.key} onClick={() => setHidden((h) => ({ ...h, [crisis.id + s.key]: !off }))}
                 style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "4px 9px", borderRadius: 999,
                   border: "1px solid rgba(255,255,255,0.14)", background: off ? "transparent" : "rgba(255,255,255,0.05)",
-                  color: off ? "#616a7d" : "#D9DCE4", fontSize: 11.5, cursor: "pointer",
+                  color: off ? "#666E7B" : "#C6CCD6", fontSize: 11.5, cursor: "pointer",
                   textDecoration: off ? "line-through" : "none" }}>
                 <span style={{ width: 9, height: 9, borderRadius: 99, background: s.color, opacity: off ? 0.35 : 1 }} />
                 {s.label}
@@ -302,7 +302,7 @@ function Matrix() {
       {sel && (
         <div style={{ ...S.panel, marginTop: 10, padding: "12px 16px", borderLeft: "3px solid #B79DFF" }}>
           <div style={{ ...S.eyebrow, marginBottom: 4 }}>{MATRIX[sel.r].name} · {MX_CRISES[sel.c]}</div>
-          <div style={{ fontSize: 13, color: "#D9DCE4", lineHeight: 1.6 }}>
+          <div style={{ fontSize: 13, color: "#C6CCD6", lineHeight: 1.6 }}>
             {note || "No crisis-specific note — see the classification below and the underlying report for the general evidence."}
           </div>
         </div>
@@ -349,7 +349,7 @@ function Matrix() {
           <li style={{ marginBottom: 5 }}><b style={{ color: "#29C7E8" }}>CONFIRMED</b> — gold’s ambiguity mechanism (buy gold on ambiguous signals, bonds on extreme-but-clear ones): Baur &amp; McDermott (2012) — an IIIS/UTS <i>working paper</i>, not a journal article; theory anchored by Caballero &amp; Krishnamurthy (2008, <i>J. Finance</i>).</li>
           <li style={{ marginBottom: 5 }}><b style={{ color: "#29C7E8" }}>CONFIRMED</b> — VIX a stronger US hedge than gold (Hood &amp; Malik 2013, <i>Rev. Fin. Econ.</i>; Szado 2009, <i>JAI</i>), with persistently negative carry (Carr &amp; Wu 2009, <i>RFS</i>; Dew-Becker et al. 2017, <i>JFE</i>). VIX futures tradable only since 2004, options 2006 — earlier “long vol” = index puts.</li>
           <li style={{ marginBottom: 5 }}><b style={{ color: "#29C7E8" }}>CONFIRMED</b> — oil/energy as the 1973–74 crisis-unique winner; note Alpanda &amp; Peralta-Alva is a <i>published</i> Review of Economic Dynamics (2010) article, not a St. Louis Fed working paper.</li>
-          <li style={{ marginBottom: 5 }}><b style={{ color: "#e0b458" }}>CORRECTED</b> — Cheema, Ryan &amp; Sarwar (2025) appeared in <i>International Review of Economics &amp; Finance</i> (vol. 102, art. 104364), NOT the “Journal of Economics and Business”; their peak-to-trough windows complement (don’t replace) the fixed t−60/+60 scale used here.</li>
+          <li style={{ marginBottom: 5 }}><b style={{ color: "#B79DFF" }}>CORRECTED</b> — Cheema, Ryan &amp; Sarwar (2025) appeared in <i>International Review of Economics &amp; Finance</i> (vol. 102, art. 104364), NOT the “Journal of Economics and Business”; their peak-to-trough windows complement (don’t replace) the fixed t−60/+60 scale used here.</li>
           <li><b style={{ color: "#b48ce0" }}>ADJUDICATED</b> — “most unique” winner: oil/energy leads on <i>magnitude</i> within a recurring crisis type; Homestake (Burdekin &amp; Weidenmier 2004) leads on <i>structural non-recurrence</i>. Both are shown.</li>
         </ul>
       </div>
@@ -469,7 +469,7 @@ function Aggregate() {
       <button key={l.key} onClick={() => setHidden((h) => ({ ...h, [l.key]: !off }))}
         style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "4px 10px", borderRadius: 999,
           border: "1px solid rgba(255,255,255,0.14)", background: off ? "transparent" : "rgba(255,255,255,0.05)",
-          color: off ? "#616a7d" : "#D9DCE4", fontSize: 11, cursor: "pointer", maxWidth: "100%",
+          color: off ? "#666E7B" : "#C6CCD6", fontSize: 11, cursor: "pointer", maxWidth: "100%",
           textDecoration: off ? "line-through" : "none" }}>
         <span style={{ width: 9, height: 9, minWidth: 9, borderRadius: 99, background: l.color, opacity: off ? 0.35 : 1 }} />
         <span style={{ textAlign: "left", lineHeight: 1.25 }}>{l.label}</span>
@@ -586,7 +586,7 @@ function Aggregate() {
 
       <div style={{ ...S.panel, marginTop: 14, padding: "14px 16px", borderLeft: "3px solid #29C7E8" }}>
         <div style={{ ...S.eyebrow, marginBottom: 6 }}>The core lesson</div>
-        <p style={{ margin: 0, fontSize: 13.5, color: "#D9DCE4", lineHeight: 1.65 }}>
+        <p style={{ margin: 0, fontSize: 13.5, color: "#C6CCD6", lineHeight: 1.65 }}>
           No asset is an unconditional safe haven. Universal winners compound quietly through the crash; category-specific
           winners (led by gold) deliver the largest gains but only in the matching regime; crisis-unique winners are
           spectacular and non-replicable. Retrospectively, the smartest investor was a diversifier holding the
@@ -855,7 +855,7 @@ function Analytics() {
             peak between "now" and about 19 months from now.
           </Expl>
         </div>
-        <p style={{ margin: 0, fontSize: 12.5, color: "#D9DCE4", lineHeight: 1.7 }}>
+        <p style={{ margin: 0, fontSize: 12.5, color: "#C6CCD6", lineHeight: 1.7 }}>
           Granger (3 lags): gold → market <b>F = 7.79, p &lt; 0.01</b>; reverse direction p = 0.73 · CCF peak: gold
           leads by <b>4 months</b> (r +0.58) · historical gold-surge leads before market peaks: 1973: 0 · GFC: 24 ·
           Euro: 36 months · today's surge peaked Jan 2026 (t−5, +94% trailing-12m) → <b>implied peak bracket: now → +19 months</b>.
@@ -1004,7 +1004,7 @@ function Elink({ k }) {
     <a href={EBASE + e.u} target="_blank" rel="noopener noreferrer" title={`eToro: ${e.n} — ${tag.l}`} style={{
       display: "inline-flex", alignItems: "center", gap: 5, padding: "3px 9px", borderRadius: 999,
       border: `1px solid ${tag.c}55`, background: "rgba(255,255,255,0.04)", textDecoration: "none",
-      fontSize: 10.5, fontWeight: 700, color: "#D9DCE4", whiteSpace: "nowrap",
+      fontSize: 10.5, fontWeight: 700, color: "#C6CCD6", whiteSpace: "nowrap",
     }}>
       <span style={{ width: 6, height: 6, borderRadius: 99, background: tag.c, flexShrink: 0 }} />
       {e.n} <span style={{ color: "#666E7B", fontWeight: 400 }}>↗</span>
@@ -1198,7 +1198,7 @@ function Playbook() {
           </tbody>
         </table>
         {vSel != null && (
-          <div style={{ margin: "8px 14px 14px", padding: "10px 12px", borderLeft: "3px solid #B79DFF", background: "rgba(255,255,255,0.03)", fontSize: 12.5, color: "#D9DCE4", lineHeight: 1.6, borderRadius: 6 }}>
+          <div style={{ margin: "8px 14px 14px", padding: "10px 12px", borderLeft: "3px solid #B79DFF", background: "rgba(255,255,255,0.03)", fontSize: 12.5, color: "#C6CCD6", lineHeight: 1.6, borderRadius: 6 }}>
             <b style={{ color: PB_VERDICTS[vSel].col }}>{PB_VERDICTS[vSel].a}:</b> {PB_VERDICTS[vSel].note}
           </div>
         )}
@@ -1223,7 +1223,7 @@ function Playbook() {
               <button onClick={() => setPhase(st.k)} style={{ background: "transparent", border: "none", cursor: "pointer", padding: 0, textAlign: "center", width: 74 }}>
                 <div style={{
                   width: 32, height: 32, borderRadius: 99, margin: "0 auto 5px", display: "flex", alignItems: "center", justifyContent: "center",
-                  fontFamily: "Georgia, serif", fontWeight: 700, fontSize: 14.5,
+                  fontFamily: "Georgia, 'Times New Roman', serif", fontWeight: 700, fontSize: 14.5,
                   background: phase === st.k ? "#B79DFF" : "rgba(255,255,255,0.06)",
                   color: phase === st.k ? "#21252D" : "#8A92A0",
                   border: `1.5px solid ${phase === st.k ? "#B79DFF" : "rgba(255,255,255,0.2)"}`,
@@ -1285,7 +1285,7 @@ function Playbook() {
           <div style={{ borderRadius: 10, background: "rgba(255,107,138,0.05)", border: "1px solid rgba(255,107,138,0.25)", padding: "12px 14px" }}>
             <div style={{ ...S.serif, fontSize: 16, fontWeight: 700, color: "#FF9A8C", marginBottom: 8 }}>Hold. Buy nothing. (0–3 months)</div>
             {PB_PHASES.p1.rules.map((r, i) => (
-              <div key={i} style={{ display: "flex", gap: 8, fontSize: 12, color: "#D9DCE4", lineHeight: 1.6, padding: "4px 0", borderTop: i ? "1px solid rgba(255,255,255,0.05)" : "none" }}>
+              <div key={i} style={{ display: "flex", gap: 8, fontSize: 12, color: "#C6CCD6", lineHeight: 1.6, padding: "4px 0", borderTop: i ? "1px solid rgba(255,255,255,0.05)" : "none" }}>
                 <span style={{ color: "#B79DFF", fontWeight: 800 }}>{i + 1}</span><span>{r}</span>
               </div>
             ))}
@@ -1317,7 +1317,7 @@ function Playbook() {
               <span style={{ width: 6, height: 6, borderRadius: 99, background: t.c, display: "inline-block" }} />{t.l}
             </span>
           ))}
-          <span style={{ fontSize: 9.5, color: "#616a7d", flex: "1 1 240px" }}>
+          <span style={{ fontSize: 9.5, color: "#666E7B", flex: "1 1 240px" }}>
             eToro links = navigation only, not advice. EU retail: US-domiciled ETFs trade as CFDs (PRIIPs) — prefer green
             "Real (EU)" UCITS lines for actual holdings; commodities &amp; FX are always CFDs. Verified Jul 2026 — re-check on platform.
           </span>
@@ -1366,7 +1366,7 @@ function ExpertRow({ e, agCol }) {
     <div style={{ borderTop: "1px solid rgba(255,255,255,0.06)", padding: "7px 0" }}>
       <div onClick={() => setOpen(!open)} style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", flexWrap: "wrap" }}>
         <span style={{ ...S.eyebrow, minWidth: 22 }}>#{e.rk}</span>
-        <span style={{ color: "#FFFFFF", fontWeight: 600, fontSize: 12.5, flex: "1 1 160px" }}>{e.name} <span style={{ color: "#616a7d", fontWeight: 400, fontSize: 10.5 }}>{e.sym}</span></span>
+        <span style={{ color: "#FFFFFF", fontWeight: 600, fontSize: 12.5, flex: "1 1 160px" }}>{e.name} <span style={{ color: "#666E7B", fontWeight: 400, fontSize: 10.5 }}>{e.sym}</span></span>
         <span style={{ fontSize: 14, fontWeight: 800, color: agCol[e.ag] }}>{e.ag}</span>
         <span style={{ fontSize: 10.5, fontWeight: 700, color: e.col, whiteSpace: "nowrap" }}>{e.v}</span>
       </div>
@@ -1380,13 +1380,13 @@ function ExpertRow({ e, agCol }) {
       </div>
       {open && (
         <div style={{ marginTop: 6, padding: "8px 11px", background: "rgba(255,255,255,0.03)", borderRadius: 7, borderLeft: `2px solid ${agCol[e.ag]}` }}>
-          <div style={{ fontSize: 12, color: "#D9DCE4", lineHeight: 1.6 }}>{e.note}</div>
+          <div style={{ fontSize: 12, color: "#C6CCD6", lineHeight: 1.6 }}>{e.note}</div>
           {e.et && e.et.length > 0 && (
             <div style={{ display: "flex", gap: 5, flexWrap: "wrap", marginTop: 7 }}>
               {e.et.map((k) => <Elink key={k} k={k} />)}
             </div>
           )}
-          <div style={{ fontSize: 10, color: "#616a7d", marginTop: 6, lineHeight: 1.5 }}>Sources: {e.refs}</div>
+          <div style={{ fontSize: 10, color: "#666E7B", marginTop: 6, lineHeight: 1.5 }}>Sources: {e.refs}</div>
         </div>
       )}
     </div>
@@ -1461,7 +1461,7 @@ function CrisisWinnersDashboard() {
         {tab === "playbook" && <Playbook />}
         {tab === "bubblegauge" && BG.enabled && <BG.DetailTab goToCrisis={() => setTab("explorer")} />}
 
-        <div style={{ marginTop: 26, paddingTop: 14, borderTop: "1px solid rgba(255,255,255,0.1)", fontSize: 10.5, color: "#616a7d", lineHeight: 1.7 }}>
+        <div style={{ marginTop: 26, paddingTop: 14, borderTop: "1px solid rgba(255,255,255,0.1)", fontSize: 10.5, color: "#666E7B", lineHeight: 1.7 }}>
           Key sources: Baur &amp; McDermott (2010) <i>J. Banking &amp; Finance</i> · Baele, Bekaert, Inghelbrecht &amp; Wei (2020) <i>RFS</i> ·
           Ranaldo &amp; Söderlind (2010) <i>Rev. Finance</i> · Temin &amp; Voth (2004) <i>AER</i> · Gorton &amp; Rouwenhorst (2006) <i>FAJ</i> ·
           Erb &amp; Harvey (2013) · Moskowitz, Ooi &amp; Pedersen (2012) <i>JFE</i> · Frazzini &amp; Pedersen (2014) <i>JFE</i> ·

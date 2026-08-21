@@ -81,8 +81,11 @@
     text: "#FFFFFF", dim: "#C6CCD6", muted: "#8A92A0", faint: "#666E7B",
     violet: "#B79DFF", cyan: "#29C7E8", blue: "#2E86E8", indigo: "#6C4FE0", line: "rgba(255,255,255,0.07)",
   };
+  // One canonical pair, shared with dashboard.tsx and widget.html.
+  const SANS = "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Helvetica, Arial, sans-serif";
   const BS = {
     serif: { fontFamily: "Georgia, 'Times New Roman', serif" },
+    sans: { fontFamily: SANS },
     panel: { background: C.panel, border: "1px solid " + C.line, borderRadius: 10 },
     eyebrow: { fontSize: 10.5, letterSpacing: "0.18em", textTransform: "uppercase", color: C.muted },
   };
@@ -105,7 +108,7 @@
     brk: { position: "relative", height: 7, marginTop: 3 },
     scale: { position: "relative", height: 12, fontSize: 9.5, color: C.faint, fontVariantNumeric: "tabular-nums" },
     // full-screen overview (DR-011)
-    screen: { position: "relative", overflow: "hidden", minHeight: "100vh", display: "flex", flexDirection: "column", gap: 12, padding: "14px 20px 20px", background: C.bg },
+    screen: { fontFamily: SANS, position: "relative", overflow: "hidden", minHeight: "100vh", display: "flex", flexDirection: "column", gap: 12, padding: "14px 20px 20px", background: C.bg },
     lift: { position: "relative", zIndex: 1 },
     bar: { display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" },
     card: { background: C.panel, borderRadius: 12, padding: "14px 16px", minWidth: 0, overflow: "hidden", display: "flex", flexDirection: "column" },
@@ -124,7 +127,7 @@
     hold:   { label: "HOLD",   color: "#29C7E8", zone: "rgba(41,199,232,0.14)" },
     trim:   { label: "TRIM",   color: "#B79DFF", zone: "rgba(183,157,255,0.16)" },
     "de-risk": { label: "DE-RISK", color: "#FF6B8A", zone: "rgba(255,107,138,0.16)" },
-    "suppressed (block degraded)": { label: "SUPPRESSED", color: "#8A919E", zone: "rgba(138,145,158,0.12)" },
+    "suppressed (block degraded)": { label: "SUPPRESSED", color: "#8A92A0", zone: "rgba(138,145,158,0.12)" },
   };
   const bandOf = (b) => BAND[b] || BAND.hold;
 
@@ -134,7 +137,7 @@
     "literature-adjacent":   { c: "#5AA9A3", t: "Motivated by the research, with a reasoned (not directly fitted) mapping." },
     "judgmental":            { c: "#d9b45c", t: "Reasoned expert choice, not a fitted model." },
     "contested":             { c: "#2E86E8", t: "Known to misfire — deliberately down-weighted." },
-    "lagging-confirmation":  { c: "#8A919E", t: "Confirms stress already underway; does not predict." },
+    "lagging-confirmation":  { c: "#8A92A0", t: "Confirms stress already underway; does not predict." },
   };
   const groundOf = (g) => GROUND[g] || { c: C.muted, t: "" };
 
@@ -805,7 +808,7 @@
             <div key={k} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 0", borderTop: "1px solid rgba(255,255,255,0.06)" }}>
               <span style={{ width: 16, height: 16, borderRadius: 4, display: "inline-flex", alignItems: "center", justifyContent: "center",
                 background: on ? "rgba(255,107,138,0.75)" : "transparent", border: "1px solid " + (on ? "#FF6B8A" : "rgba(255,255,255,0.2)"),
-                color: "#1E222A", fontWeight: 800, fontSize: 11 }}>{on ? "!" : ""}</span>
+                color: "#21252D", fontWeight: 800, fontSize: 11 }}>{on ? "!" : ""}</span>
               <span style={{ fontSize: 12, color: on ? C.text : C.muted, fontWeight: on ? 600 : 400 }}>{REDFLAG_COPY[k]}</span>
               <span style={{ marginLeft: "auto", fontSize: 10, color: on ? "#FF6B8A" : C.faint, fontWeight: 700 }}>{on ? "FIRED" : "clear"}</span>
             </div>
@@ -981,7 +984,7 @@
         </p>
         {goToCrisis && top.explorer && (
           <button onClick={() => goToCrisis(top.explorer)} style={{ marginTop: 10, cursor: "pointer", fontSize: 12, fontWeight: 700,
-            color: "#1E222A", background: "#B79DFF", border: "none", borderRadius: 7, padding: "7px 12px" }}>
+            color: "#21252D", background: "#B79DFF", border: "none", borderRadius: 7, padding: "7px 12px" }}>
             Open the atlas → {top.label} ›
           </button>
         )}
@@ -1103,7 +1106,7 @@
   // published 0..100 range or with an unknown rating is dropped, not rendered; previous_*
   // values are 0-100 or null, and null means "no observation", never zero.
   const FG_RATINGS = ["extreme fear", "fear", "neutral", "greed", "extreme greed"];
-  const FG_COLORS = { "extreme fear": "#FF6B8A", "fear": "#C0564A", "neutral": "#C3C9D4", "greed": "#29C7E8", "extreme greed": "#5AA9A3" };
+  const FG_COLORS = { "extreme fear": "#FF6B8A", "fear": "#F08AA0", "neutral": "#C6CCD6", "greed": "#29C7E8", "extreme greed": "#2E86E8" };
   const FG_ZONES = [25, 45, 55, 75]; // zone band edges on the 0-100 axis
   function validFearGreed(m) {
     if (!(m && m.available && isNum(m.value) && m.value >= 0 && m.value <= 100)) return false;
@@ -1168,7 +1171,7 @@
     const det = m.detail || {};
     const rating = det.rating || null;
     const col = (rating && FG_COLORS[rating]) || C.dim;
-    const zoneCols = ["#5AA9A3", "#29C7E8", "#8A919E", "#C0564A", "#FF6B8A"]; // flipped: red on the right (matches the regime gauge)
+    const zoneCols = ["#5AA9A3", "#29C7E8", "#8A92A0", "#C0564A", "#FF6B8A"]; // flipped: red on the right (matches the regime gauge)
     const edges = [0].concat(FG_ZONES, [100]);
     const deltas = [["prev close", det.previous_close], ["1w", det.previous_1_week], ["1m", det.previous_1_month], ["1y", det.previous_1_year]]
       .filter((p) => isNum(p[1])); // null ≠ zero: a null comparison is skipped, never shown as 0
@@ -1291,7 +1294,7 @@
     const det = m.detail || {};
     const rating = det.rating || null;
     const col = (rating && FG_COLORS[rating]) || C.dim;
-    const zoneCols = ["#5AA9A3", "#29C7E8", "#8A919E", "#C0564A", "#FF6B8A"]; // flipped: red on the right (matches the regime gauge)
+    const zoneCols = ["#5AA9A3", "#29C7E8", "#8A92A0", "#C0564A", "#FF6B8A"]; // flipped: red on the right (matches the regime gauge)
     const edges = [0].concat(FG_ZONES, [100]);
     // CNN's own reference readings — informational text only; the ARROW's source is the observed
     // snapshot series below (fgSeriesTrend), NOT these. null is skipped, never a 0.
@@ -1445,7 +1448,7 @@
     return (
       <div role="dialog" aria-modal="true" aria-label="AI bubble monitor — opening"
         style={{ position: "fixed", inset: 0, zIndex: 1000, background: C.bg, color: C.text,
-          overflowY: "auto", WebkitOverflowScrolling: "touch", fontFamily: "-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif" }}>
+          overflowY: "auto", WebkitOverflowScrolling: "touch", fontFamily: SANS }}>
         <div style={{ minHeight: "100dvh", display: "flex", flexDirection: "column", position: "relative",
           padding: "calc(env(safe-area-inset-top,0px) + 8px) 0 calc(env(safe-area-inset-bottom,0px) + 18px)" }}>
           <div aria-hidden="true" style={{ position: "absolute", top: 70, left: 0, right: 0, height: 340, pointerEvents: "none",
@@ -1532,7 +1535,7 @@
                 <div style={{ ...BS.eyebrow }}>CNN Fear &amp; Greed</div>
                 <div style={{ ...BS.serif, fontSize: 15, color: fgCol, fontVariantNumeric: "tabular-nums" }}>{fg.value.toFixed(1)}{fg.detail && fg.detail.rating ? " · " + fg.detail.rating : ""}</div>
               </div>
-              <div style={{ position: "relative", height: 6, borderRadius: 999, marginTop: 9, background: "linear-gradient(90deg,#5AA9A3,#29C7E8,#8A919E,#C0564A,#FF6B8A)" }}>
+              <div style={{ position: "relative", height: 6, borderRadius: 999, marginTop: 9, background: "linear-gradient(90deg,#5AA9A3,#29C7E8,#8A92A0,#C0564A,#FF6B8A)" }}>
                 {fgT && <TrendTail pts={fgT} flip={true} barH={6} />}
                 <div style={{ position: "absolute", top: -3, left: (100 - fg.value) + "%", transform: "translateX(-50%)", width: 2, height: 12, borderRadius: 2, background: C.text, boxShadow: "0 0 0 2px " + C.bg }} />
               </div>
