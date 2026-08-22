@@ -10,7 +10,7 @@
 <title>AI Bubble Monitor — JS-Widget</title>
 <style type="text/css">
   :root{
-    --bg:#21252D; --text:#FFFFFF; --dim:#C6CCD6; --muted:#8A92A0; --faint:#666E7B;
+    --bg:#21252D; --text:#FFFFFF; --dim:#C6CCD6; --muted:#9BA4B2; --faint:#939CAA;
     --violet:#B79DFF; --line:rgba(255,255,255,0.07); --serif:Georgia,'Times New Roman',serif;
   }
   *{box-sizing:border-box}
@@ -22,7 +22,7 @@
   .wrap{position:relative;width:168px;height:168px;overflow:hidden;margin:0 auto;padding:10px 12px 8px;
     display:flex;flex-direction:column;gap:7px}
   .glow{position:absolute;inset:0;pointer-events:none;
-    background:radial-gradient(80% 60% at 50% 0%,rgba(224,180,88,0.12),rgba(224,180,88,0.03) 55%,transparent 78%)}
+    background:radial-gradient(80% 60% at 50% 0%,rgba(183,157,255,0.12),rgba(183,157,255,0.03) 55%,transparent 78%)}
   .row{position:relative;z-index:1}
   /* Heads MUST stay one line: .wrap is a fixed 168px box with overflow:hidden, so a wrapped
      head steals a row from the layout and pushes .foot (freshness) out of the widget. nowrap makes
@@ -46,7 +46,7 @@
     font-size:10.5px;line-height:1.2;color:var(--dim);font-variant-numeric:tabular-nums;position:relative;z-index:1;margin-top:1px}
   .grid .cell{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .grid .k{color:var(--muted)}
-  .foot{font-size:8px;color:var(--faint);text-align:center;position:relative;z-index:1;
+  .foot{font-size:8.5px;color:var(--muted);text-align:center;position:relative;z-index:1;
     font-variant-numeric:tabular-nums;margin-top:auto}
   .foot .badge{border:1px solid var(--line);border-radius:999px;padding:0 5px;text-transform:uppercase;letter-spacing:0.06em}
 </style>
@@ -71,7 +71,7 @@
 /* ============ WidgetWeb JS-Widget: AI Bubble Monitor (served from GitHub Pages) ============
    Self-contained, no external assets (30MB widget budget), STATELESS (no cookies / no local store).
    Authored at the widget's 168pt box (viewport width=168) so it is NOT scaled down. Dense horizontal
-   layout: a REGIME zone bar (blue/gold/red) + big score+band, an F&G zone bar, and a full metric grid.
+   layout: a REGIME zone bar (cyan/violet/rose) + big score+band, an F&G zone bar, and a full metric grid.
    Gated like the dashboard: ?status-api=<key> -> subdomain-of-host API base (KEY_RE-whitelisted). */
 
 function __wweb2JsWidgetTitle(){ return "AI Bubble Monitor"; }
@@ -94,13 +94,14 @@ var API_BASE = ACT.base || null;
 var DEMO = !!ACT.demo;
 
 /* ---- tokens ---- */
-var BAND={hold:{label:"HOLD",color:"#29C7E8"},trim:{label:"TRIM",color:"#B79DFF"},"de-risk":{label:"DE-RISK",color:"#FF6B8A"}};
+var BAND={hold:{label:"HOLD",color:"#29C7E8"},trim:{label:"TRIM",color:"#B79DFF"},"de-risk":{label:"DE-RISK",color:"#FF6B8A"},
+  "suppressed (block degraded)":{label:"SUPPRESSED",color:"#9BA4B2"}}; // a withheld score must not read as HOLD
 function bandOf(b){return BAND[b]||BAND.hold;}
 var FG_COLORS={"extreme fear":"#FF6B8A","fear":"#F08AA0","neutral":"#C6CCD6","greed":"#29C7E8","extreme greed":"#2E86E8"};
 var FG_RATINGS=["extreme fear","fear","neutral","greed","extreme greed"]; // same enum the dashboard validates against
 function fgRating(r){return FG_RATINGS.indexOf(r)!==-1?r:null;} // array lookup: never reaches Object.prototype
 var FG_SHORT={"extreme greed":"extr. greed","extreme fear":"extr. fear"}; // display-only: full rating still drives FG_COLORS
-var GREEN="#29C7E8", RED="#FF6B8A";
+var OK="#29C7E8", ALERT="#FF6B8A"; // names track values (cyan / rose)
 
 var SAMPLE={score:40,band:"hold",iqr:[34,47],redFlags:0,spy:"IN",qqq:"IN",
   fg:{value:46,rating:"neutral"},cape:42.2,goldTtm:22.9,btcDd:-44,asOf:"sample",
@@ -119,7 +120,7 @@ function tail(barEl,pts,flip){
   if(!barEl) return;
   var old=barEl.querySelector("svg.tt"); if(old) old.parentNode.removeChild(old);
   if(!pts||pts.length!==3||!pts.every(num)) return;
-  var color="#FFFFFF"; // cream ink (= C.text), matches the dashboard's TrendTail — reads on every zone
+  var color="#FFFFFF"; // white ink (= C.text), matches the dashboard's TrendTail — reads on every zone
   var W=barEl.clientWidth,H=barEl.clientHeight||9; if(!W) return;
   function xf(v){v=clamp(v);return ((flip?100-v:v)/100)*W;}
   var x0=xf(pts[0]),x2=xf(pts[2]),mlen=Math.abs(x2-x0); if(mlen<2) return;
@@ -171,13 +172,13 @@ function render(){
   // dense metric grid — every remaining number
   var g=document.getElementById("grid"); g.textContent="";
   if(num(d.cape)) g.appendChild(cell("CAPE",Math.round(d.cape)+""));
-  if(num(d.goldTtm)) g.appendChild(cell("Gold",(d.goldTtm>0?"+":"")+Math.round(d.goldTtm)+"%",GREEN));
-  if(num(d.btcDd)) g.appendChild(cell("BTC",Math.round(d.btcDd)+"%",RED));
+  if(num(d.goldTtm)) g.appendChild(cell("Gold",(d.goldTtm>0?"+":"")+Math.round(d.goldTtm)+"%",OK));
+  if(num(d.btcDd)) g.appendChild(cell("BTC",Math.round(d.btcDd)+"%",ALERT));
   // Guard BOTH bounds with num() before rounding — mirrors the dashboard's pair() (src/bubblegauge.tsx:275).
   // Math.round(null) is 0, so a null bound would otherwise print a fabricated "IQR 0–0" interval.
   if(Array.isArray(d.iqr)&&d.iqr.length===2&&num(d.iqr[0])&&num(d.iqr[1]))
     g.appendChild(cell("IQR",Math.round(d.iqr[0])+"–"+Math.round(d.iqr[1]))); // round like every other cell: live IQR is float
-  if(num(d.redFlags)) g.appendChild(cell("Flags",d.redFlags+"/4",d.redFlags>0?"#B79DFF":GREEN));
+  if(num(d.redFlags)) g.appendChild(cell("Flags",d.redFlags+"/4",d.redFlags>0?"#B79DFF":OK));
   if(d.spy&&d.qqq){ var tc=(d.spy==="IN"&&d.qqq==="IN")?GREEN:(d.spy==="OUT"&&d.qqq==="OUT")?RED:"#B79DFF";
     g.appendChild(cell("Trend",d.spy+"·"+d.qqq,tc)); }
   // freshness / sample
@@ -185,7 +186,7 @@ function render(){
   if(d.asOf&&d.asOf!=="sample"){ foot.appendChild(document.createTextNode(rel(d.asOf))); }
   else { foot.appendChild(span("badge","sample")); foot.appendChild(document.createTextNode(" · heuristic, not advice")); }
   // V2 "Kielwasser" trend tails on both bars (regime + F&G), same encoding as the dashboard/splash.
-  // Drawn in the marker's cream ink so the tail reads on every zone (a zone-matched tail vanishes).
+  // Drawn in the marker's white ink so the tail reads on every zone (a zone-matched tail vanishes).
   tail(document.querySelector(".bar.reg"),d.scoreTrend,false);
   tail(document.querySelector(".bar.fg"),(d.fg&&num(d.fg.value))?d.fgTrend:null,true);
 }

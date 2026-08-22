@@ -78,7 +78,7 @@
 
   const C = {
     bg: "#21252D", panel: "#272C35", panel2: "#1B1F26",
-    text: "#FFFFFF", dim: "#C6CCD6", muted: "#8A92A0", faint: "#666E7B",
+    text: "#FFFFFF", dim: "#C6CCD6", muted: "#9BA4B2", faint: "#939CAA",
     violet: "#B79DFF", cyan: "#29C7E8", blue: "#2E86E8", indigo: "#6C4FE0", line: "rgba(255,255,255,0.07)",
   };
   // One canonical pair, shared with dashboard.tsx and widget.html.
@@ -568,7 +568,7 @@
       // the arrowhead is filled with the colour of the bar END it is heading toward (full-saturation
       // extreme), so the hue itself signals the trend; both bars are red on the right, F&G is greed-teal
       // on the left and regime blue on the left.
-      const destColor = dir > 0 ? "#FF6B8A" : (flip ? "#5AA9A3" : "#29C7E8");
+      const destColor = dir > 0 ? "#FF6B8A" : (flip ? "#2E86E8" : "#29C7E8");
       return { x0, x2, d, head, sw: Math.max(2.4, barH * 0.34), destColor };
     }, [pts, w, flip, barH]);
     const gid = gidRef.current;
@@ -1106,6 +1106,8 @@
   // published 0..100 range or with an unknown rating is dropped, not rendered; previous_*
   // values are 0-100 or null, and null means "no observation", never zero.
   const FG_RATINGS = ["extreme fear", "fear", "neutral", "greed", "extreme greed"];
+  // The five-step F&G ramp, greed-first. zone bars, gradients and rating text all read THIS.
+  const FG_RAMP = ["#2E86E8", "#29C7E8", "#C6CCD6", "#F08AA0", "#FF6B8A"];
   const FG_COLORS = { "extreme fear": "#FF6B8A", "fear": "#F08AA0", "neutral": "#C6CCD6", "greed": "#29C7E8", "extreme greed": "#2E86E8" };
   const FG_ZONES = [25, 45, 55, 75]; // zone band edges on the 0-100 axis
   function validFearGreed(m) {
@@ -1171,7 +1173,7 @@
     const det = m.detail || {};
     const rating = det.rating || null;
     const col = (rating && FG_COLORS[rating]) || C.dim;
-    const zoneCols = ["#5AA9A3", "#29C7E8", "#8A92A0", "#C0564A", "#FF6B8A"]; // flipped: red on the right (matches the regime gauge)
+    const zoneCols = FG_RAMP; // flipped: alarm on the right (matches the regime gauge)
     const edges = [0].concat(FG_ZONES, [100]);
     const deltas = [["prev close", det.previous_close], ["1w", det.previous_1_week], ["1m", det.previous_1_month], ["1y", det.previous_1_year]]
       .filter((p) => isNum(p[1])); // null ≠ zero: a null comparison is skipped, never shown as 0
@@ -1294,7 +1296,7 @@
     const det = m.detail || {};
     const rating = det.rating || null;
     const col = (rating && FG_COLORS[rating]) || C.dim;
-    const zoneCols = ["#5AA9A3", "#29C7E8", "#8A92A0", "#C0564A", "#FF6B8A"]; // flipped: red on the right (matches the regime gauge)
+    const zoneCols = FG_RAMP; // flipped: alarm on the right (matches the regime gauge)
     const edges = [0].concat(FG_ZONES, [100]);
     // CNN's own reference readings — informational text only; the ARROW's source is the observed
     // snapshot series below (fgSeriesTrend), NOT these. null is skipped, never a 0.
@@ -1535,7 +1537,7 @@
                 <div style={{ ...BS.eyebrow }}>CNN Fear &amp; Greed</div>
                 <div style={{ ...BS.serif, fontSize: 15, color: fgCol, fontVariantNumeric: "tabular-nums" }}>{fg.value.toFixed(1)}{fg.detail && fg.detail.rating ? " · " + fg.detail.rating : ""}</div>
               </div>
-              <div style={{ position: "relative", height: 6, borderRadius: 999, marginTop: 9, background: "linear-gradient(90deg,#5AA9A3,#29C7E8,#8A92A0,#C0564A,#FF6B8A)" }}>
+              <div style={{ position: "relative", height: 6, borderRadius: 999, marginTop: 9, background: "linear-gradient(90deg," + FG_RAMP.join(",") + ")" }}>
                 {fgT && <TrendTail pts={fgT} flip={true} barH={6} />}
                 <div style={{ position: "absolute", top: -3, left: (100 - fg.value) + "%", transform: "translateX(-50%)", width: 2, height: 12, borderRadius: 2, background: C.text, boxShadow: "0 0 0 2px " + C.bg }} />
               </div>
@@ -1930,12 +1932,12 @@
             {refs.map((r) => r[0] + " " + Math.round(r[1])).join(" · ")}</span>}
         </div>
         <div style={{ position: "relative", height: 10, borderRadius: 99, marginTop: 10,
-          background: "linear-gradient(90deg,#FF6B8A," + C.violet + "," + C.blue + "," + C.cyan + ")" }}>
-          <div style={{ position: "absolute", top: -4, left: v + "%", transform: "translateX(-50%)", width: 3, height: 18,
+          background: "linear-gradient(90deg," + FG_RAMP.join(",") + ")" }}>
+          <div style={{ position: "absolute", top: -4, left: (100 - v) + "%", transform: "translateX(-50%)", width: 3, height: 18,
             borderRadius: 2, background: C.text, boxShadow: "0 0 0 2px " + C.panel }} />
         </div>
         <div style={{ display: "flex", justifyContent: "space-between", fontSize: 9, color: C.faint, marginTop: 5 }}>
-          <span>0 · extreme fear</span><span>100 · extreme greed</span>
+          <span>100 · extreme greed</span><span>0 · extreme fear</span>
         </div>
         {ser && (
           <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column", justifyContent: "flex-end", marginTop: 10 }}>

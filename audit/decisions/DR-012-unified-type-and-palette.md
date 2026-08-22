@@ -60,7 +60,18 @@ serve. Left untouched: the per-series line colours, the grounding-class colours
 *degraded* — a warning colour carries meaning no key colour can.
 
 After the sweep, the only non-canonical literals remaining in the two gated files are exactly those
-three grounding-class colours. `widget.html` is fully canonical.
+three grounding-class colours.
+
+**Correction (same day).** This record originally claimed `widget.html` was "fully canonical" after the
+sweep. It was not: the widget's ambient glow carried the retired gold as an **rgba triple**
+(`rgba(224,180,88,…)`), which a hex-only map cannot see. A 35-agent wide test across all three surfaces
+caught it, along with four further defects the sweep caused or left: the Fear & Greed scale was being
+painted with **four different ramps** running in **opposite directions** on the console versus the
+strip, block, splash and widget; the zone bars contradicted their own `FG_COLORS` table; the widget's
+`GREEN`/`RED` tokens held cyan and rose, the same name/value lie this record invokes to justify the
+`--gold` rename; the widget had **no `suppressed` band at all** and silently relabelled a withheld
+score as HOLD; and the tertiary greys failed 4.5:1 on the new panels. All are fixed, and the F&G ramp
+is now a single `FG_RAMP` token that all five surfaces derive from.
 
 ## Verification
 

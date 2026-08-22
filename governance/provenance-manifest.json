@@ -16,7 +16,7 @@
     },
     {
       "file": "widget.html",
-      "sha256": "791631242de63532286669c5ade10d7fc5dc50b533fd2bc9763e07e8f56c064c",
+      "sha256": "1a6787ce8d87984a7d863fec27930a6707f86db30b28ef9021c62fd90047eae6",
       "role": "served self-contained iOS JS-Widget (WidgetWeb spec) — stateless; gated ?status-api fetch to the constructed API_BASE only; no cookies/localStorage/vendors",
       "derives_from_spec": "DR-008 (widget served from Pages) + DR-009 (fixed-box geometry invariant) + INTEGRATION_NOTES (gating) + github.com/Villy21/JsWidget spec + DR-012 (unified type and palette)",
       "test_evidence": "verify/tests/62-security-surface (in SERVED: gated fetch, no cookie/localStorage/telemetry/AI-client), 61-provenance (this hash), 72-widget-layout (head nowrap+ellipsis standing control, IQR num() guard, F&G rating whitelist)",
@@ -25,7 +25,7 @@
     },
     {
       "file": "dashboard.js",
-      "sha256": "c0c69e1c16154757071f2bd0cbd5e59314bc95b80dbb69b7e7dc0a2ba7ec83ef",
+      "sha256": "558717c75a1a71aa76b9e31b4f4cfe3c7bf969794236f104d9f59474142297a3",
       "role": "served compiled crisis-atlas (esbuild transpile + minify of src/dashboard.tsx, IIFE-wrapped)",
       "derives_from_spec": "rewrite/00-recommendation.md + DR-006 (compiled-ahead)",
       "test_evidence": "verify/tests/66-compiled-fresh (bundle==src) + 30/62/63",
@@ -34,7 +34,7 @@
     },
     {
       "file": "bubblegauge.js",
-      "sha256": "4574378b4fb9a936fec9888c8301015d5438bb18df4c061110bdef5461fb5ad0",
+      "sha256": "be71c0ded5e3ac7ca4a53fb3f7ccf430e937d7551ec2475293ec2d380e9ba191",
       "role": "served compiled gated integration (esbuild transpile + minify of src/bubblegauge.tsx)",
       "derives_from_spec": "rewrite/00-recommendation.md + DR-006 (compiled-ahead)",
       "test_evidence": "verify/tests/66-compiled-fresh (bundle==src) + 30/62/63",
@@ -43,7 +43,7 @@
     },
     {
       "file": "src/dashboard.tsx",
-      "sha256": "d4950560a26fa2d5db34058ad6a5b82da1f05fbc0992df4ffe13e1925661b7db",
+      "sha256": "2a7796b52a9ce692ad33b6c5ad38790e654ddb9d85058bed30258508eced69c7",
       "role": "SOURCE of dashboard.js (view + math; imports ./data)",
       "derives_from_spec": "rewrite/00-recommendation.md + DR-006 (module migration) + DR-011 (app-wide palette, owner-authorised)",
       "test_evidence": "verify/tests/*",
@@ -52,11 +52,11 @@
     },
     {
       "file": "src/bubblegauge.tsx",
-      "sha256": "95726dc59ec28268e3c4b6ab7d22cd13700be344c4a0e74dc54cd9331720c8dc",
+      "sha256": "626650f86701e0df0d454b5b87e04caccd609f720429a8daf3c75f1ee80c7e05",
       "role": "SOURCE of bubblegauge.js (gated integration)",
       "derives_from_spec": "rewrite/00-recommendation.md + DR-006 (module migration) + DR-010 (desktop overview hero) + DR-011 (full-screen console, palette, budget)",
       "test_evidence": "verify/tests/*; 73-overview-verdict (verdict/distance/persistence contract, executed against the shipped functions)",
-      "adversarial_verification": "A 27-agent review panel over the real screenshots and the source confirmed six defects AFTER the first merge, all fixed here: HS.card had overflow:hidden without minHeight:0 so grid children could not shrink and the r2 cards overran their track at 1280x800; the scroll fade was unconditional and ghosted the final row of live data; the weight gutter sat on the <th> only, so the header hung ~15px off its column and values collided with the bar; gauge captions were <text> inside a meet-scaled SVG (~6px at 1280, oversized at 1920) and are now HTML at fixed size; the chart reserved 55-60% of its plot for a band the score has never reached; and the legend separated label from value by up to 640px with nothing between. Built and screenshotted in headless Chromium at 1280x800 / 1440x900 / 1920x1080 and iterated four times against those images; then reviewed by an independent three-lens panel (visual craft / number honesty / a11y+robustness) over the same screenshots and the source. Defects found and fixed this way: section mounted 324px down and inside the 1060px column; clipped y-axis numerals; gauge overflowing its card so the legend was swallowed by overflow:hidden; sparklines reading a live.series field the feed does not expose; a table row sliced at 800px height; and a \"VIX\" legend showing multiplier/2 as a percentage. Verified in a real browser, NOT only by static render.",
+      "adversarial_verification": "A 35-agent wide test across all three served surfaces confirmed a further set of defects, fixed here: the Fear & Greed scale was painted with four different ramps and ran in opposite directions on the console versus the strip/block/splash/widget (now one FG_RAMP, one direction, five surfaces); the zone bars still carried the retired teal/brick and contradicted their own FG_COLORS table; the trend arrowhead resolved to a retired hue on the flipped axis; and the tertiary greys failed 4.5:1 on the new panels. A 27-agent review panel over the real screenshots and the source confirmed six defects AFTER the first merge, all fixed here: HS.card had overflow:hidden without minHeight:0 so grid children could not shrink and the r2 cards overran their track at 1280x800; the scroll fade was unconditional and ghosted the final row of live data; the weight gutter sat on the <th> only, so the header hung ~15px off its column and values collided with the bar; gauge captions were <text> inside a meet-scaled SVG (~6px at 1280, oversized at 1920) and are now HTML at fixed size; the chart reserved 55-60% of its plot for a band the score has never reached; and the legend separated label from value by up to 640px with nothing between. Built and screenshotted in headless Chromium at 1280x800 / 1440x900 / 1920x1080 and iterated four times against those images; then reviewed by an independent three-lens panel (visual craft / number honesty / a11y+robustness) over the same screenshots and the source. Defects found and fixed this way: section mounted 324px down and inside the 1060px column; clipped y-axis numerals; gauge overflowing its card so the legend was swallowed by overflow:hidden; sparklines reading a live.series field the feed does not expose; a table row sliced at 800px height; and a \"VIX\" legend showing multiplier/2 as a percentage. Verified in a real browser, NOT only by static render.",
       "owning_role": "platform-security"
     },
     {
