@@ -38,8 +38,8 @@ import { interp, rebase, fmtM, logPath, ser, zArr, corrArr, xcorrRow, mulberry32
 const S = {
   page: { minHeight: "100vh", background: "#21252D", color: "#FFFFFF", fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Helvetica, Arial, sans-serif" },
   serif: { fontFamily: "Georgia, 'Times New Roman', serif" },
-  panel: { background: "#272C35", border: "1px solid rgba(255,255,255,0.09)", borderRadius: 10 },
-  eyebrow: { fontSize: 10.5, letterSpacing: "0.18em", textTransform: "uppercase", color: "#8A92A0" },
+  panel: { background: "#272C35", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 10 },
+  eyebrow: { fontSize: 10.5, letterSpacing: "0.18em", textTransform: "uppercase", color: "#9BA4B2" },
 };
 
 function Chip({ active, onClick, children, color }) {
@@ -48,7 +48,7 @@ function Chip({ active, onClick, children, color }) {
       padding: "7px 12px", borderRadius: 999, cursor: "pointer", whiteSpace: "nowrap",
       border: `1px solid ${active ? (color || "#B79DFF") : "rgba(255,255,255,0.16)"}`,
       background: active ? "rgba(183,157,255,0.12)" : "transparent",
-      color: active ? "#FFFFFF" : "#8A92A0", fontSize: 12.5, fontWeight: active ? 600 : 400,
+      color: active ? "#FFFFFF" : "#9BA4B2", fontSize: 12.5, fontWeight: active ? 600 : 400,
     }}>{children}</button>
   );
 }
@@ -60,7 +60,7 @@ function Seg({ options, value, onChange }) {
         <button key={o.v} onClick={() => onChange(o.v)} style={{
           padding: "5px 10px", fontSize: 11.5, cursor: "pointer", border: "none",
           background: value === o.v ? "#B79DFF" : "transparent",
-          color: value === o.v ? "#21252D" : "#8A92A0", fontWeight: 600,
+          color: value === o.v ? "#21252D" : "#9BA4B2", fontWeight: 600,
         }}>{o.label}</button>
       ))}
     </div>
@@ -96,7 +96,7 @@ const ChartTip = ({ active, payload, label }) => {
   if (!rows.length) return null;
   return (
     <div style={{ background: "#1B1F26", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 8, padding: "8px 11px", fontSize: 11.5, maxWidth: 250 }}>
-      <div style={{ color: "#8A92A0", marginBottom: 5, fontWeight: 600 }}>{fmtM(label)}</div>
+      <div style={{ color: "#9BA4B2", marginBottom: 5, fontWeight: 600 }}>{fmtM(label)}</div>
       {rows.map((p) => (
         <div key={p.dataKey} style={{ display: "flex", justifyContent: "space-between", gap: 12, color: p.color, lineHeight: 1.55 }}>
           <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.name}</span>
@@ -195,9 +195,9 @@ function Explorer() {
             <CartesianGrid stroke="rgba(255,255,255,0.07)" vertical={false} />
             <XAxis dataKey="m" type="number" domain={[-60, 60]} ticks={[-60, -48, -36, -24, -12, 0, 12, 24, 36, 48, 60]}
               tickFormatter={(m) => (m === 0 ? "Peak" : m > 0 ? `+${m}` : `${m}`)}
-              tick={{ fill: "#8A92A0", fontSize: 10.5 }} stroke="rgba(255,255,255,0.2)" />
+              tick={{ fill: "#9BA4B2", fontSize: 10.5 }} stroke="rgba(255,255,255,0.2)" />
             <YAxis scale={log ? "log" : "linear"} domain={log ? ["auto", "auto"] : ["auto", "auto"]} allowDataOverflow
-              tick={{ fill: "#8A92A0", fontSize: 10.5 }} stroke="rgba(255,255,255,0.2)" width={44} />
+              tick={{ fill: "#9BA4B2", fontSize: 10.5 }} stroke="rgba(255,255,255,0.2)" width={44} />
             <Tooltip content={<ChartTip />} />
             <ReferenceLine x={0} stroke="#FFFFFF" strokeOpacity={0.45} strokeDasharray="4 3"
               label={{ value: "PEAK", fill: "#FFFFFF", fontSize: 9, position: "insideTopRight", opacity: 0.6 }} />
@@ -216,7 +216,7 @@ function Explorer() {
               <button key={s.key} onClick={() => setHidden((h) => ({ ...h, [crisis.id + s.key]: !off }))}
                 style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "4px 9px", borderRadius: 999,
                   border: "1px solid rgba(255,255,255,0.14)", background: off ? "transparent" : "rgba(255,255,255,0.05)",
-                  color: off ? "#666E7B" : "#C6CCD6", fontSize: 11.5, cursor: "pointer",
+                  color: off ? "#939CAA" : "#C6CCD6", fontSize: 11.5, cursor: "pointer",
                   textDecoration: off ? "line-through" : "none" }}>
                 <span style={{ width: 9, height: 9, borderRadius: 99, background: s.color, opacity: off ? 0.35 : 1 }} />
                 {s.label}
@@ -225,7 +225,7 @@ function Explorer() {
             );
           })}
         </div>
-        <div style={{ padding: "0 18px 12px", fontSize: 10.5, color: "#666E7B" }}>
+        <div style={{ padding: "0 18px 12px", fontSize: 10.5, color: "#939CAA" }}>
           ▼ collapsing market · U universal · C category-specific · ★ crisis-unique · ! falsified — tap a chip to show/hide.
           Panels chart the top evidence-scored assets; the complete asset × crisis coverage is in the Similarity Matrix.
           {" "}Sources: {crisis.sources}.
@@ -262,7 +262,7 @@ function Matrix() {
         </div>
         <p style={{ margin: 0, fontSize: 13, color: "#C6CCD6", lineHeight: 1.6 }}>
           Qualitative similarity matrix implied by the Baur–McDermott safe-haven regressions and the flight-to-safety
-          literature. <span style={{ color: "#29C7E8" }}>✓ rose / strong safe haven</span> · <span style={{ color: "#d9b45c" }}>~ weak or mixed</span> · <span style={{ color: "#e08a8a" }}>✗ fell</span> · <span style={{ color: "#C6CCD6" }}>? potential (AI ’26 — no outcome yet, current institutional view only)</span> · blank = no academic evidence. Tap any cell for the note.
+          literature. <span style={{ color: "#5FBF87" }}>✓ rose / strong safe haven</span> · <span style={{ color: "#d9b45c" }}>~ weak or mixed</span> · <span style={{ color: "#e08a8a" }}>✗ fell</span> · <span style={{ color: "#C6CCD6" }}>? potential (AI ’26 — no outcome yet, current institutional view only)</span> · blank = no academic evidence. Tap any cell for the note.
         </p>
       </div>
 
@@ -272,7 +272,7 @@ function Matrix() {
             <tr>
               <th style={{ textAlign: "left", padding: "10px 12px", position: "sticky", left: 0, background: "#272C35", ...S.eyebrow }}>Asset</th>
               {MX_CRISES.map((c) => (
-                <th key={c} style={{ padding: "10px 4px", color: "#8A92A0", fontWeight: 600, fontSize: 10.5, whiteSpace: "nowrap" }}>{c}</th>
+                <th key={c} style={{ padding: "10px 4px", color: "#9BA4B2", fontWeight: 600, fontSize: 10.5, whiteSpace: "nowrap" }}>{c}</th>
               ))}
             </tr>
           </thead>
@@ -364,7 +364,7 @@ const AGG_LINES = [
   { key: "cash", label: "Phase 1 · Cash/T-bills (hist.)", color: "#BBCF6A", w: 2 },
   { key: "bonds", label: "Phase 2 · Duration bonds (hist.)", color: "#29C7E8", w: 2 },
   { key: "convex", label: "Convexity · trend & long-vol (hist.)", color: "#9A7BD6", w: 1.8 },
-  { key: "category", label: "Category-specific (hist.)", color: "#B79DFF", w: 2 },
+  { key: "category", label: "Category-specific (hist.)", color: "#D9A441", w: 2 },
   { key: "unique", label: "Crisis-unique (hist.)", color: "#B48CE0", w: 1.7 },
 ];
 
@@ -410,8 +410,8 @@ function PairTile({ p, data }) {
           <CartesianGrid stroke="rgba(255,255,255,0.06)" vertical={false} />
           <XAxis dataKey="m" type="number" domain={[-60, 60]} ticks={[-60, -24, 0, 24, 60]}
             tickFormatter={(m) => (m === 0 ? "Peak" : m > 0 ? `+${m}` : `${m}`)}
-            tick={{ fill: "#8A92A0", fontSize: 9.5 }} stroke="rgba(255,255,255,0.18)" />
-          <YAxis tick={{ fill: "#8A92A0", fontSize: 9.5 }} stroke="rgba(255,255,255,0.18)" width={34} domain={["auto", "auto"]} />
+            tick={{ fill: "#9BA4B2", fontSize: 9.5 }} stroke="rgba(255,255,255,0.18)" />
+          <YAxis tick={{ fill: "#9BA4B2", fontSize: 9.5 }} stroke="rgba(255,255,255,0.18)" width={34} domain={["auto", "auto"]} />
           <Tooltip content={<ChartTip />} />
           <ReferenceLine x={0} stroke="#FFFFFF" strokeOpacity={0.4} strokeDasharray="4 3" />
           <ReferenceLine y={100} stroke="rgba(255,255,255,0.15)" strokeDasharray="2 4" />
@@ -422,7 +422,7 @@ function PairTile({ p, data }) {
           )}
         </LineChart>
       </ResponsiveContainer>
-      <div style={{ display: "flex", gap: 14, padding: "4px 12px 0 16px", fontSize: 10.5, color: "#8A92A0", flexWrap: "wrap" }}>
+      <div style={{ display: "flex", gap: 14, padding: "4px 12px 0 16px", fontSize: 10.5, color: "#9BA4B2", flexWrap: "wrap" }}>
         <span><span style={{ color: p.color, fontWeight: 700 }}>━</span> history (solid)</span>
         {p.aiKey && <span><span style={{ color: p.aiColor, fontWeight: 700 }}>╌</span> AI ’26 → today (dashed)</span>}
       </div>
@@ -431,7 +431,7 @@ function PairTile({ p, data }) {
         {aiRun != null && <> · 2026 +{aiRun}%</>}
         {histAfter != null && <> · <span style={{ color: "#FFFFFF", fontWeight: 600 }}>history at t+36:</span> {Math.round(histAfter)}</>}
       </div>
-      <div style={{ padding: "0 12px 10px 16px", fontSize: 10.5, color: "#666E7B", lineHeight: 1.5 }}>{p.note}</div>
+      <div style={{ padding: "0 12px 10px 16px", fontSize: 10.5, color: "#939CAA", lineHeight: 1.5 }}>{p.note}</div>
     </div>
   );
 }
@@ -469,7 +469,7 @@ function Aggregate() {
       <button key={l.key} onClick={() => setHidden((h) => ({ ...h, [l.key]: !off }))}
         style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "4px 10px", borderRadius: 999,
           border: "1px solid rgba(255,255,255,0.14)", background: off ? "transparent" : "rgba(255,255,255,0.05)",
-          color: off ? "#666E7B" : "#C6CCD6", fontSize: 11, cursor: "pointer", maxWidth: "100%",
+          color: off ? "#939CAA" : "#C6CCD6", fontSize: 11, cursor: "pointer", maxWidth: "100%",
           textDecoration: off ? "line-through" : "none" }}>
         <span style={{ width: 9, height: 9, minWidth: 9, borderRadius: 99, background: l.color, opacity: off ? 0.35 : 1 }} />
         <span style={{ textAlign: "left", lineHeight: 1.25 }}>{l.label}</span>
@@ -518,8 +518,8 @@ function Aggregate() {
                 <CartesianGrid stroke="rgba(255,255,255,0.06)" vertical={false} />
                 <XAxis dataKey="m" type="number" domain={[-60, 60]} ticks={[-60, -24, 0, 24, 60]}
                   tickFormatter={(m) => (m === 0 ? "Peak" : m > 0 ? `+${m}` : `${m}`)}
-                  tick={{ fill: "#8A92A0", fontSize: 9.5 }} stroke="rgba(255,255,255,0.18)" />
-                <YAxis tick={{ fill: "#8A92A0", fontSize: 9.5 }} stroke="rgba(255,255,255,0.18)" width={34} domain={["auto", "auto"]} />
+                  tick={{ fill: "#9BA4B2", fontSize: 9.5 }} stroke="rgba(255,255,255,0.18)" />
+                <YAxis tick={{ fill: "#9BA4B2", fontSize: 9.5 }} stroke="rgba(255,255,255,0.18)" width={34} domain={["auto", "auto"]} />
                 <Tooltip content={<ChartTip />} />
                 <ReferenceLine x={0} stroke="#FFFFFF" strokeOpacity={0.4} strokeDasharray="4 3" />
                 <ReferenceLine y={100} stroke="rgba(255,255,255,0.15)" strokeDasharray="2 4" />
@@ -528,12 +528,12 @@ function Aggregate() {
                 <Line type="monotone" dataKey="unique" name="Crisis-unique winners" stroke="#B48CE0" strokeWidth={2} dot={false} isAnimationActive={false} />
               </LineChart>
             </ResponsiveContainer>
-            <div style={{ display: "flex", gap: 14, padding: "4px 12px 0 16px", fontSize: 10.5, color: "#8A92A0", flexWrap: "wrap" }}>
+            <div style={{ display: "flex", gap: 14, padding: "4px 12px 0 16px", fontSize: 10.5, color: "#9BA4B2", flexWrap: "wrap" }}>
               <span><span style={{ color: "#9A7BD6", fontWeight: 700 }}>━</span> convexity (trend & long-vol)</span>
               <span><span style={{ color: "#C98A4F", fontWeight: 700 }}>━</span> category-specific</span>
               <span><span style={{ color: "#B48CE0", fontWeight: 700 }}>━</span> crisis-unique</span>
             </div>
-            <div style={{ padding: "6px 12px 10px 16px", fontSize: 10.5, color: "#666E7B", lineHeight: 1.5 }}>
+            <div style={{ padding: "6px 12px 10px 16px", fontSize: 10.5, color: "#939CAA", lineHeight: 1.5 }}>
               Convexity spikes into the crash and decays after — insurance, not a store of value. No 2026 trend/long-vol
               backfill is charted; crisis-unique winners are identifiable only ex post; the category composite is paired
               above via its lead asset, gold.
@@ -549,8 +549,8 @@ function Aggregate() {
               <CartesianGrid stroke="rgba(255,255,255,0.07)" vertical={false} />
               <XAxis dataKey="m" type="number" domain={[-60, 60]} ticks={[-60, -48, -36, -24, -12, 0, 12, 24, 36, 48, 60]}
                 tickFormatter={(m) => (m === 0 ? "Peak" : m > 0 ? `+${m}` : `${m}`)}
-                tick={{ fill: "#8A92A0", fontSize: 10.5 }} stroke="rgba(255,255,255,0.2)" />
-              <YAxis tick={{ fill: "#8A92A0", fontSize: 10.5 }} stroke="rgba(255,255,255,0.2)" width={44} domain={["auto", "auto"]} />
+                tick={{ fill: "#9BA4B2", fontSize: 10.5 }} stroke="rgba(255,255,255,0.2)" />
+              <YAxis tick={{ fill: "#9BA4B2", fontSize: 10.5 }} stroke="rgba(255,255,255,0.2)" width={44} domain={["auto", "auto"]} />
               <Tooltip content={<ChartTip />} />
               <ReferenceLine x={0} stroke="#FFFFFF" strokeOpacity={0.45} strokeDasharray="4 3"
                 label={{ value: "PEAK / TODAY", fill: "#FFFFFF", fontSize: 9, position: "insideTopRight", opacity: 0.6 }} />
@@ -579,7 +579,7 @@ function Aggregate() {
         {stats.map((s) => (
           <div key={s.n} style={{ ...S.panel, padding: "14px 16px" }}>
             <div style={{ ...S.serif, fontSize: 26, color: "#B79DFF", fontWeight: 600, fontVariantNumeric: "tabular-nums" }}>{s.n}</div>
-            <div style={{ fontSize: 11.5, color: "#8A92A0", lineHeight: 1.55, marginTop: 4 }}>{s.d}</div>
+            <div style={{ fontSize: 11.5, color: "#9BA4B2", lineHeight: 1.55, marginTop: 4 }}>{s.d}</div>
           </div>
         ))}
       </div>
@@ -619,10 +619,10 @@ const FanTip = ({ active, payload }) => {
   if (!row) return null;
   return (
     <div style={{ background: "#1B1F26", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 8, padding: "8px 11px", fontSize: 11 }}>
-      <div style={{ color: "#8A92A0", fontWeight: 600, marginBottom: 4 }}>t+{row.m} mo</div>
+      <div style={{ color: "#9BA4B2", fontWeight: 600, marginBottom: 4 }}>t+{row.m} mo</div>
       <div style={{ color: "#FFFFFF" }}>median: {Math.round(row.med)}</div>
-      <div style={{ color: "#8A92A0" }}>middle 50%: {Math.round(row.b50[0])}–{Math.round(row.b50[1])}</div>
-      <div style={{ color: "#666E7B" }}>80% band: {Math.round(row.b80[0])}–{Math.round(row.b80[1])}</div>
+      <div style={{ color: "#9BA4B2" }}>middle 50%: {Math.round(row.b50[0])}–{Math.round(row.b50[1])}</div>
+      <div style={{ color: "#939CAA" }}>80% band: {Math.round(row.b80[0])}–{Math.round(row.b80[1])}</div>
     </div>
   );
 };
@@ -642,8 +642,8 @@ function FanTile({ title, sub, col, fan, expl, note }) {
         <ComposedChart data={fan.rows} margin={{ top: 8, right: 10, bottom: 0, left: 0 }}>
           <CartesianGrid stroke="rgba(255,255,255,0.06)" vertical={false} />
           <XAxis dataKey="m" type="number" domain={[0, 60]} ticks={[0, 12, 24, 36, 48, 60]}
-            tickFormatter={(m) => `+${m}`} tick={{ fill: "#8A92A0", fontSize: 9.5 }} stroke="rgba(255,255,255,0.18)" />
-          <YAxis tick={{ fill: "#8A92A0", fontSize: 9.5 }} stroke="rgba(255,255,255,0.18)" width={34} domain={["auto", "auto"]} />
+            tickFormatter={(m) => `+${m}`} tick={{ fill: "#9BA4B2", fontSize: 9.5 }} stroke="rgba(255,255,255,0.18)" />
+          <YAxis tick={{ fill: "#9BA4B2", fontSize: 9.5 }} stroke="rgba(255,255,255,0.18)" width={34} domain={["auto", "auto"]} />
           <Tooltip content={<FanTip />} />
           <ReferenceLine y={100} stroke="#FFFFFF" strokeOpacity={0.4} strokeDasharray="3 3" />
           <Area dataKey="b80" stroke="none" fill={col} fillOpacity={0.13} isAnimationActive={false} />
@@ -657,7 +657,7 @@ function FanTile({ title, sub, col, fan, expl, note }) {
         <span style={{ color: "#FFFFFF", fontWeight: 600 }}>at +36 mo:</span> median {Math.round(s.med36)},
         P(below 100) {(s.below36 * 100).toFixed(0)}%, 10–90% [{Math.round(s.lo36)}, {Math.round(s.hi36)}]
       </div>
-      <div style={{ padding: "0 12px 10px 16px", fontSize: 10.5, color: "#666E7B", lineHeight: 1.5 }}>{note}</div>
+      <div style={{ padding: "0 12px 10px 16px", fontSize: 10.5, color: "#939CAA", lineHeight: 1.5 }}>{note}</div>
     </div>
   );
 }
@@ -714,7 +714,7 @@ function Analytics() {
         {clockCards.map((s) => (
           <div key={s.n} style={{ ...S.panel, padding: "14px 16px" }}>
             <div style={{ ...S.serif, fontSize: 24, color: "#B79DFF", fontWeight: 600 }}>{s.n}</div>
-            <div style={{ fontSize: 11.5, color: "#8A92A0", lineHeight: 1.55, marginTop: 4 }}>{s.d}</div>
+            <div style={{ fontSize: 11.5, color: "#9BA4B2", lineHeight: 1.55, marginTop: 4 }}>{s.d}</div>
           </div>
         ))}
       </div>
@@ -736,8 +736,8 @@ function Analytics() {
           <LineChart data={xc} margin={{ top: 6, right: 14, bottom: 4, left: 0 }}>
             <CartesianGrid stroke="rgba(255,255,255,0.07)" vertical={false} />
             <XAxis dataKey="p" type="number" domain={[-30, 6]} ticks={[-30, -24, -18, -12, -6, 0, 6]}
-              tick={{ fill: "#8A92A0", fontSize: 10 }} stroke="rgba(255,255,255,0.2)" />
-            <YAxis tick={{ fill: "#8A92A0", fontSize: 10 }} stroke="rgba(255,255,255,0.2)" width={40} domain={["auto", "auto"]} />
+              tick={{ fill: "#9BA4B2", fontSize: 10 }} stroke="rgba(255,255,255,0.2)" />
+            <YAxis tick={{ fill: "#9BA4B2", fontSize: 10 }} stroke="rgba(255,255,255,0.2)" width={40} domain={["auto", "auto"]} />
             <Tooltip content={<ChartTip />} />
             <ReferenceLine x={0} stroke="#FFFFFF" strokeOpacity={0.45} strokeDasharray="4 3"
               label={{ value: "ANALOG PEAK", fill: "#FFFFFF", fontSize: 8.5, position: "insideTopRight", opacity: 0.6 }} />
@@ -746,7 +746,7 @@ function Analytics() {
             <Line dataKey="japan" name="vs Japan 1990" stroke="#5AA9A3" strokeWidth={2} dot={false} isAnimationActive={false} />
           </LineChart>
         </ResponsiveContainer>
-        <div style={{ padding: "2px 18px 12px", fontSize: 10.5, color: "#666E7B" }}>
+        <div style={{ padding: "2px 18px 12px", fontSize: 10.5, color: "#939CAA" }}>
           Correlation of today's last 24 months vs the analog window ending at position p (computed live; K=36 confirms the pattern).
         </div>
       </div>
@@ -819,7 +819,7 @@ function Analytics() {
             </Expl>
           </div>
           <div style={{ ...S.serif, fontSize: 26, color: "#B48CE0", fontWeight: 600 }}>P(turbulent) = 1.00</div>
-          <div style={{ fontSize: 11.5, color: "#8A92A0", lineHeight: 1.6, marginTop: 4 }}>
+          <div style={{ fontSize: 11.5, color: "#9BA4B2", lineHeight: 1.6, marginTop: 4 }}>
             Calm state: +2.4%/mo · σ 0.6% — Turbulent: +0.5%/mo · σ 5.5% · expected storm duration ≈ 21 mo ·
             dot-com showed the identical P = 1.00 signature at its own peak.
           </div>
@@ -838,7 +838,7 @@ function Analytics() {
           {AN.explos.map((r) => (
             <div key={r.v} style={{ display: "flex", justifyContent: "space-between", gap: 8, fontSize: 11.5, padding: "4px 0", borderTop: "1px solid rgba(255,255,255,0.06)" }}>
               <span style={{ color: "#C6CCD6" }}>{r.v}</span>
-              <span style={{ color: r.flag ? "#2E86E8" : "#8A92A0", fontWeight: 600, whiteSpace: "nowrap" }}>{r.s} · {r.verdict}</span>
+              <span style={{ color: r.flag ? "#2E86E8" : "#9BA4B2", fontWeight: 600, whiteSpace: "nowrap" }}>{r.s} · {r.verdict}</span>
             </div>
           ))}
         </div>
@@ -894,7 +894,7 @@ function Analytics() {
             <div style={{ height: 7, borderRadius: 99, background: "rgba(255,255,255,0.07)" }}>
               <div style={{ width: `${h.s * 100}%`, height: "100%", borderRadius: 99, background: h.c, opacity: 0.85 }} />
             </div>
-            <div style={{ fontSize: 10.5, color: "#666E7B", marginTop: 3, lineHeight: 1.5 }}>{h.r}</div>
+            <div style={{ fontSize: 10.5, color: "#939CAA", marginTop: 3, lineHeight: 1.5 }}>{h.r}</div>
           </div>
         ))}
         <p style={{ margin: "10px 0 0", fontSize: 11.5, color: "#C6CCD6", lineHeight: 1.65 }}>
@@ -909,7 +909,7 @@ function Analytics() {
 
       <div style={{ ...S.panel, padding: "12px 16px", marginTop: 12, borderLeft: "3px solid #666E7B" }}>
         <div style={{ ...S.eyebrow, marginBottom: 5 }}>Honest limits</div>
-        <p style={{ margin: 0, fontSize: 11.5, color: "#8A92A0", lineHeight: 1.65 }}>
+        <p style={{ margin: 0, fontSize: 11.5, color: "#9BA4B2", lineHeight: 1.65 }}>
           Historical templates are stylized anchor reconstructions; only the 2026 series are real market backfill.
           Monthly resolution (n = 60 returns) is thin for every method here — published versions use daily data. The
           LPPL fit failed its formal qualification; the raw bubble flag proved seed-sensitive; fan charts are
@@ -947,7 +947,7 @@ const PB_VERDICTS = [
     note: "Falls hard in every liquidity phase (2008 −69%, 2020) — M9 vetoes Phase 0/1. But the IEA ~30% supply deficit by 2035 is mostly grid/EV-mandated (AI datacenters only ~1–2% of demand), so the structural case survives the bubble's death: a high-conviction Phase-3 buy." },
   { a: "India equities", cells: { "M1": "F", "M2": "P", "M3/4": "C", "M6": "P", "M9": "C", "M10": "C" }, v: "COND · P3 (weak USD)", col: "#8FAE5D",
     note: "High-beta EM, not a hedge (−60% USD in 2008). But post-correction valuations are near long-term averages and record domestic SIP flows floored the 2026 drawdown at ~13–14% against record FII outflows. Conditional on the weak-dollar regime and the SIP floor holding (stoppage ratio >100% is the warning light)." },
-  { a: "Convertible bonds", cells: { "M1": "F", "M9": "C" }, v: "COND (M9 flag)", col: "#8A92A0",
+  { a: "Convertible bonds", cells: { "M1": "F", "M9": "C" }, v: "COND (M9 flag)", col: "#9BA4B2",
     note: "The 2008 crash was an ownership problem: ~80–85% arb-held with 3–5× leverage → forced sales (Mitchell-Pulvino). Today's holder base is long-only-dominated, so the flag softens — but hardens back to a veto if arb crowding returns toward 2008 levels." },
   { a: "EM / Intl / Japan", cells: { "M1": "C", "M2": "P", "M6": "P", "M9": "C", "M10": "P" }, v: "COND · P3", col: "#5AA9A3",
     note: "The validated 2002–07 precedent: after the US-centric dot-com bust, EAFE beat the S&P and EM won by ~10%/yr. Today the relative-CAPE gap is wide again and Japan/Europe carry the lowest AI/mega-cap adjacency (M2). Conditional on the weak-dollar regime (BIS dollar-cycle evidence)." },
@@ -1007,7 +1007,7 @@ function Elink({ k }) {
       fontSize: 10.5, fontWeight: 700, color: "#C6CCD6", whiteSpace: "nowrap",
     }}>
       <span style={{ width: 6, height: 6, borderRadius: 99, background: tag.c, flexShrink: 0 }} />
-      {e.n} <span style={{ color: "#666E7B", fontWeight: 400 }}>↗</span>
+      {e.n} <span style={{ color: "#939CAA", fontWeight: 400 }}>↗</span>
     </a>
   );
 }
@@ -1055,7 +1055,7 @@ const PB_EXPERT = [
     note: "Protocol agrees on the asset, differs on timing: a post-trough Phase-3 buy (M6/M2 pass), not a hedge now (M1 fails).", refs: "Grantham/GMO (Jul 8), Hartnett, StanChart, State Street, Amundi, Dalio, UBS, JPMorgan, Morgan Stanley, Deutsche Bank, Macquarie" },
   { rk: 3, sym: "EEM VWO IEMG", name: "Emerging-market equities", score: 40, srcs: 10, fresh: "4", bias: 2.5, v: "P3 · 15% ex-China", ag: "±", col: "#8FAE5D", et: ["vwo", "eem"],
     note: "Weak-dollar conditional (M5); the protocol strips China out of the sleeve.", refs: "Hartnett, GMO, Amundi, BlackRock/iShares, Dalio, JPMorgan, GSAM, StanChart, Morgan Stanley, Mobius" },
-  { rk: 4, sym: "XLV VHT IXJ", name: "Healthcare (defensive)", score: 40, srcs: 8, fresh: "5", bias: 2, v: "Relative mitigator", ag: "±", col: "#8A92A0", et: ["xlv"],
+  { rk: 4, sym: "XLV VHT IXJ", name: "Healthcare (defensive)", score: 40, srcs: 8, fresh: "5", bias: 2, v: "Relative mitigator", ag: "±", col: "#9BA4B2", et: ["xlv"],
     note: "Falls less, doesn't rise — no absolute-haven role in any phase (Baur–McDermott framework).", refs: "Schwab (Jun 26), GQG, JPMorgan, Amundi, RBC WM, Morgan Stanley, Cetera, Deutsche Bank" },
   { rk: 5, sym: "TLT IEF AGG LQD", name: "Quality bonds — govt & IG duration", score: 39, srcs: 9, fresh: "5", bias: 3, v: "Challenged · short-dur only", ag: "✗", col: "#29C7E8", et: ["tlt", "ief", "agg"],
     note: "The sharpest divergence: experts rank duration #5; the protocol keeps it SMALL and SHORT after April 2025 (BIS: haven correlations ≈ 0). The CSV itself flags the contest.", refs: "Hartnett (Jul 6), Deutsche Bank (Jul 6), State Street (Jun 30), Julius Baer, Amundi, Morgan Stanley, UBS, JPMorgan, StanChart — haven status contested (BIS Jun 28)" },
@@ -1093,9 +1093,9 @@ const PB_EXPERT = [
     note: "Dollar-funding sensitivity in the acute phase; thin sourcing agrees.", refs: "Julius Baer (Jun 26), HSBC (pre-window)" },
   { rk: 22, sym: "SLV SIL", name: "Silver / silver miners", score: 12, srcs: 3, fresh: "0", bias: 3, v: "P2/3 · 15%", ag: "±", col: "#CFD6DD", et: ["slvr", "slv", "sil"],
     note: "No fresh expert confirmation AND the gold/silver-ratio extreme already played out (≈100 → ≈60) — the protocol keeps a smaller catch-up role.", refs: "UBS ('25, targets cut Jun), Dalio, XP — miner ETFs sold per Frankfurt flows (Jul 1)" },
-  { rk: 23, sym: "UUP", name: "US dollar (protection sleeve)", score: 11, srcs: 1, fresh: "1", bias: 3, v: "Funding-stress only", ag: "±", col: "#8A92A0", et: ["uup"],
+  { rk: 23, sym: "UUP", name: "US dollar (protection sleeve)", score: 11, srcs: 1, fresh: "1", bias: 3, v: "Funding-stress only", ag: "±", col: "#9BA4B2", et: ["uup"],
     note: "One source contradicting the majority; protocol: USD spikes only in the acute dash-for-cash, weakened by de-dollarization (worst H1 since 1973).", refs: "Banco Safra (Jul 3) — contradicts Hartnett/UBS/Amundi non-USD preference" },
-  { rk: 24, sym: "CWB", name: "Convertible bonds", score: 8, srcs: 1, fresh: "1", bias: 4, v: "M9 flag", ag: "✓", col: "#8A92A0", et: [],
+  { rk: 24, sym: "CWB", name: "Convertible bonds", score: 8, srcs: 1, fresh: "1", bias: 4, v: "M9 flag", ag: "✓", col: "#9BA4B2", et: [],
     note: "Bottom rank + highest issuer bias (State Street sells the product) + the protocol's marginal-holder flag all align — the 2008 lesson stands. (No confirmed eToro listing for CWB.)", refs: "State Street (Jun 30) — record 2026 inflows; high issuer bias" },
 ];
 
@@ -1152,7 +1152,7 @@ function Playbook() {
               padding: "5px 10px", borderRadius: 999, cursor: "pointer", fontSize: 11.5, fontWeight: 600,
               border: `1px solid ${m.id === mSel ? "#B79DFF" : m.veto ? "rgba(224,133,61,0.5)" : "rgba(255,255,255,0.16)"}`,
               background: m.id === mSel ? "rgba(183,157,255,0.12)" : "transparent",
-              color: m.id === mSel ? "#FFFFFF" : m.veto ? "#E8B48A" : "#8A92A0",
+              color: m.id === mSel ? "#FFFFFF" : m.veto ? "#E8B48A" : "#9BA4B2",
             }}>{m.id}{m.veto ? " ⛔" : ""}</button>
           ))}
         </div>
@@ -1161,7 +1161,7 @@ function Playbook() {
             <div style={{ fontSize: 13.5, color: "#FFFFFF", fontWeight: 700, marginBottom: 4 }}>{method.id} — {method.name}</div>
             <div style={{ fontSize: 12.5, color: "#C6CCD6", lineHeight: 1.6 }}>{method.sig}</div>
             {method.veto && <div style={{ fontSize: 12, color: "#E8B48A", marginTop: 6 }}><b>VETO RULE:</b> {method.veto}</div>}
-            <div style={{ fontSize: 10.5, color: "#666E7B", marginTop: 6 }}>{method.cite}</div>
+            <div style={{ fontSize: 10.5, color: "#939CAA", marginTop: 6 }}>{method.cite}</div>
           </div>
         )}
       </div>
@@ -1178,7 +1178,7 @@ function Playbook() {
         <table style={{ borderCollapse: "collapse", width: "100%", minWidth: 760, fontSize: 11.5 }}>
           <thead><tr>
             <th style={{ textAlign: "left", padding: "8px 12px", position: "sticky", left: 0, background: "#272C35", ...S.eyebrow }}>Asset</th>
-            {PB_COLS.map((c) => <th key={c} style={{ padding: "8px 3px", color: "#8A92A0", fontWeight: 600, fontSize: 10 }}>{c}</th>)}
+            {PB_COLS.map((c) => <th key={c} style={{ padding: "8px 3px", color: "#9BA4B2", fontWeight: 600, fontSize: 10 }}>{c}</th>)}
             <th style={{ textAlign: "left", padding: "8px 10px", ...S.eyebrow }}>Verdict</th>
           </tr></thead>
           <tbody>
@@ -1225,11 +1225,11 @@ function Playbook() {
                   width: 32, height: 32, borderRadius: 99, margin: "0 auto 5px", display: "flex", alignItems: "center", justifyContent: "center",
                   fontFamily: "Georgia, 'Times New Roman', serif", fontWeight: 700, fontSize: 14.5,
                   background: phase === st.k ? "#B79DFF" : "rgba(255,255,255,0.06)",
-                  color: phase === st.k ? "#21252D" : "#8A92A0",
+                  color: phase === st.k ? "#21252D" : "#9BA4B2",
                   border: `1.5px solid ${phase === st.k ? "#B79DFF" : "rgba(255,255,255,0.2)"}`,
                 }}>{st.num}</div>
-                <div style={{ fontSize: 11.5, fontWeight: 700, color: phase === st.k ? "#FFFFFF" : "#8A92A0" }}>{st.t}</div>
-                <div style={{ fontSize: 9, color: "#666E7B", lineHeight: 1.25, marginTop: 1 }}>{st.s}</div>
+                <div style={{ fontSize: 11.5, fontWeight: 700, color: phase === st.k ? "#FFFFFF" : "#9BA4B2" }}>{st.t}</div>
+                <div style={{ fontSize: 9, color: "#939CAA", lineHeight: 1.25, marginTop: 1 }}>{st.s}</div>
               </button>
             </React.Fragment>
           ))}
@@ -1250,7 +1250,7 @@ function Playbook() {
               </div>
               <div style={{ display: "flex", gap: "4px 12px", flexWrap: "wrap", margin: "6px 2px 12px" }}>
                 {items.map((it) => (
-                  <span key={it.tick} style={{ fontSize: 9.5, color: "#8A92A0", display: "inline-flex", alignItems: "center", gap: 4 }}>
+                  <span key={it.tick} style={{ fontSize: 9.5, color: "#9BA4B2", display: "inline-flex", alignItems: "center", gap: 4 }}>
                     <span style={{ width: 8, height: 8, borderRadius: 2, background: it.c, display: "inline-block" }} />{it.tick} {it.w}%
                   </span>
                 ))}
@@ -1262,7 +1262,7 @@ function Playbook() {
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 8 }}>
                       <div>
                         <div style={{ ...S.serif, fontSize: 15.5, fontWeight: 700, color: "#FFFFFF" }}>{it.tick}</div>
-                        <div style={{ fontSize: 10.5, color: "#8A92A0", marginTop: 1 }}>{it.name}</div>
+                        <div style={{ fontSize: 10.5, color: "#9BA4B2", marginTop: 1 }}>{it.name}</div>
                       </div>
                       <div style={{ ...S.serif, fontSize: 22, fontWeight: 700, color: it.c }}>{it.w}<span style={{ fontSize: 12 }}>%</span></div>
                     </div>
@@ -1297,7 +1297,7 @@ function Playbook() {
             {PB_PHASES.p2.fork.map((f) => (
               <div key={f.t} style={{ borderRadius: 10, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderTop: `3px solid ${f.c}`, padding: "11px 13px" }}>
                 <div style={{ fontWeight: 800, color: f.c, fontSize: 12.5 }}>{f.t}</div>
-                <div style={{ fontSize: 10, color: "#666E7B", marginBottom: 6 }}>signal: {f.cond}</div>
+                <div style={{ fontSize: 10, color: "#939CAA", marginBottom: 6 }}>signal: {f.cond}</div>
                 <div style={{ fontSize: 11.5, color: "#C6CCD6", lineHeight: 1.6, marginBottom: 8 }}>{f.d}</div>
                 <div style={{ display: "flex", gap: 5, flexWrap: "wrap", alignItems: "center" }}>
                   {f.m.map((mm) => (
@@ -1313,11 +1313,11 @@ function Playbook() {
         {/* eToro access legend */}
         <div style={{ display: "flex", gap: "4px 14px", flexWrap: "wrap", alignItems: "center", marginTop: 12, paddingTop: 9, borderTop: "1px solid rgba(255,255,255,0.07)" }}>
           {ET_TAG.map((t) => (
-            <span key={t.l} style={{ fontSize: 9.5, color: "#8A92A0", display: "inline-flex", alignItems: "center", gap: 4 }}>
+            <span key={t.l} style={{ fontSize: 9.5, color: "#9BA4B2", display: "inline-flex", alignItems: "center", gap: 4 }}>
               <span style={{ width: 6, height: 6, borderRadius: 99, background: t.c, display: "inline-block" }} />{t.l}
             </span>
           ))}
-          <span style={{ fontSize: 9.5, color: "#666E7B", flex: "1 1 240px" }}>
+          <span style={{ fontSize: 9.5, color: "#939CAA", flex: "1 1 240px" }}>
             eToro links = navigation only, not advice. EU retail: US-domiciled ETFs trade as CFDs (PRIIPs) — prefer green
             "Real (EU)" UCITS lines for actual holdings; commodities &amp; FX are always CFDs. Verified Jul 2026 — re-check on platform.
           </span>
@@ -1344,12 +1344,12 @@ function Playbook() {
               padding: "4px 10px", borderRadius: 999, cursor: "pointer", fontSize: 11.5, fontWeight: 600,
               border: `1px solid ${filter === v ? "#B79DFF" : "rgba(255,255,255,0.16)"}`,
               background: filter === v ? "rgba(183,157,255,0.12)" : "transparent",
-              color: filter === v ? "#FFFFFF" : "#8A92A0",
+              color: filter === v ? "#FFFFFF" : "#9BA4B2",
             }}>{l}</button>
           ))}
         </div>
         {experts.map((e) => <ExpertRow key={e.rk} e={e} agCol={agCol} />)}
-        <div style={{ fontSize: 10.5, color: "#666E7B", marginTop: 10, lineHeight: 1.6 }}>
+        <div style={{ fontSize: 10.5, color: "#939CAA", marginTop: 10, lineHeight: 1.6 }}>
           Score = source-count × freshness × (inverse) bias composite from the source artifact, max 66. Bias 1–5
           (5 = product-seller). The expert table is practitioner consensus — deliberately a LOOSER evidence standard
           than the academic protocol; the verdict column is the academic filter applied on top. Not investment advice.
@@ -1366,7 +1366,7 @@ function ExpertRow({ e, agCol }) {
     <div style={{ borderTop: "1px solid rgba(255,255,255,0.06)", padding: "7px 0" }}>
       <div onClick={() => setOpen(!open)} style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", flexWrap: "wrap" }}>
         <span style={{ ...S.eyebrow, minWidth: 22 }}>#{e.rk}</span>
-        <span style={{ color: "#FFFFFF", fontWeight: 600, fontSize: 12.5, flex: "1 1 160px" }}>{e.name} <span style={{ color: "#666E7B", fontWeight: 400, fontSize: 10.5 }}>{e.sym}</span></span>
+        <span style={{ color: "#FFFFFF", fontWeight: 600, fontSize: 12.5, flex: "1 1 160px" }}>{e.name} <span style={{ color: "#939CAA", fontWeight: 400, fontSize: 10.5 }}>{e.sym}</span></span>
         <span style={{ fontSize: 14, fontWeight: 800, color: agCol[e.ag] }}>{e.ag}</span>
         <span style={{ fontSize: 10.5, fontWeight: 700, color: e.col, whiteSpace: "nowrap" }}>{e.v}</span>
       </div>
@@ -1374,7 +1374,7 @@ function ExpertRow({ e, agCol }) {
         <div style={{ flex: 1, height: 6, borderRadius: 99, background: "rgba(255,255,255,0.07)" }}>
           <div style={{ width: `${(e.score / 66) * 100}%`, height: "100%", borderRadius: 99, background: agCol[e.ag], opacity: 0.75 }} />
         </div>
-        <span style={{ fontSize: 10, color: "#8A92A0", fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>
+        <span style={{ fontSize: 10, color: "#9BA4B2", fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>
           {e.score} · {e.srcs} src · {e.fresh} fresh · <span style={{ color: biasCol }}>bias {e.bias}</span>
         </span>
       </div>
@@ -1386,7 +1386,7 @@ function ExpertRow({ e, agCol }) {
               {e.et.map((k) => <Elink key={k} k={k} />)}
             </div>
           )}
-          <div style={{ fontSize: 10, color: "#666E7B", marginTop: 6, lineHeight: 1.5 }}>Sources: {e.refs}</div>
+          <div style={{ fontSize: 10, color: "#939CAA", marginTop: 6, lineHeight: 1.5 }}>Sources: {e.refs}</div>
         </div>
       )}
     </div>
@@ -1417,7 +1417,7 @@ function CrisisWinnersDashboard() {
         <h1 style={{ ...S.serif, fontSize: "clamp(26px, 5vw, 38px)", margin: 0, fontWeight: 600, lineHeight: 1.15 }}>
           Crisis <span style={{ color: "#B79DFF" }}>Winners</span> — assets that rose when markets collapsed
         </h1>
-        <p style={{ fontSize: 12.5, color: "#8A92A0", lineHeight: 1.6, margin: "10px 0 0", maxWidth: 780 }}>
+        <p style={{ fontSize: 12.5, color: "#9BA4B2", lineHeight: 1.6, margin: "10px 0 0", maxWidth: 780 }}>
           Stylized monthly reconstructions anchored to magnitudes documented in the peer-reviewed literature
           (Baur &amp; McDermott 2010; Baele et al. 2020; Ranaldo &amp; Söderlind 2010; Temin &amp; Voth 2004; Gorton &amp;
           Rouwenhorst 2006; Moskowitz, Ooi &amp; Pedersen 2012; Conlon &amp; McGee 2020; Reinhart &amp; Rogoff 2009; Jordà
@@ -1449,7 +1449,7 @@ function CrisisWinnersDashboard() {
             <button key={t.id} onClick={() => setTab(t.id)} style={{
               padding: "9px 14px", background: "transparent", cursor: "pointer", fontSize: 13.5, whiteSpace: "nowrap",
               border: "none", borderBottom: tab === t.id ? "2px solid #B79DFF" : "2px solid transparent",
-              color: tab === t.id ? "#FFFFFF" : "#666E7B", fontWeight: tab === t.id ? 700 : 400,
+              color: tab === t.id ? "#FFFFFF" : "#939CAA", fontWeight: tab === t.id ? 700 : 400,
             }}>{t.label}</button>
           ))}
         </div>
@@ -1461,7 +1461,7 @@ function CrisisWinnersDashboard() {
         {tab === "playbook" && <Playbook />}
         {tab === "bubblegauge" && BG.enabled && <BG.DetailTab goToCrisis={() => setTab("explorer")} />}
 
-        <div style={{ marginTop: 26, paddingTop: 14, borderTop: "1px solid rgba(255,255,255,0.1)", fontSize: 10.5, color: "#666E7B", lineHeight: 1.7 }}>
+        <div style={{ marginTop: 26, paddingTop: 14, borderTop: "1px solid rgba(255,255,255,0.1)", fontSize: 10.5, color: "#939CAA", lineHeight: 1.7 }}>
           Key sources: Baur &amp; McDermott (2010) <i>J. Banking &amp; Finance</i> · Baele, Bekaert, Inghelbrecht &amp; Wei (2020) <i>RFS</i> ·
           Ranaldo &amp; Söderlind (2010) <i>Rev. Finance</i> · Temin &amp; Voth (2004) <i>AER</i> · Gorton &amp; Rouwenhorst (2006) <i>FAJ</i> ·
           Erb &amp; Harvey (2013) · Moskowitz, Ooi &amp; Pedersen (2012) <i>JFE</i> · Frazzini &amp; Pedersen (2014) <i>JFE</i> ·
