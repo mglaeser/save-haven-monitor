@@ -179,7 +179,7 @@ function render(){
   if(Array.isArray(d.iqr)&&d.iqr.length===2&&num(d.iqr[0])&&num(d.iqr[1]))
     g.appendChild(cell("IQR",Math.round(d.iqr[0])+"–"+Math.round(d.iqr[1]))); // round like every other cell: live IQR is float
   if(num(d.redFlags)) g.appendChild(cell("Flags",d.redFlags+"/4",d.redFlags>0?"#B79DFF":OK));
-  if(d.spy&&d.qqq){ var tc=(d.spy==="IN"&&d.qqq==="IN")?GREEN:(d.spy==="OUT"&&d.qqq==="OUT")?RED:"#B79DFF";
+  if(d.spy&&d.qqq){ var tc=(d.spy==="IN"&&d.qqq==="IN")?OK:(d.spy==="OUT"&&d.qqq==="OUT")?ALERT:"#B79DFF";
     g.appendChild(cell("Trend",d.spy+"·"+d.qqq,tc)); }
   // freshness / sample
   var foot=document.getElementById("foot"); foot.textContent="";
