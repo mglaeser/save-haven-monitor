@@ -8,13 +8,11 @@
    "weight": 1,
    "potential": true,
    "peak": "Jul 2026 (= today, by construction)",
-   "cause": "Hyperscaler AI capex (~$1tn 2025–26) outpacing free cash flow, record concentration (Mag-7 ≈ 35% of the S&P 500) and CAPE ≈ 41 — the BIS (28 Jun 2026), ECB FSR (27 May 2026), Fed FSR (8 May 2026) and Bank of England all warn of a possible sharp correction; econometric bubble tests are split (Cowles/Yale GSADF finds explosiveness; a 2026 counter-paper finds none once tech fundamentals are modeled).",
-   "highlight": "Institutional + algorithmic verdict: GOLD is elevated to lead regime-matched hedge — 2026 hedge score 0.85, a statistical co-lead with phase-1 cash (0.88), decisively above 'challenged' Treasuries (0.42). Basis: 27% of global reserves vs 22% UST (ECB, 2 Jun 2026), regime-match r 0.96–0.98 with monetary-crisis scripts, worst-quintile beta ≈ 0, and gold Granger-LEADS the market this cycle. Caveat: a +130% run-up means part of the hedge is pre-paid. CHF secondary; the yen (~¥162) and Bitcoin (−51% from ATH) look falsified this cycle.",
-   "sources": "BIS Annual Economic Report 2026; ECB FSR May 2026 & Int'l Role of the Euro Jun 2026; Fed FSR May 2026; BoE FSR 2026; WGC Jun 2026; Duffie (2020)",
    "series": [
     {
      "key": "mkt",
-     "label": "NASDAQ-100 (feared market)",
+     "name": "NASDAQ-100",
+     "verdict": "(feared market)",
      "cls": "market",
      "color": "#E05252",
      "end": 0,
@@ -83,7 +81,8 @@
     },
     {
      "key": "au",
-     "label": "Gold — lead regime-matched hedge",
+     "name": "Gold",
+     "verdict": "— lead regime-matched hedge",
      "cls": "category",
      "color": "#E0B458",
      "dashed": true,
@@ -138,7 +137,8 @@
     },
     {
      "key": "cash",
-     "label": "3M T-bills / cash (TR) — phase 1",
+     "name": "3M T-bills / cash (TR)",
+     "verdict": "— phase 1",
      "cls": "universal",
      "color": "#BBCF6A",
      "dashed": true,
@@ -180,7 +180,8 @@
     },
     {
      "key": "ust",
-     "label": "10Y US Treasuries (TR) — challenged",
+     "name": "10Y US Treasuries (TR)",
+     "verdict": "— challenged",
      "cls": "universal",
      "color": "#5B8DEF",
      "dashed": true,
@@ -222,7 +223,7 @@
     },
     {
      "key": "chf",
-     "label": "Swiss franc (vs USD)",
+     "name": "Swiss franc (vs USD)",
      "cls": "category",
      "color": "#7EC8E3",
      "dashed": true,
@@ -260,7 +261,7 @@
     },
     {
      "key": "usd",
-     "label": "US dollar (DXY)",
+     "name": "US dollar (DXY)",
      "cls": "category",
      "color": "#8FAE5D",
      "dashed": true,
@@ -298,7 +299,8 @@
     },
     {
      "key": "jpy",
-     "label": "Japanese yen (failed this cycle)",
+     "name": "Japanese yen",
+     "verdict": "(failed this cycle)",
      "cls": "falsified",
      "color": "#5AA9A3",
      "dashed": true,
@@ -332,7 +334,8 @@
     },
     {
      "key": "btc",
-     "label": "Bitcoin (risk asset)",
+     "name": "Bitcoin",
+     "verdict": "(risk asset)",
      "cls": "falsified",
      "color": "#E8853D",
      "dashed": true,
@@ -385,13 +388,10 @@
    "cat": "A",
    "weight": 1,
    "peak": "Sep 1929",
-   "cause": "Equity bubble, banking collapse and deflation. Dow −89% peak-to-trough (Jul 1932).",
-   "highlight": "Homestake Mining +474–580% while the Dow lost 89% — the archetypal crisis-unique winner under the fixed gold price.",
-   "sources": "Brunnermeier & Oehmke (2013); Jordà et al. (2019) QJE; economic-history literature on gold-standard mining shares",
    "series": [
     {
      "key": "mkt",
-     "label": "Dow Jones Industrial",
+     "name": "Dow Jones Industrial",
      "cls": "market",
      "color": "#E05252",
      "a": [
@@ -471,7 +471,7 @@
     },
     {
      "key": "hm",
-     "label": "Homestake Mining (gold shares)",
+     "name": "Homestake Mining (gold shares)",
      "cls": "unique",
      "color": "#E0B458",
      "a": [
@@ -519,7 +519,7 @@
     },
     {
      "key": "gb",
-     "label": "Long-term US govt bonds",
+     "name": "Long-term US govt bonds",
      "cls": "universal",
      "color": "#5B8DEF",
      "a": [
@@ -559,7 +559,8 @@
     },
     {
      "key": "cash",
-     "label": "Cash (real purchasing power) — phase 1",
+     "name": "Cash (real purchasing power)",
+     "verdict": "— phase 1",
      "cls": "universal",
      "color": "#BBCF6A",
      "a": [
@@ -602,13 +603,10 @@
    "cat": "A",
    "weight": 1,
    "peak": "Jan 1973",
-   "cause": "Growth-stock overvaluation meets oil shock and inflation. S&P 500 −48%; Nifty Fifty names fell 70–90%.",
-   "highlight": "Gold ≈ +385% within the window (post-Bretton-Woods repricing); crude roughly QUADRUPLED after the Oct 1973 embargo ($2.90 → $11.65/bbl — the highest-magnitude crisis-unique winner, Alpanda & Peralta-Alva 2010); collateralized commodity futures roughly doubled (Gorton & Rouwenhorst 2006).",
-   "sources": "Gorton & Rouwenhorst (2006) FAJ; Alpanda & Peralta-Alva (2010) Rev. Econ. Dynamics; Erb & Harvey (2013); Siegel (1998); Fesenmaier & Smith (2002)",
    "series": [
     {
      "key": "mkt",
-     "label": "S&P 500",
+     "name": "S&P 500",
      "cls": "market",
      "color": "#E05252",
      "a": [
@@ -676,7 +674,7 @@
     },
     {
      "key": "au",
-     "label": "Gold",
+     "name": "Gold",
      "cls": "category",
      "color": "#E0B458",
      "a": [
@@ -732,7 +730,8 @@
     },
     {
      "key": "oil",
-     "label": "Crude oil / energy (unique)",
+     "name": "Crude oil / energy",
+     "verdict": "(unique)",
      "cls": "unique",
      "color": "#C05A32",
      "a": [
@@ -780,7 +779,7 @@
     },
     {
      "key": "cmd",
-     "label": "Commodity futures (GSCI-type)",
+     "name": "Commodity futures (GSCI-type)",
      "cls": "category",
      "color": "#C98A4F",
      "a": [
@@ -828,7 +827,7 @@
     },
     {
      "key": "val",
-     "label": "Value / dividend stocks",
+     "name": "Value / dividend stocks",
      "cls": "category",
      "color": "#74B06F",
      "a": [
@@ -864,7 +863,7 @@
     },
     {
      "key": "cta",
-     "label": "Trend-following / CTA (stylized)",
+     "name": "Trend-following / CTA (stylized)",
      "cls": "universal",
      "color": "#4F79C9",
      "a": [
@@ -919,13 +918,10 @@
    "cat": "A",
    "weight": 1,
    "peak": "Dec 1989",
-   "cause": "Monetary over-expansion, land + equity bubble. Nikkei −80% by 2003 (decline continues beyond this window).",
-   "highlight": "Deflation made JGBs and the yen the standout winners; rolling Nikkei puts are the stylized crisis-unique convexity trade.",
-   "sources": "Ranaldo & Söderlind (2010) Rev. Finance; Brunnermeier & Oehmke (2013)",
    "series": [
     {
      "key": "mkt",
-     "label": "Nikkei 225",
+     "name": "Nikkei 225",
      "cls": "market",
      "color": "#E05252",
      "a": [
@@ -1005,7 +1001,7 @@
     },
     {
      "key": "jgb",
-     "label": "JGBs 10Y (total return)",
+     "name": "JGBs 10Y (total return)",
      "cls": "universal",
      "color": "#5B8DEF",
      "a": [
@@ -1053,7 +1049,7 @@
     },
     {
      "key": "jpy",
-     "label": "Japanese yen (vs USD)",
+     "name": "Japanese yen (vs USD)",
      "cls": "category",
      "color": "#5AA9A3",
      "a": [
@@ -1101,7 +1097,8 @@
     },
     {
      "key": "cash",
-     "label": "Yen cash / call rate (TR) — phase 1",
+     "name": "Yen cash / call rate (TR)",
+     "verdict": "— phase 1",
      "cls": "universal",
      "color": "#BBCF6A",
      "a": [
@@ -1141,7 +1138,7 @@
     },
     {
      "key": "puts",
-     "label": "Rolling Nikkei puts (stylized)",
+     "name": "Rolling Nikkei puts (stylized)",
      "cls": "unique",
      "color": "#B48CE0",
      "a": [
@@ -1200,13 +1197,10 @@
    "cat": "E",
    "weight": 0.7,
    "peak": "Aug 1987",
-   "cause": "Portfolio insurance and market microstructure. Dow −22.6% in a single day; ≈ −33% intra-quarter.",
-   "highlight": "Gold was a weak-to-strong safe haven for the US and Canada (Baur & McDermott 2010); Treasuries and the yen rallied.",
-   "sources": "Baur & McDermott (2010) J. Banking & Finance; Ranaldo & Söderlind (2010)",
    "series": [
     {
      "key": "mkt",
-     "label": "S&P 500",
+     "name": "S&P 500",
      "cls": "market",
      "color": "#E05252",
      "a": [
@@ -1278,7 +1272,7 @@
     },
     {
      "key": "au",
-     "label": "Gold",
+     "name": "Gold",
      "cls": "category",
      "color": "#E0B458",
      "a": [
@@ -1330,7 +1324,7 @@
     },
     {
      "key": "ust",
-     "label": "Long US Treasuries (TR)",
+     "name": "Long US Treasuries (TR)",
      "cls": "universal",
      "color": "#5B8DEF",
      "a": [
@@ -1382,7 +1376,7 @@
     },
     {
      "key": "jpy",
-     "label": "Japanese yen (vs USD)",
+     "name": "Japanese yen (vs USD)",
      "cls": "category",
      "color": "#5AA9A3",
      "a": [
@@ -1430,7 +1424,8 @@
     },
     {
      "key": "cash",
-     "label": "3M T-bills / cash (TR) — phase 1",
+     "name": "3M T-bills / cash (TR)",
+     "verdict": "— phase 1",
      "cls": "universal",
      "color": "#BBCF6A",
      "a": [
@@ -1474,7 +1469,7 @@
     },
     {
      "key": "puts",
-     "label": "Index puts / long volatility (stylized)",
+     "name": "Index puts / long volatility (stylized)",
      "cls": "universal",
      "color": "#9A7BD6",
      "a": [
@@ -1529,13 +1524,10 @@
    "cat": "D",
    "weight": 0.8,
    "peak": "Jun 1997",
-   "cause": "USD-pegged EM currency and credit bust. Thai equities ≈ −80% in USD terms; Indonesian GNP −84% in USD.",
-   "highlight": "The US dollar was the classic EM-crisis winner (+~115% vs THB at the extreme); gold rose in local-currency terms.",
-   "sources": "Reinhart & Rogoff (2009); safe-haven currency literature (Ranaldo & Söderlind 2010)",
    "series": [
     {
      "key": "mkt",
-     "label": "Thai equities (USD terms)",
+     "name": "Thai equities (USD terms)",
      "cls": "market",
      "color": "#E05252",
      "a": [
@@ -1603,7 +1595,7 @@
     },
     {
      "key": "usd",
-     "label": "US dollar (vs THB)",
+     "name": "US dollar (vs THB)",
      "cls": "category",
      "color": "#8FAE5D",
      "a": [
@@ -1663,7 +1655,7 @@
     },
     {
      "key": "aul",
-     "label": "Gold in local currency (THB)",
+     "name": "Gold in local currency (THB)",
      "cls": "category",
      "color": "#E0B458",
      "a": [
@@ -1703,7 +1695,7 @@
     },
     {
      "key": "ust",
-     "label": "US Treasuries (TR)",
+     "name": "US Treasuries (TR)",
      "cls": "universal",
      "color": "#5B8DEF",
      "a": [
@@ -1750,13 +1742,10 @@
    "cat": "A",
    "weight": 1,
    "peak": "Mar 2000",
-   "cause": "TMT equity bubble (GSADF-dated explosive episode). NASDAQ −78% peak-to-trough (Oct 2002).",
-   "highlight": "Value's revenge: Fama-French small-value ≈ +16.2%/yr 2000–07 vs S&P +1.7%/yr. Gold FELL — the key exception that demotes it from universal status.",
-   "sources": "Phillips, Wu & Yu (2011); Fama-French portfolio evidence; Baur & McDermott (2010)",
    "series": [
     {
      "key": "mkt",
-     "label": "NASDAQ Composite",
+     "name": "NASDAQ Composite",
      "cls": "market",
      "color": "#E05252",
      "a": [
@@ -1840,7 +1829,7 @@
     },
     {
      "key": "val",
-     "label": "Small-cap value stocks",
+     "name": "Small-cap value stocks",
      "cls": "category",
      "color": "#74B06F",
      "a": [
@@ -1900,7 +1889,7 @@
     },
     {
      "key": "ust",
-     "label": "10Y US Treasuries (TR)",
+     "name": "10Y US Treasuries (TR)",
      "cls": "universal",
      "color": "#5B8DEF",
      "a": [
@@ -1940,7 +1929,8 @@
     },
     {
      "key": "cash",
-     "label": "3M T-bills / cash (TR) — phase 1",
+     "name": "3M T-bills / cash (TR)",
+     "verdict": "— phase 1",
      "cls": "universal",
      "color": "#BBCF6A",
      "a": [
@@ -1980,7 +1970,7 @@
     },
     {
      "key": "reit",
-     "label": "REITs",
+     "name": "REITs",
      "cls": "category",
      "color": "#C98A4F",
      "a": [
@@ -2024,7 +2014,8 @@
     },
     {
      "key": "au",
-     "label": "Gold (fell — the exception)",
+     "name": "Gold",
+     "verdict": "(fell — the exception)",
      "cls": "category",
      "color": "#E0B458",
      "a": [
@@ -2075,13 +2066,10 @@
    "cat": "B",
    "weight": 1,
    "peak": "Oct 2007",
-   "cause": "US housing / credit bubble and securitization. S&P 500 −57%; real house prices −35% over ~6 years.",
-   "highlight": "The full safe-haven set fired at once: gold strong safe haven at the peak (Baur & McDermott), Treasuries rallied hard, yen appreciated, trend-following delivered crisis alpha, long volatility paid out.",
-   "sources": "Baur & McDermott (2010); Baele et al. (2020) RFS; Moskowitz, Ooi & Pedersen (2012) JFE; St. Louis Fed",
    "series": [
     {
      "key": "mkt",
-     "label": "S&P 500",
+     "name": "S&P 500",
      "cls": "market",
      "color": "#E05252",
      "a": [
@@ -2161,7 +2149,7 @@
     },
     {
      "key": "au",
-     "label": "Gold",
+     "name": "Gold",
      "cls": "category",
      "color": "#E0B458",
      "a": [
@@ -2225,7 +2213,7 @@
     },
     {
      "key": "ust",
-     "label": "Long US Treasuries (TR)",
+     "name": "Long US Treasuries (TR)",
      "cls": "universal",
      "color": "#5B8DEF",
      "a": [
@@ -2277,7 +2265,7 @@
     },
     {
      "key": "jpy",
-     "label": "Japanese yen (vs USD)",
+     "name": "Japanese yen (vs USD)",
      "cls": "category",
      "color": "#5AA9A3",
      "a": [
@@ -2325,7 +2313,7 @@
     },
     {
      "key": "cta",
-     "label": "Trend-following / CTA",
+     "name": "Trend-following / CTA",
      "cls": "universal",
      "color": "#4F79C9",
      "a": [
@@ -2373,7 +2361,8 @@
     },
     {
      "key": "cash",
-     "label": "3M T-bills / cash (TR) — phase 1",
+     "name": "3M T-bills / cash (TR)",
+     "verdict": "— phase 1",
      "cls": "universal",
      "color": "#BBCF6A",
      "a": [
@@ -2421,7 +2410,7 @@
     },
     {
      "key": "vol",
-     "label": "Long volatility (stylized)",
+     "name": "Long volatility (stylized)",
      "cls": "universal",
      "color": "#9A7BD6",
      "a": [
@@ -2488,13 +2477,10 @@
    "cat": "D",
    "weight": 0.8,
    "peak": "Jul 2011 (intensification)",
-   "cause": "Bank–sovereign doom loop; periphery yields spiked to unsustainable levels. Euro-area bank equity collapsed.",
-   "highlight": "Core Bunds and US Treasuries rallied; the CHF surged +~50% vs EUR until the SNB floor (Sep 2011); gold in EUR peaked with the crisis.",
-   "sources": "Ranaldo & Söderlind (2010); SNB-floor literature; Baele et al. (2020)",
    "series": [
     {
      "key": "mkt",
-     "label": "Euro Stoxx Banks",
+     "name": "Euro Stoxx Banks",
      "cls": "market",
      "color": "#E05252",
      "a": [
@@ -2570,7 +2556,7 @@
     },
     {
      "key": "bund",
-     "label": "German Bunds 10Y (TR)",
+     "name": "German Bunds 10Y (TR)",
      "cls": "universal",
      "color": "#5B8DEF",
      "a": [
@@ -2614,7 +2600,7 @@
     },
     {
      "key": "chf",
-     "label": "Swiss franc (vs EUR)",
+     "name": "Swiss franc (vs EUR)",
      "cls": "category",
      "color": "#7EC8E3",
      "a": [
@@ -2662,7 +2648,7 @@
     },
     {
      "key": "au",
-     "label": "Gold (EUR terms)",
+     "name": "Gold (EUR terms)",
      "cls": "category",
      "color": "#E0B458",
      "a": [
@@ -2710,7 +2696,7 @@
     },
     {
      "key": "ust",
-     "label": "US Treasuries (TR)",
+     "name": "US Treasuries (TR)",
      "cls": "universal",
      "color": "#4F79C9",
      "a": [
@@ -2753,13 +2739,10 @@
    "cat": "E",
    "weight": 0.5,
    "peak": "Feb 2020",
-   "cause": "Exogenous pandemic shock + dash-for-cash. S&P 500 −34% in one month — then the fastest recovery on record.",
-   "highlight": "Phase 1 was a 'dash for cash': in mid-March even Treasuries sold off while T-bills/money-market funds absorbed record inflows (Duffie 2020) — then duration rallied. Treasuries later failed in the 2022 inflation regime; Bitcoin fell in lockstep with equities: falsified as a safe haven (Conlon & McGee 2020).",
-   "sources": "Conlon & McGee (2020) Finance Research Letters; Duffie (2020) Brookings; Corbet et al. (2020); Baele et al. (2020)",
    "series": [
     {
      "key": "mkt",
-     "label": "S&P 500",
+     "name": "S&P 500",
      "cls": "market",
      "color": "#E05252",
      "a": [
@@ -2831,7 +2814,7 @@
     },
     {
      "key": "ust",
-     "label": "10Y US Treasuries (TR)",
+     "name": "10Y US Treasuries (TR)",
      "cls": "universal",
      "color": "#5B8DEF",
      "a": [
@@ -2883,7 +2866,8 @@
     },
     {
      "key": "cash",
-     "label": "3M T-bills / cash (TR) — phase 1",
+     "name": "3M T-bills / cash (TR)",
+     "verdict": "— phase 1",
      "cls": "universal",
      "color": "#BBCF6A",
      "a": [
@@ -2927,7 +2911,7 @@
     },
     {
      "key": "au",
-     "label": "Gold",
+     "name": "Gold",
      "cls": "category",
      "color": "#E0B458",
      "a": [
@@ -2983,7 +2967,7 @@
     },
     {
      "key": "usd",
-     "label": "US dollar (DXY)",
+     "name": "US dollar (DXY)",
      "cls": "category",
      "color": "#8FAE5D",
      "a": [
@@ -3031,7 +3015,8 @@
     },
     {
      "key": "btc",
-     "label": "Bitcoin (falsified safe haven)",
+     "name": "Bitcoin",
+     "verdict": "(falsified safe haven)",
      "cls": "falsified",
      "color": "#E8853D",
      "dashed": true,
@@ -3101,13 +3086,10 @@
    "weight": 1,
    "peak": "Jun 1720",
    "stylizedAll": true,
-   "cause": "Debt-for-equity conversion scheme fuelled by credit; shares rose ~8× in six months, then collapsed ~85%.",
-   "highlight": "Hoare's Bank rode the bubble knowingly and exited near the top — IRR ≈ 51% p.a. (Temin & Voth 2004). The winning asset was the timed exit to cash and quality, not the bubble itself.",
-   "sources": "Temin & Voth (2004) AER; Garber (1990 JEP; 2000 MIT Press)",
    "series": [
     {
      "key": "mkt",
-     "label": "South Sea Co. shares",
+     "name": "South Sea Co. shares",
      "cls": "market",
      "color": "#E05252",
      "a": [
@@ -3187,7 +3169,7 @@
     },
     {
      "key": "hoare",
-     "label": "Hoare's Bank timed exit (stylized)",
+     "name": "Hoare's Bank timed exit (stylized)",
      "cls": "unique",
      "color": "#B48CE0",
      "a": [
@@ -3235,7 +3217,7 @@
     },
     {
      "key": "boe",
-     "label": "Bank of England stock",
+     "name": "Bank of England stock",
      "cls": "category",
      "color": "#5AA9A3",
      "a": [
@@ -3279,7 +3261,7 @@
     },
     {
      "key": "cash",
-     "label": "Cash / specie & land",
+     "name": "Cash / specie & land",
      "cls": "category",
      "color": "#8FAE5D",
      "a": [
@@ -3319,15 +3301,7 @@
     2,
     1,
     3
-   ],
-   "notes": {
-    "0": "Rose via gold-mining shares (Homestake +474–580%) under the fixed gold price.",
-    "3": "Spiked intraday on Black Monday (+4.2%) then sold off as investors liquidated for cash — an 'ATM' in acute liquidity crunches; weak-to-strong per Baur & McDermott (2010).",
-    "4": "Rose in local-currency terms as EM currencies collapsed.",
-    "6": "Fell ≈ −27% into the peak and stayed weak — the key exception that demotes gold from universal status.",
-    "7": "Strong safe haven at the crisis peak (Baur & McDermott 2010).",
-    "10": "ELEVATED to lead regime-matched hedge: 2026 hedge score 0.85 (co-lead with cash at 0.88) — regime-match r 0.96–0.98 vs monetary-crisis scripts, worst-quintile beta ≈ 0, Granger-leads the market; 27% of global reserves, overtaking US Treasuries at 22% (ECB, 2 Jun 2026); record central-bank demand (WGC, Jun 2026). Caveat: ~$4,100 after the $5,595 Jan-2026 record — part of the hedge is pre-paid."
-   }
+   ]
   },
   {
    "name": "Long safe govt bonds",
@@ -3343,13 +3317,7 @@
     2,
     2,
     3
-   ],
-   "notes": {
-    "1": "Collapsed in real terms — bonds fail in inflationary regimes.",
-    "8": "Core Bunds/Treasuries only; periphery sovereigns were the collapsing asset.",
-    "9": "Rallied in the crash, then fell ≈ −25% in the 2022 inflation regime.",
-    "10": "Challenged: in April 2025 Treasuries, USD and equities fell TOGETHER; BIS (Sep 2025) found Treasury safe-haven correlations near zero since. 2026 hedge score 0.42 — demoted to 5th, behind CHF, for this configuration (Cheema, Ryan & Sarwar 2025: bonds work best in macro/financial downturns, weaker in geopolitical/inflation shocks)."
-   }
+   ]
   },
   {
    "name": "Cash / T-bills / USD liquidity",
@@ -3365,13 +3333,7 @@
     1,
     2,
     3
-   ],
-   "notes": {
-    "0": "Deflation lifted the real value of cash ~25% peak-to-trough.",
-    "1": "Positive nominal T-bill yields but negative real returns in the inflationary regime.",
-    "9": "March 2020 'dash for cash': even Treasuries sold off while T-bills and money-market funds absorbed record inflows (Duffie 2020; BIS Bulletin No. 2).",
-    "10": "The live phase-1 haven: money-market fund assets at a record $7.95tn (ICI, 1 Jul 2026). 2026 hedge score 0.88 — rank #1 on CERTAINTY (100% worst-month hit rate, no drawdown, par entry); gold is the payoff co-lead."
-   }
+   ]
   },
   {
    "name": "Japanese yen",
@@ -3387,11 +3349,7 @@
     1,
     1,
     3
-   ],
-   "notes": {
-    "7": "Appreciated ≈ +23% vs USD through the acute phase (Ranaldo & Söderlind 2010).",
-    "10": "~¥162 — a ~40-year low; carry dominates haven flows, so the yen has NOT behaved as a haven this cycle."
-   }
+   ]
   },
   {
    "name": "Swiss franc",
@@ -3407,11 +3365,7 @@
     2,
     1,
     3
-   ],
-   "notes": {
-    "8": "+~50% vs EUR until the SNB imposed the 1.20 floor in Sep 2011.",
-    "10": "Credible secondary haven — the franc strengthened materially vs USD 2021–26 (USD/CHF ~0.76 in Jan 2026)."
-   }
+   ]
   },
   {
    "name": "US dollar",
@@ -3427,12 +3381,7 @@
     1,
     2,
     3
-   ],
-   "notes": {
-    "4": "The classic EM-crisis winner: +~115% vs THB at the extreme.",
-    "9": "Spiked in the Mar 2020 dash-for-cash funding stress.",
-    "10": "Worst first half since 1973 in H1 2025 (DXY −10.8%); reserve diversification away from USD documented (ECB, WGC)."
-   }
+   ]
   },
   {
    "name": "Commodity futures",
@@ -3448,10 +3397,7 @@
     -1,
     0,
     3
-   ],
-   "notes": {
-    "1": "Equity-like returns, negatively correlated with stocks, positively with inflation (Gorton & Rouwenhorst 2006)."
-   }
+   ]
   },
   {
    "name": "Oil / energy",
@@ -3467,11 +3413,7 @@
     -1,
     0,
     3
-   ],
-   "notes": {
-    "1": "Crude roughly quadrupled after the Oct 1973 embargo ($2.90 → $11.65/bbl by Jan 1974) — the highest-magnitude crisis-unique winner (Alpanda & Peralta-Alva 2010, Rev. Econ. Dynamics; Fed History).",
-    "7": "Fell from ~$147 to ~$34 in the demand-driven collapse (Hamilton 2009, BPEA) — high uniqueness, low recurrence."
-   }
+   ]
   },
   {
    "name": "Value / small-value stocks",
@@ -3487,12 +3429,7 @@
     -1,
     0,
     3
-   ],
-   "notes": {
-    "6": "Small-value ≈ +16.2%/yr 2000–07 vs S&P +1.7%/yr — the post-bubble rotation.",
-    "7": "Fell with the market during the crash itself; the premium is post-trough.",
-    "10": "The dot-com analogue: value / equal-weight rotation is the leading candidate post-bubble winner if an AI unwind mirrors 2000–02."
-   }
+   ]
   },
   {
    "name": "Low-beta / quality (QMJ)",
@@ -3508,10 +3445,7 @@
     2,
     2,
     3
-   ],
-   "notes": {
-    "7": "QMJ shows mild positive convexity — benefits from flight to quality (Asness, Frazzini & Pedersen 2019)."
-   }
+   ]
   },
   {
    "name": "Trend-following / CTA",
@@ -3527,11 +3461,7 @@
     1,
     1,
     3
-   ],
-   "notes": {
-    "3": "Crisis alpha is strongest in prolonged drawdowns, weaker in one-day crashes (Kaminski).",
-    "7": "+14–18% in 2008 while equities halved (time-series momentum, Moskowitz et al. 2012)."
-   }
+   ]
   },
   {
    "name": "Long volatility / index puts",
@@ -3547,12 +3477,7 @@
     2,
     2,
     3
-   ],
-   "notes": {
-    "3": "Via index puts / portfolio hedges — VIX futures only tradable since 2004, VIX options since 2006.",
-    "7": "Long VIX futures/calls materially cut portfolio risk in 2008 (Szado 2009); VIX a stronger US hedge than gold (Hood & Malik 2013). Cost: persistently negative carry (Carr & Wu 2009).",
-    "10": "Convex insurance is available and relatively cheap pre-spike; expected carry is negative between crises (Dew-Becker et al. 2017)."
-   }
+   ]
   },
   {
    "name": "Bitcoin",
@@ -3568,11 +3493,7 @@
     -1,
     0,
     3
-   ],
-   "notes": {
-    "9": "Fell in lockstep with the S&P 500; a 10% allocation raised 1% portfolio VaR by 13.6% (Conlon & McGee 2020) — falsified as a safe haven.",
-    "10": "−51% from the Oct 2025 ATH (~$126k) to ~$62k by Jul 2026 while equity indices set records — again trading as a risk asset."
-   }
+   ]
   }
  ],
  "MX_CRISES": [
@@ -3592,47 +3513,22 @@
   {
    "title": "Universal winners — two phases",
    "tag": "U",
-   "color": "#5B8DEF",
-   "items": [
-    "PHASE 1 · Cash / T-bills / USD liquidity — the first-response winner: flight to liquidity and record money-market inflows (Longstaff 2004; Nagel 2016; Krishnamurthy & Vissing-Jorgensen 2012; Baele et al. 2020; Duffie 2020 'dash for cash')",
-    "PHASE 2 · Long safe sovereign bonds — 9/10 crises once funding stress eases; best in macro/financial downturns, weaker in geopolitical/inflation shocks (Cheema, Ryan & Sarwar 2025) and challenged since April 2025",
-    "Long volatility / index puts — paid in every observed crisis; negative expected carry between crises (Szado 2009; Carr & Wu 2009)",
-    "Trend-following / CTA — 'crisis alpha' in prolonged drawdowns (weaker in one-day crashes)",
-    "Gold is near-universal but demoted historically (it fell in the dot-com bust) — yet for the 2026 configuration it is ELEVATED to lead regime-matched hedge, score 0.85 co-lead with cash (see Analytics ranking)"
-   ]
+   "color": "#5B8DEF"
   },
   {
    "title": "Category-specific winners",
    "tag": "C",
-   "color": "#E0B458",
-   "items": [
-    "Gold → monetary / inflation / currency crises — AND 'black-swan' ambiguity: investors buy gold on ambiguous signals, bonds on extreme-but-clear ones (Baur & McDermott 2012 working paper; Caballero & Krishnamurthy 2008)",
-    "Value / small-value stocks → after equity-growth bubbles (dot-com)",
-    "US dollar → EM and global funding-stress crises (Asia ’97, LTCM, 2008, 2020)",
-    "Government bonds → deflationary crises specifically — they are the collapsing asset in sovereign/inflation crises",
-    "Quality / low-beta → recessionary equity drawdowns generally"
-   ]
+   "color": "#E0B458"
   },
   {
    "title": "Crisis-unique winners",
    "tag": "★",
-   "color": "#B48CE0",
-   "items": [
-    "Oil / energy — 1973–74: crude ~4× post-embargo; the highest-MAGNITUDE unique winner, though the crisis TYPE recurs (1979, 1990, 2022) and oil FELL in the 2008/2020 demand collapses (Hamilton 2009)",
-    "Homestake Mining & gold miners — 1930s: >500% Oct 1929–Dec 1935 vs a ~⅔ Dow loss (Burdekin & Weidenmier 2004) — the most NON-REPLICABLE winner (fixed-gold-price regime)",
-    "Rolling Nikkei puts — Japan 1990",
-    "Mega-cap tech — the COVID recovery trade, not the crash hedge",
-    "Hoare's Bank timed exit — South Sea 1720 (IRR ≈ 51% p.a., Temin & Voth 2004)"
-   ]
+   "color": "#B48CE0"
   },
   {
    "title": "Falsified candidates",
    "tag": "!",
-   "color": "#E8853D",
-   "items": [
-    "Bitcoin — fell in lockstep with equities in Mar 2020 (Conlon & McGee 2020); by Jul 2026 down ~51% from its ATH while indices set records",
-    "Japanese yen (this cycle) — ~¥162, a ~40-year low despite repeated risk episodes; carry has dominated haven flows 2021–26"
-   ]
+   "color": "#E8853D"
   }
  ],
  "CAT": {

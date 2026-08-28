@@ -1,0 +1,40 @@
+{
+ "schema": "shm-fallback-content.v1",
+ "note": "FROZEN fixture — the hermetic stand-in for the deploy-generated dist/content/fallback.json (DR-014 item 6; A2 §1 P3). Client commit contract (src/content.ts parseFallback): as_of non-empty (deploy stamps YYYY-MM-DD), numeric content_version, blocks including the mandatory 'site.disclaimer' block (red line 5 / Q50 — a payload without it NEVER commits), slots optional. Slot text is printable-ASCII <=700 (client drops violators), so values carrying typographic glyphs live in BLOCKS, which the frozen viewer assertions pin verbatim. A prose string may migrate out of the baked page ONLY if this fixture serves it (SPEC section Re-freeze R2).",
+ "as_of": "2026-08-28",
+ "content_version": 1,
+ "source": "fallback",
+ "disclaimer": "Historical patterns from public sources — not tick data, and not investment advice.",
+ "blocks": {
+  "site.disclaimer": { "kind": "text", "text": "Historical patterns from public sources — not tick data, and not investment advice. eToro links = navigation only, not advice." },
+  "atlas.classification.gfc": { "kind": "text", "text": "B · Real-estate / credit bubble" },
+  "atlas.classification.blackmonday": { "kind": "text", "text": "E · Liquidity / exogenous shock" },
+  "atlas.explorer.potential-banner": { "kind": "text", "text": "POTENTIAL crisis — the peak is anchored at today (Jul 2026) by construction, not as a forecast. All lines end at t0 and the right half of the axis is intentionally empty: no forward projection. Backfill uses real market anchors (Jul 2021 → Jul 2026); current-state sources are ≤ 6 weeks old (BIS 28 Jun · ECB 2 Jun & 27 May · Fed 8 May 2026). Safe-haven candidates are shown dashed." },
+  "site.aggregate.methodology": { "kind": "text", "text": "Each line is a weighted cross-crisis composite, rebased to 100 at the common peak: how the asset class folds its own crisis shape into the peak and the historical aftermath that follows it. Bitcoin (falsified) is excluded." },
+  "site.playbook.m9": { "kind": "text", "text": "M9 — Survivability & marginal holder" },
+  "playbook.verdicts": { "kind": "items", "items": ["Defense / aerospace", "Gold & gold miners", "Cash & T-bills"] },
+  "playbook.phases": { "kind": "entries", "entries": ["Cash & T-bills", "Hold. Buy nothing. (0–3 months) — Hold cash — sitting still IS the strategy."] },
+  "analytics.clock.weighted.value": { "kind": "text", "text": "≈ −12 mo" },
+  "analytics.clock.dotcom.value": { "kind": "text", "text": "p ≈ 0 / +1" },
+  "analytics.clock.dotcom.caption": { "kind": "text", "text": "dot-com template, the closest analog: today matches its PEAK (r 0.79–0.89, DTW confirms)" },
+  "analytics.clock.gold-lead.value": { "kind": "text", "text": "now → +19 mo" },
+  "analytics.explos.2.stat": { "kind": "text", "text": "−0.76" },
+  "analytics.explos.3.stat": { "kind": "text", "text": "−1.20" }
+ },
+ "slots": {
+  "atlas.explorer.potential-banner.anchor-date": { "text": "Jul 2026", "source": "fallback", "updated_at": "2026-08-28T00:00:00Z" },
+  "analytics.clock.lppl.value": { "text": "+2.5 mo", "source": "fallback", "updated_at": "2026-08-28T00:00:00Z" },
+  "analytics.markov.p_turbulent": { "text": "P(turbulent) = 1.00", "source": "fallback", "updated_at": "2026-08-28T00:00:00Z" },
+  "analytics.explos.1.stat": { "text": "+0.75", "source": "fallback", "updated_at": "2026-08-28T00:00:00Z" },
+  "analytics.granger.summary": { "text": "F = 7.79 - gold leads the hedge basket at the 1% level in the 2021-26 backfill window", "source": "fallback", "updated_at": "2026-08-28T00:00:00Z" },
+  "analytics.hedgeweight.gold.score": { "text": "0.88", "source": "fallback", "updated_at": "2026-08-28T00:00:00Z" },
+  "analytics.hedgeweight.bonds.score": { "text": "0.85", "source": "fallback", "updated_at": "2026-08-28T00:00:00Z" },
+  "analytics.hedgeweight.cash.score": { "text": "0.59", "source": "fallback", "updated_at": "2026-08-28T00:00:00Z" },
+  "playbook.expert.as_of": { "text": "2026-08-28", "source": "fallback", "updated_at": "2026-08-28T00:00:00Z" }
+ },
+ "display": {
+  "note": "gauge copy deck rides GET /api/v1/score data.display (A2 P2); the widget stays out of scope (Q12). Stub until the SH-wire gauge-copy PR.",
+  "bands": {},
+  "indicator_gloss": {}
+ }
+}

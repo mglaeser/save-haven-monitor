@@ -19,7 +19,10 @@ const { REPO, raw } = require("../lib/load.js");
 const { ok } = require("../lib/assert.js");
 
 // per-file byte ceilings for the CI-compiled bundles (raw, uncompressed) — headroom over current sizes
-const JS_BUDGET = { "dashboard.js": 155000, "bubblegauge.js": 110000 };
+// DELIBERATE RATCHET EDIT (DR-014 item 5 / Q17, on the record): bubblegauge.js 110000 -> 140000.
+// The shallow-frontend content path (fetch chokepoint, shape validators, disclaimer gate,
+// last-known-good/offline states) compiles into bubblegauge.js and needs the headroom.
+const JS_BUDGET = { "dashboard.js": 155000, "bubblegauge.js": 140000 };
 // self-hosted vendor JS the browser fetches (bytes pinned by 35/40; counted toward total page weight)
 const VENDOR_JS = [
   "vendor/react.production.min.js",
@@ -28,7 +31,8 @@ const VENDOR_JS = [
   "vendor/Recharts.js",
 ];
 // total served-JS page-weight ceiling (compiled + vendors), with headroom over the per-file maxima
-const TOTAL_JS_BUDGET = 950000;
+// (adjusted +30000 in lockstep with the bubblegauge.js ceiling — DR-014 item 5; was 950000)
+const TOTAL_JS_BUDGET = 980000;
 
 const sizeOf = (f) => fs.statSync(path.join(REPO, f)).size;
 

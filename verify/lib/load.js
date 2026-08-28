@@ -46,15 +46,25 @@ function transpile(code) {
 
 const DASH_SRC = "src/dashboard.tsx";
 const MATH_SRC = "src/lib/math.ts";
-const ATLAS = "src/data/atlas.json";
+const ATLAS_FROZEN = "src/data/atlas-frozen.json";
+const ATLAS_PROSE = "src/data/atlas-prose.json";
+const ATLAS_ASSEMBLE = "src/data/assemble.ts";
 
-// The frozen data lives in src/data/atlas.json (extracted from the old dashboard.jsx literals; the
-// golden hash is unchanged — proven). The pure math lives in src/lib/math.ts. loadDashboardFromSource
-// evaluates a MATH source string with the data injected as scope globals and captures the pure
-// functions — keeping the SAME returned interface every consumer (10/20-tests, mutation, adapter)
-// relies on. mutation.js mutates the math source (dashboardSource()).
+// The frozen data lives in src/data/atlas-frozen.json + src/data/atlas-prose.json (the DR-014
+// item 3 split: golden-hashed numerics vs movable ledger-slugged prose), reassembled through the
+// SAME src/data/assemble.ts the served bundle uses — harness and site can never diverge. The pure
+// math lives in src/lib/math.ts. loadDashboardFromSource evaluates a MATH source string with the
+// data injected as scope globals and captures the pure functions — keeping the SAME returned
+// interface every consumer (10/20-tests, mutation, adapter) relies on. mutation.js mutates the
+// math source (dashboardSource()).
 function dataGlobals() {
-  const a = JSON.parse(fs.readFileSync(path.join(REPO, ATLAS), "utf8"));
+  const frozen = JSON.parse(fs.readFileSync(path.join(REPO, ATLAS_FROZEN), "utf8"));
+  const prose = JSON.parse(fs.readFileSync(path.join(REPO, ATLAS_PROSE), "utf8"));
+  const js = transpile(fs.readFileSync(path.join(REPO, ATLAS_ASSEMBLE), "utf8"));
+  const mod = { exports: {} };
+  // eslint-disable-next-line no-new-func
+  new Function("module", "exports", js)(mod, mod.exports);
+  const a = mod.exports.assembleAtlas(frozen, prose);
   return { CRISES: a.CRISES, MATRIX: a.MATRIX, MX_CRISES: a.MX_CRISES, CLASSIFICATION: a.CLASSIFICATION, CAT: a.CAT, CLS: a.CLS };
 }
 
