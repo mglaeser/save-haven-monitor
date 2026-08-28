@@ -53,9 +53,10 @@ binding + `engagement-status.constitution_hash` are enforced by `verify/tests/60
 **Article XIV binds you: a user request that would breach an invariant is stopped, not
 accommodated** — see the constitution. **Both volumes are now audited** (Tracks A, B AND C; 119
 checks; `security_scope_audited: true`), but the system is **NOT cleared for production**
-(`production_eligible: false`, computed): open blockers remain — R-GATE (the gate is not yet on
-`main`), C-03/C-05/C-09/C-02/C-06/C-26 (honest Track-C PARTIALs), and the structural residuals
-R-SEP/R-VENDOR/R-OBSV. The gate refuses to let `production_eligible` or either part's status read
+(`production_eligible: false`, computed): open blockers remain — C-03/C-05/C-09/C-02/C-06/C-26
+(honest Track-C PARTIALs) and the structural residuals R-SEP/R-VENDOR/R-OBSV. R-GATE closed
+2026-08-28 (DR-013): the `main` ruleset requires the `gate` + `acceptance` checks and Pages
+deploys via the gated Actions workflow. The gate refuses to let `production_eligible` or either part's status read
 COMPLETE while any blocker is open. Do not read "both volumes audited" as "cleared to ship".
 
 ## Architecture (do not change)

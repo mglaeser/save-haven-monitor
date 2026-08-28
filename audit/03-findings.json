@@ -7,21 +7,21 @@
    "track": "A",
    "priority": 9,
    "founding_band": "BLOCKER-1",
-   "verdict": "FAIL",
+   "verdict": "PARTIAL",
    "na_justification": null,
    "probe": "Tried to falsify 'zero bypass paths / every production change is gated': queried live branch protection and the Pages deploy model, and checked whether the gate even exists on the production branch.",
-   "evidence": "mcp__github__list_branches(mglaeser/save-haven-monitor): both 'main' and the work branch return \"protected\":false \u2014 no branch protection, no required status check. main HEAD = 04772bf (frozen baseline); verify/ + .github/workflows/verify.yml were added only in 2aa7838/4af8354 on the work branch, so PRODUCTION (main, which Pages serves) carries NO gate at all. The single verify workflow run (actions_list, run 29475787128, event=push) concluded \"failure\". DR-002-ci-gate.md lines 18-31 admit: 'A GitHub Actions check reports status but does not block a merge or the Pages deploy unless branch protection requires it ... Until branch protection requires the verify check on main, the gate is advisory, not blocking.' The gate CAN block in isolation (verify/tests/50-gate-selftest passed 5/5 this run: blocks null-standing_control PASS, production_eligible lie, count drift, failed required test), but a direct push to unprotected main deploys instantly, bypassing CI entirely. No per-change machine-readable provenance record (model+prompt+frozen-spec+checks) is enforced; independent adversarial verification exists only as a one-time Phase-2 calibration, not a standing per-change control.",
+   "evidence": "mcp__github__list_branches(mglaeser/save-haven-monitor): both 'main' and the work branch return \"protected\":false \u2014 no branch protection, no required status check. main HEAD = 04772bf (frozen baseline); verify/ + .github/workflows/verify.yml were added only in 2aa7838/4af8354 on the work branch, so PRODUCTION (main, which Pages serves) carries NO gate at all. The single verify workflow run (actions_list, run 29475787128, event=push) concluded \"failure\". DR-002-ci-gate.md lines 18-31 admit: 'A GitHub Actions check reports status but does not block a merge or the Pages deploy unless branch protection requires it ... Until branch protection requires the verify check on main, the gate is advisory, not blocking.' The gate CAN block in isolation (verify/tests/50-gate-selftest passed 5/5 this run: blocks null-standing_control PASS, production_eligible lie, count drift, failed required test), but a direct push to unprotected main deploys instantly, bypassing CI entirely. No per-change machine-readable provenance record (model+prompt+frozen-spec+checks) is enforced; independent adversarial verification exists only as a one-time Phase-2 calibration, not a standing per-change control. ADDENDUM 2026-08-28 (DR-013): live re-probe -- GET /repos/mglaeser/save-haven-monitor/rules/branches/main returns rules pull_request + required_status_checks (contexts: gate, acceptance) + non_fast_forward + deletion (ruleset updated 2026-08-18); GET .../pages returns build_type=workflow (Actions-gated deploy, DR-006). Direct/force pushes to main are refused; a PR cannot merge with either required check red. The per-component provenance chain now exists (governance/provenance-manifest.json, C-37/61-provenance); the standing per-change INDEPENDENT adversarial verifier remains convention, not machinery -- hence PARTIAL, not PASS.",
    "standing_control": {
-    "exists_now": false,
-    "mechanism": "gate.js + run.js are self-tested and version-controlled, but nothing forces them to run before production: no branch protection, and Pages deploys directly from main on push",
-    "blocks": "nothing at production today (advisory only)",
-    "cadence": "on push/PR (reporting only)",
-    "ratchet": "none enforced (bypass paths open)"
+    "exists_now": true,
+    "mechanism": "main ruleset requires the gate and acceptance checks with PRs mandatory (no force-push, no deletion); Pages deploys only from the Actions workflow after run.js + mutation.js + gate.js pass; per-component provenance chains attested in governance/provenance-manifest.json (C-37)",
+    "blocks": "merge to main and the Pages deploy (both boundaries)",
+    "cadence": "every PR/push and every deploy",
+    "ratchet": "60-governance keeps the workflow wired; 61-provenance fails on any shipped-component hash drift"
    },
    "structural_fix": {
     "available": true,
-    "taken": false,
-    "rationale": "Owner enabling 'Require status checks to pass -> verify' + 'Do not allow bypassing' on main converts the advisory check into a real gate; alternatively re-architect Pages to deploy from a CI artifact produced only after the gate passes. Neither is done."
+    "taken": true,
+    "rationale": "Owner enabling 'Require status checks to pass -> verify' + 'Do not allow bypassing' on main converts the advisory check into a real gate; alternatively re-architect Pages to deploy from a CI artifact produced only after the gate passes. Neither is done. (DR-013 2026-08-28: BOTH routes are now done -- the main ruleset requires the gate and acceptance checks, and Pages deploys from the gated Actions workflow.)"
    },
    "residual_risk": {
     "compensating_control": "run-verify-before-push convention in CLAUDE.md and verify/tests/60-governance asserting the workflow stays wired",
@@ -38,6 +38,10 @@
     {
      "date": "2026-07-16",
      "event": "assessed FAIL"
+    },
+    {
+     "date": "2026-08-28",
+     "event": "re-assessed FAIL -> PARTIAL per DR-013: gate is deploy-blocking (ruleset 2026-08-18 requiring gate+acceptance, no force-push; Pages build_type=workflow). The standing per-change independent adversarial verifier remains convention, not machinery."
     }
    ],
    "remediation": "Owner must enable branch protection on main requiring the verify check with bypass disabled (the single human command-authority precondition), and merge verify/ to main so the gate exists on the production branch; add an enforced machine-readable provenance record per change and wire a standing independent adversarial verifier (a model that did not write the change). Until then a change can reach production wholly ungated."
@@ -1388,20 +1392,20 @@
    "track": "B",
    "priority": 9,
    "founding_band": "BLOCKER-1",
-   "verdict": "FAIL",
+   "verdict": "PARTIAL",
    "na_justification": null,
    "probe": "Falsify 'the pipeline gates': (1) queried branch protection on main via GitHub API; (2) traced the deploy path (Pages-from-branch vs Actions); (3) grepped the pipeline for soft-fail constructs (continue-on-error/|| true/set +e/--exit-zero/allow_failure); (4) ran run.js+gate.js locally to confirm blocking behaviour exists at all.",
-   "evidence": "mcp__github__list_branches(mglaeser/save-haven-monitor) -> main {\"protected\": false}. .github/workflows/verify.yml has `permissions: contents: read`, triggers on push/PR, runs `node run.js` then `node gate.js` -- but Pages deploys directly from the main branch, and with no branch protection a red check does NOT block the push or the Pages deploy. audit/decisions/DR-002-ci-gate.md R-GATE states this in the open: 'a GitHub Actions check reports status but does not block a merge or the Pages deploy unless branch protection requires it... Until branch protection requires the verify check on main, the gate is advisory, not blocking.' Soft-fail grep over .github/ and verify/ (excluding node_modules): zero hits -- the only `|| true` is inside gitignored playwright-core. gate.js runs clean locally (GATE PASS) and its blocking behaviour is self-tested (verify/tests/50 proves gate.js exits non-zero on PASS-without-standing-control, asserted production_eligible, count drift, failed required test -- all 5 self-tests pass). So a blocking engine EXISTS and is calibrated (6/6, audit/02-calibration.md) but is not wired to the production boundary.",
+   "evidence": "mcp__github__list_branches(mglaeser/save-haven-monitor) -> main {\"protected\": false}. .github/workflows/verify.yml has `permissions: contents: read`, triggers on push/PR, runs `node run.js` then `node gate.js` -- but Pages deploys directly from the main branch, and with no branch protection a red check does NOT block the push or the Pages deploy. audit/decisions/DR-002-ci-gate.md R-GATE states this in the open: 'a GitHub Actions check reports status but does not block a merge or the Pages deploy unless branch protection requires it... Until branch protection requires the verify check on main, the gate is advisory, not blocking.' Soft-fail grep over .github/ and verify/ (excluding node_modules): zero hits -- the only `|| true` is inside gitignored playwright-core. gate.js runs clean locally (GATE PASS) and its blocking behaviour is self-tested (verify/tests/50 proves gate.js exits non-zero on PASS-without-standing-control, asserted production_eligible, count drift, failed required test -- all 5 self-tests pass). So a blocking engine EXISTS and is calibrated (6/6, audit/02-calibration.md) but is not wired to the production boundary. ADDENDUM 2026-08-28 (DR-013): both bypasses are closed -- the main ruleset (updated 2026-08-18) requires the gate and acceptance status checks with PRs mandatory and force pushes refused, and Pages build_type=workflow means deploy.yml publishes only after run.js + mutation.js + gate.js pass (the structural fix below, taken via DR-006). The mandate's weekly synthetic-failure re-proof of blocking behaviour still does not exist -- hence PARTIAL, not PASS.",
    "standing_control": {
-    "exists_now": false,
-    "mechanism": "verify.yml runs run.js+gate.js on every push/PR and is calibrated 6/6; gate.js block-behaviour is self-tested by tests/50. But the gate is not required on main.",
-    "blocks": "Nothing at the deploy boundary today -- Pages serves whatever lands on main; the workflow status is advisory.",
-    "cadence": "on push/PR (not the weekly synthetic-failure re-proof the mandate specifies)",
-    "ratchet": "Soft-fail constructs at zero (grep-verified this run) -- the S11 ratchet holds; but no weekly synthetic failing-test/vulnerable-dep push exists to re-prove blocking."
+    "exists_now": true,
+    "mechanism": "verify.yml (run.js + gate.js) and the acceptance suite are required status checks on main via ruleset; deploy.yml publishes Pages only after the full gate passes (DR-006); gate.js block-behaviour is self-tested by tests/50.",
+    "blocks": "merge to main and the Pages deploy",
+    "cadence": "on every PR/push and every deploy (the mandate's weekly synthetic-failure re-proof still does not exist)",
+    "ratchet": "Soft-fail constructs at zero -- the S11 ratchet holds; 50-gate-selftest proves blocking behaviour each run."
    },
    "structural_fix": {
     "available": true,
-    "taken": false,
+    "taken": true,
     "rationale": "Replace Pages-from-branch with a deploy job (actions/deploy-pages) that runs ONLY after gate.js passes, making the gate the sole path to production instead of an advisory check beside an ungated branch deploy. This removes the push-to-main bypass without adding a build/transform of the served files (it copies static files). The alternative -- branch protection requiring 'verify' + no-bypass -- is owner-only (Rule 1 human dependency) and remains R-GATE."
    },
    "residual_risk": {
@@ -1419,6 +1423,10 @@
     {
      "date": "2026-07-16",
      "event": "assessed FAIL"
+    },
+    {
+     "date": "2026-08-28",
+     "event": "re-assessed FAIL -> PARTIAL per DR-013: both bypasses closed (ruleset requiring gate+acceptance + Actions-gated deploy per DR-006); weekly synthetic-failure re-proof still absent."
     }
    ],
    "remediation": "Make the gate actually block: convert deployment to an Actions Pages-deploy job gated on gate.js success (structural fix, agent-reachable), OR have the owner enable branch protection on main requiring the 'verify' check with 'do not allow bypassing' (human precondition). Then add the mandate's weekly synthetic failing-test + vulnerable-dep push to a scratch branch that must be blocked, and re-run seeded-defect calibration against the wired pipeline."
@@ -1573,7 +1581,7 @@
    "verdict": "PARTIAL",
    "na_justification": null,
    "probe": "Scan the ENTIRE git history (not just head), the served client files, and any env/fixture/CI artifacts for secrets; enumerate every non-human identity and the credentials it holds; check whether a standing control scans head-per-commit AND history nightly with a canary.",
-   "evidence": "Full-history scan clean: `git log --all -p` over the served files and `git grep` over all blobs in `git rev-list --all` for sk_live_/ghp_/AKIA/PEM/Bearer/Authorization/X-API-Key returned ONLY three matches, all of which are the calibration corpus and tests/30 pattern strings DESCRIBING the D1 seeded defect (audit/02-calibration.md, verify/calibration/corpus.json, tests/30) -- no real credential. No .env/.pem/.key/secret/credential file has ever existed (`git log --all --name-only` grep empty). The site holds ZERO credentials by design: bubblegauge.jsx sends only `headers: { accept: \"application/json\" }` on its GET (grep for X-API-Key/Authorization/Bearer/token in bubblegauge.jsx: no auth header -- only a 'dark tokens' comment). Identity model: every identity is a machine identity but the SITE stores none -- the ?status-api=<key> value is a user-supplied subdomain selector constrained by KEY_RE ^[a-z0-9-]{1,32}$ (tests/30 enforces), not a secret. Standing control: tests/30 forbids secret idioms + X-API-Key + Authorization in served source and runs in CI; seeded defect D1 caught 6/6. GAP: (a) CI is advisory (main unprotected -- see B-01), so the head-scan does not BLOCK merge/deploy; (b) no nightly FULL-HISTORY scan; (c) no monthly canary-secret-before-merge exists.",
+   "evidence": "Full-history scan clean: `git log --all -p` over the served files and `git grep` over all blobs in `git rev-list --all` for sk_live_/ghp_/AKIA/PEM/Bearer/Authorization/X-API-Key returned ONLY three matches, all of which are the calibration corpus and tests/30 pattern strings DESCRIBING the D1 seeded defect (audit/02-calibration.md, verify/calibration/corpus.json, tests/30) -- no real credential. No .env/.pem/.key/secret/credential file has ever existed (`git log --all --name-only` grep empty). The site holds ZERO credentials by design: bubblegauge.jsx sends only `headers: { accept: \"application/json\" }` on its GET (grep for X-API-Key/Authorization/Bearer/token in bubblegauge.jsx: no auth header -- only a 'dark tokens' comment). Identity model: every identity is a machine identity but the SITE stores none -- the ?status-api=<key> value is a user-supplied subdomain selector constrained by KEY_RE ^[a-z0-9-]{1,32}$ (tests/30 enforces), not a secret. Standing control: tests/30 forbids secret idioms + X-API-Key + Authorization in served source and runs in CI; seeded defect D1 caught 6/6. GAP: (a) CI is advisory (main unprotected -- see B-01), so the head-scan does not BLOCK merge/deploy; (b) no nightly FULL-HISTORY scan; (c) no monthly canary-secret-before-merge exists. ADDENDUM 2026-08-28 (DR-013): gap (a) is closed -- tests/30 now BLOCKS at both boundaries (main ruleset requires the gate check; Pages deploys via the gated Actions workflow). Gaps (b) nightly full-history scan and (c) canary secret remain -- stays PARTIAL.",
    "standing_control": {
     "exists_now": true,
     "mechanism": "verify/tests/30 no-secrets check (blocks head-of-branch secret idioms incl. X-API-Key/Authorization) + KEY_RE whitelist enforcement, calibrated by D1 (6/6).",
@@ -1597,6 +1605,10 @@
     {
      "date": "2026-07-16",
      "event": "assessed PARTIAL"
+    },
+    {
+     "date": "2026-08-28",
+     "event": "DR-013: tests/30 is now deploy-blocking via the required checks; nightly full-history scan and canary secret remain absent -- stays PARTIAL."
     }
    ],
    "remediation": "Make tests/30 actually block (wire the gate to the deploy boundary -- see B-01). Add a nightly full-history secret scan (e.g. trufflehog/gitleaks over `git rev-list --all`) that fails the platform release, and a monthly canary secret planted on a scratch branch that must be caught before merge. No rotation is needed since no live credential exists."
@@ -1671,7 +1683,7 @@
    "verdict": "PARTIAL",
    "na_justification": null,
    "probe": "Tried to deploy an unsigned/unattested artifact: `git push origin main` publishes to GitHub Pages directly (CLAUDE.md: Settings->Pages 'Deploy from a branch'->main/root). Then searched the whole tree for any signed attestation / SBOM / AI-BOM / in-toto/sigstore/SLSA provenance and for a deploy-time admission policy that verifies it.",
-   "evidence": "No attestation/SBOM/AI-BOM file exists anywhere (ls audit/ verify/ .github/; `git tag -l` empty). .github/workflows/verify.yml runs on push/PR with `permissions: contents: read` and its own header states it 'VERIFIES the served site; it does not build or deploy it' (verify.yml:1-3) \u2014 a check, not a deploy gate. DR-002 R-GATE states in writing: 'the gate is advisory, not blocking' until owner-set branch protection requires it. So a red gate does NOT stop a Pages deploy. Integrity provenance that DOES exist and is CI-held: index.html carries sha384 SRI on all 5 CDN scripts (index.html:49-53); verify/tests/40-sri-recompute.test.js re-derives each hash from fetched bytes; 35-supply-chain.test.js asserts pinned URLs equal golden/pinned-deps.json exactly; 20-golden-content.test.js pins the served crisis-data byte-hash and gate.js:31-32 makes golden+data-invariants a mustPass. But this is byte-INTEGRITY, not a SIGNED attestation tied to an identity, and it is not checked at deploy time by a fail-closed policy.",
+   "evidence": "No attestation/SBOM/AI-BOM file exists anywhere (ls audit/ verify/ .github/; `git tag -l` empty). .github/workflows/verify.yml runs on push/PR with `permissions: contents: read` and its own header states it 'VERIFIES the served site; it does not build or deploy it' (verify.yml:1-3) \u2014 a check, not a deploy gate. DR-002 R-GATE states in writing: 'the gate is advisory, not blocking' until owner-set branch protection requires it. So a red gate does NOT stop a Pages deploy. Integrity provenance that DOES exist and is CI-held: index.html carries sha384 SRI on all 5 CDN scripts (index.html:49-53); verify/tests/40-sri-recompute.test.js re-derives each hash from fetched bytes; 35-supply-chain.test.js asserts pinned URLs equal golden/pinned-deps.json exactly; 20-golden-content.test.js pins the served crisis-data byte-hash and gate.js:31-32 makes golden+data-invariants a mustPass. But this is byte-INTEGRITY, not a SIGNED attestation tied to an identity, and it is not checked at deploy time by a fail-closed policy. ADDENDUM 2026-08-28 (DR-013): the ungated publish path is closed -- Pages build_type=workflow (deploy only after the gate) and the main ruleset requires gate+acceptance with force pushes refused. Signing/attestation over the served files still does not exist -- stays PARTIAL.",
    "standing_control": null,
    "structural_fix": null,
    "residual_risk": {
@@ -1689,6 +1701,10 @@
     {
      "date": "2026-07-16",
      "event": "assessed PARTIAL"
+    },
+    {
+     "date": "2026-08-28",
+     "event": "DR-013: preventive half done (ruleset + Actions-gated Pages deploy); signing/attestation over the served files remains absent -- stays PARTIAL."
     }
    ],
    "remediation": "Enable branch protection on main requiring the `verify` check (or switch Pages to 'GitHub Actions' deployment) so the check becomes preventive; then add a signing/attestation step (GitHub artifact attestations or cosign/sigstore) over index.html+dashboard.jsx+bubblegauge.jsx plus a CycloneDX SBOM, and verify the attestation in the deploy job, failing closed on an unsigned/unattested artifact."
