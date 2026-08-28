@@ -49,6 +49,9 @@ confidence, is a merge condition. *Derives from:* `A-01` `A-14` `A-15` `B-01` `B
 > the gate is advisory on production.** Compensating control: `verify/tests/60-governance` keeps the
 > workflow wired and CI runs on every push; tripwire: the governance test goes red if the gate is
 > removed. Owner: `mglaeser`. This is a *command* action (a setting), not in-the-loop review.
+> **Closed 2026-08-28 (DR-013):** the `main` ruleset requires the `gate` and `acceptance` checks
+> (PRs mandatory, force pushes refused) and Pages deploys only from the gated Actions workflow —
+> the gate is deploy-blocking on production.
 
 ## Article II — Separation of powers
 
