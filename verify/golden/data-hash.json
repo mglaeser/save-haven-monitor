@@ -1,7 +1,8 @@
 {
-  "data_hash": "5c0c3a20d9a9de159dabe9e6e81df72b7e05121797bc363ef6ac1864fa3453a0",
-  "recorded": "2026-07-16",
-  "frozen_commit": "04772bf",
-  "covers": "CRISES + MATRIX + MX_CRISES + CLASSIFICATION + CAT + CLS (now src/data/atlas.json; byte-preserved from the former dashboard.jsx literals)",
-  "update_rule": "Changing this requires a decision record in audit/decisions/ (weakening/altering frozen research data is a finding per CLAUDE.md + Article X)."
+ "data_hash": "f35efded05f1077e957400e664c6285bb7e6710f6d3a058917ac8fe0daa2517c",
+ "recorded": "2026-08-28",
+ "frozen_commit": "UNCOMMITTED",
+ "covers": "raw bytes of src/data/atlas-frozen.json ONLY — numeric series anchors/months, weights, CAT/CLS domains, MX_CRISES headers, structural headings/colors, and the split series labels {name, verdict} (Q5). The movable science prose (crisis cause/highlight/sources, matrix notes, classification items) lives in src/data/atlas-prose.json keyed by the a1-ledger's atlas.* slugs, OUTSIDE this hash per DR-014 item 3 — it is governed by the content-pipeline controls (20-golden companion assertions + 70-claims re-homed ratchets), not by this baseline.",
+ "update_rule": "Changing this requires a decision record in audit/decisions/ (weakening/altering frozen research data is a finding per CLAUDE.md + Article X). Regenerate only via `node scripts/split-atlas.js --write-golden`.",
+ "supersedes": "5c0c3a20d9a9de159dabe9e6e81df72b7e05121797bc363ef6ac1864fa3453a0 (recorded 2026-07-16 @ 04772bf)"
 }

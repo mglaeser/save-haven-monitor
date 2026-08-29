@@ -1,0 +1,16 @@
+{
+ "schema": "shm-fallback-content.v1",
+ "note": "FROZEN poison fixture — identical shape contract to content-fallback.fixture.json EXCEPT the disclaimer is absent in BOTH homes: no 'site.disclaimer' block and no top-level disclaimer. Every text value carries the sentinel POISON-NO-DISCLAIMER-7f3a. The disclaimer-gate contract (bubblegauge PR-0 c4 / Q14 / red line 5): this payload must NEVER commit — the sentinel must never appear in the DOM.",
+ "as_of": "2026-08-28",
+ "content_version": 1,
+ "source": "fallback",
+ "blocks": {
+  "atlas.classification.gfc": { "kind": "text", "text": "POISON-NO-DISCLAIMER-7f3a — this text must never render" },
+  "atlas.explorer.potential-banner": { "kind": "text", "text": "POISON-NO-DISCLAIMER-7f3a — this text must never render" }
+ },
+ "slots": {
+  "analytics.markov.p_turbulent": { "text": "POISON-NO-DISCLAIMER-7f3a", "source": "fallback", "updated_at": "2026-08-28T00:00:00Z" },
+  "analytics.granger.summary": { "text": "POISON-NO-DISCLAIMER-7f3a", "source": "fallback", "updated_at": "2026-08-28T00:00:00Z" }
+ },
+ "display": { "bands": {}, "indicator_gloss": {} }
+}

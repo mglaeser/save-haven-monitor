@@ -6,10 +6,19 @@
 // network call at all). Anything else fails the run — the egress allowlist is part of the parity
 // contract, not an implementation detail.
 //
-// The FROZEN part of the suite is tests/ + golden/ + SPEC.md (hash-manifested in
+// Re-freeze R2 (DR-014 item 1): the harness additionally PINS the content plane. It serves the
+// frozen fixture golden/content-fallback.fixture.json at /content/fallback.json — the local,
+// hermetic stand-in for the deploy-generated dist/content/fallback.json artifact — on every page,
+// including ACCEPT_BASE_URL runs (live-content drift is out of this parity contract's scope).
+// Tests can override per page: opts.content = "<golden filename>" swaps the fixture (poison
+// case), opts.content = null forces a 404 (outage case). Each page records its request ledger
+// (pg.requestsMade()) so frozen tests can assert the R2 negative contract ("requests never leave
+// the origin") and condition target-contract assertions on "the page consumed the content URL".
+//
+// The FROZEN part of the suite is tests/ + golden/ + SPEC.md + this file (hash-manifested in
 // verify/golden/acceptance-freeze.json). This bootstrap file may be adapted to a new
-// implementation ONLY in ways that keep the tests' observable semantics identical (e.g. a
-// different local port); the tests themselves must not change.
+// implementation ONLY via re-freeze, and only in ways that keep the tests' observable semantics
+// identical (e.g. a different local port); the tests themselves must not change.
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
@@ -17,6 +26,16 @@ const path = require("path");
 const REPO = path.resolve(__dirname, "..", "..");
 const PORT = Number(process.env.ACCEPT_PORT || 8490);
 const BASE = process.env.ACCEPT_BASE_URL || null; // external target overrides the local server
+
+// The content plane (DR-014 / A2 §1 P3): one same-origin artifact, pinned to a frozen fixture.
+const CONTENT_PATH = "/content/fallback.json";
+const CONTENT_FIXTURE = path.join(REPO, "acceptance", "golden", "content-fallback.fixture.json");
+function contentBody(opts) {
+  if (opts.content === null) return null; // forced outage — the route answers 404
+  if (typeof opts.content === "string")
+    return fs.readFileSync(path.join(REPO, "acceptance", "golden", opts.content));
+  return fs.readFileSync(CONTENT_FIXTURE); // default: the frozen good fixture
+}
 
 // Local mirrors for the (current) pinned CDN set. A self-hosting rewrite simply never requests
 // these; the routing rule stays identical either way.
@@ -73,8 +92,18 @@ async function launch() {
   async function page(pathAndQuery, opts = {}) {
     const pg = await browser.newPage({ viewport: opts.viewport || { width: 1280, height: 950 } });
     pg.on("pageerror", (e) => violations.push("pageerror: " + e.message));
+    const reqs = [];
+    pg.requestsMade = () => reqs.slice();
     await pg.route("**/*", (route) => {
       const u = route.request().url();
+      reqs.push(u);
+      // the pinned content plane: same-origin /content/fallback.json is answered by the harness
+      let pathname = null; try { pathname = new URL(u).pathname; } catch (e) {}
+      if (u.startsWith(origin) && pathname === CONTENT_PATH) {
+        const body = contentBody(opts);
+        if (body == null) return route.fulfill({ status: 404, contentType: "text/plain", body: "not found" });
+        return route.fulfill({ contentType: "application/json", body });
+      }
       if (u.startsWith(origin) || u.startsWith("data:")) return route.fallback();
       const key = u.replace("https://unpkg.com/", "");
       if (u.startsWith("https://unpkg.com/") && CDN_MIRROR[key]) {

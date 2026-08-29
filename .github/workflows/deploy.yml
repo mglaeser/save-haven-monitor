@@ -10,6 +10,14 @@ name: deploy
 on:
   push:
     branches: ["main"]
+  # Daily fallback-content refresh (DR-014 control 6, Q22): re-runs the full gated pipeline
+  # (gate -> build -> deploy) so dist/content/fallback.json trails the content API by at most
+  # ~24 h + the accepted <=600 s CDN staleness (Q23). If the API is down that day, the generator
+  # recovers the currently published artifact and the deploy still succeeds (Q15). NOTE: GitHub
+  # suspends cron after 60 days without repo activity — the site stays live; only the freshness
+  # refresh pauses until the next push or manual dispatch.
+  schedule:
+    - cron: "23 6 * * *"
   workflow_dispatch: {}
 permissions:
   contents: read
@@ -56,6 +64,19 @@ jobs:
           set -euo pipefail
           node build.js --dist
           echo "published set:"; find dist -type f | sort
+      # DR-014 control 6 (Q15/Q16): deploy-time fallback content. The API host is derived AT
+      # RUNTIME from the CNAME file (fixed subdomain + CNAME parent domain, mirroring the client's
+      # KEY_RE-gated derivation) — no literal host exists in this workflow or in the script (red
+      # line 2). Runs AFTER build.js --dist and BEFORE upload, so the Pages artifact and the SLSA
+      # attestation cover the exact fallback bytes. Failure policy: API unreachable => WARNING,
+      # recover the currently published artifact, deploy proceeds (Q15); a well-formed content
+      # payload missing its disclaimer block => exit 1, deploy blocked (red line 5 —
+      # un-disclaimed content never commits, not even into the fallback).
+      - name: Generate fallback content artifact (dist/content/fallback.json)
+        run: |
+          set -euo pipefail
+          node scripts/generate-fallback.js
+          echo "published set (post-fallback):"; find dist -type f | sort
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa # v3
         with:
