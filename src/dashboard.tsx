@@ -1120,7 +1120,7 @@ function Playbook() {
           <h2 style={{ ...S.serif, fontSize: 22, margin: 0, fontWeight: 600 }}>The ex-ante playbook — and today's expert buy-list</h2>
           <Expl>
             <b>This tab in one breath.</b> Instead of asking "what went up in past crises" (the other tabs), this asks
-            "HOW could you have KNOWN in advance?" — and assembles, from the academic literature, the ten-screen
+            "HOW could you have KNOWN in advance?" — and assembles, from the academic literature, the eleven-screen
             checklist that would have found the winners and vetoed the traps (like convertibles in 2008 or portfolio
             insurance in 1987). Then it runs every candidate asset through the checklist, builds the phased buy plan,
             and finally holds it against what experts recommend RIGHT NOW (your research artifact) — showing exactly
@@ -1128,7 +1128,7 @@ function Playbook() {
           </Expl>
         </div>
         <p style={{ margin: 0, fontSize: 13, color: "#C6CCD6", lineHeight: 1.6 }}>
-          Ten ordered screens (M0–M10) with four veto rules → per-asset verdicts → a simple phased selection →
+          Eleven ordered screens (M0–M10) with four veto rules → per-asset verdicts → a simple phased selection →
           mapped against the 24-asset expert-consensus table. Historical/analytical synthesis, not investment advice.
         </p>
       </div>

@@ -95,6 +95,26 @@ module.exports = function register(t) {
     ok(!/25–75|back at/.test(distanceOf({ action_band: "hold", headline_median: 40, iqr: null })), "a missing IQR must add no clause");
   });
 
+  t("DR-010: an unknown band measures the SAME line the verdict names (hold, not de-risk)", () => {
+    // verdictOf() already falls back to hold for an unrecognised band, and 'wat'
+    // is asserted above. distanceOf() keyed off action_band === "hold" alone, so
+    // the same reading produced "No action indicated." beside a distance to the
+    // DE-RISK line at 60 — one sentence naming two different lines.
+    const verdictOf = load("verdictOf"), distanceOf = load("distanceOf");
+    for (const band of ["wat", "", "HOLD", "unknown"]) {
+      const d = { action_band: band, headline_median: 40, trend_states: faber("IN", "IN") };
+      ok(verdictOf(d).lead === "No action indicated.", `band=${JSON.stringify(band)} should read as hold`);
+      const dist = distanceOf(d);
+      ok(/trim line at 45/.test(dist),
+        `band=${JSON.stringify(band)}: the verdict says hold, so the distance must be to the trim line at 45 — got: ${dist}`);
+      ok(!/de-risk/.test(dist),
+        `band=${JSON.stringify(band)}: distance names the de-risk line while the verdict says hold — got: ${dist}`);
+    }
+    // the recognised bands are unchanged
+    ok(/trim line at 45/.test(distanceOf({ action_band: "hold", headline_median: 40 })), "hold still measures to 45");
+    ok(/de-risk line at 60/.test(distanceOf({ action_band: "trim", headline_median: 55 })), "trim still measures to 60");
+  });
+
   t("DR-010: band persistence counts only the unbroken tail of the history", () => {
     const runOf = load("runOf");
     const h = (bands) => ({ json: { data: bands.map((b) => ({ action_band: b })) } });
