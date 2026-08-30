@@ -1634,10 +1634,15 @@
   // would mislead. Withheld entirely for a suppressed band: distance to a withheld line is noise.
   function distanceOf(d) {
     if (d.action_band === "suppressed (block degraded)" || !isNum(d.headline_median)) return "";
-    const nx = d.action_band === "hold" ? 45 : 60;
+    // An UNKNOWN band is hold, exactly as bandOf() and verdictOf() treat it. Keyed off
+    // "hold" alone, an unrecognised band produced a verdict of "No action indicated."
+    // beside a distance measured to the DE-RISK line at 60 — the two halves of the same
+    // sentence disagreeing about which line the reader is near.
+    const holdLike = d.action_band !== "de-risk" && d.action_band !== "trim";
+    const nx = holdLike ? 45 : 60;
     const v = Math.round(Math.max(0, Math.min(100, d.headline_median)));
     const gap = Math.abs(nx - v), unit = gap === 1 ? " point" : " points";
-    const line = d.action_band === "hold" ? "trim" : "de-risk";
+    const line = holdLike ? "trim" : "de-risk";
     const base = gap === 0 ? "It sits exactly on the " + line + " line at " + nx + "."
       : d.action_band === "de-risk" ? gap + unit + " above the de-risk line at 60."
       : gap + unit + " below the " + line + " line at " + nx + ".";
