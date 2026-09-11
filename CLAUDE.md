@@ -64,7 +64,7 @@ COMPLETE while any blocker is open. Do not read "both volumes audited" as "clear
 - `index.html` — the only page. Loads self-hosted SRI-pinned vendor UMDs from `./vendor/*`,
   then the compiled `./bubblegauge.js`, then `./dashboard.js` (order matters — bubblegauge
   defines the `window.BubbleGauge` global that dashboard reads). The compiled `.js` are the
-  esbuild output of the `.jsx` sources (`build.js`); no in-browser Babel, no unpkg.
+  esbuild output of the `src/*.tsx` sources (`build.js`); no in-browser Babel, no unpkg.
 - `src/dashboard.tsx` — the source of truth for the crisis atlas view (the pure math is in src/lib/math.ts, typed + tsc-strict + mutation-tested; the frozen crisis
   DATA now lives in `src/data/atlas.json`, loaded via `src/data.ts`; the golden hash is unchanged).
   calculations. **Do not touch any crisis data constant, string, number, or
@@ -72,11 +72,20 @@ COMPLETE while any blocker is open. Do not read "both volumes audited" as "clear
   logic bug, report it — do not silently fix behavior. (The only sanctioned edits
   are the small, clearly-marked bubblegauge integration hooks near the top and in
   the app shell; the frozen-content rule above still governs everything else.)
-- `src/bubblegauge.tsx` — OPTIONAL, self-contained AI-regime-gauge integration. It
-  no-ops entirely (defines/mounts/fetches nothing) unless `?status-api=<key>` is
-  present, so with no query param the site renders identically to the original atlas
-  (no strip, no extra tab, no splash, no network calls; the inert compiled `bubblegauge.js`
-  is still loaded). See `INTEGRATION_NOTES.md` for the contract, gating, and offline `demo` mode.
+- `src/bubblegauge.tsx` — self-contained, ALWAYS-ON AI-regime-gauge integration (DR-015).
+  The bubblegauge API endpoint is **embedded**: the fixed subdomain label `api` of the registrable
+  apex the page is served from (or its `www` alias), derived from `location.hostname` at load (a
+  fragment, never a host — the same origin `scripts/generate-fallback.js` derives from `CNAME` at
+  deploy time; loopback hosts use `http://localhost:8000`; any deeper host, IP literal or shared
+  public suffix such as `*.github.io` derives nothing and shows the static state without a request). There is **no query parameter, no `demo`
+  mode, no persisted activation key** — the former `?status-api=<key>` gate is retired. Every
+  visitor's browser tries the API; **the static/default content is used only when the API is
+  not reachable** (network error, timeout, non-2xx — HTTP 503 is the distinct "warming up" state —
+  or a payload failing boundary validation): the strip reads "gauge unavailable", the AI-2026
+  lines revert to the hardcoded Jul-2026 anchors and the Aggregate/Analytics badges read
+  `static · Jul 2026 snapshot`, the splash/hero/live card do not mount,
+  and the crisis atlas is unaffected. See `INTEGRATION_NOTES.md` for the contract and the
+  fallback shapes; the offline API fixtures live in `acceptance/golden/api-*.fixture.json`.
 - `.nojekyll` — empty, disables Jekyll processing.
 - All URLs relative (`./dashboard.js`) — the site must work at any base path.
 
@@ -98,7 +107,10 @@ fail the build if Babel or an unpkg runtime tag returns.
   never in the browser. There is no "add a build step" prohibition any more, and
   no in-browser-Babel console notice to accept — that path is deprecated (DR-007).
 - Local preview: `node build.js` then `python3 -m http.server 8000` (file:// is
-  blocked by CORS). Preview the gated integration with `?status-api=demo`.
+  blocked by CORS). On localhost the embedded API base is `http://localhost:8000`, so the
+  preview shows the **static/unavailable state** unless a bubblegauge instance answers there;
+  to see the connected state offline, run `node verify/shot.js` (answers the API base from the
+  frozen acceptance fixtures) or the acceptance suite itself.
 - GitHub Pages: **Settings → Pages → Source "GitHub Actions"** — deploy is
   gate-blocked and served from `.github/workflows/deploy.yml`, not from a branch
   (see `rewrite/03-pages-setup-guide.md`).
@@ -113,3 +125,10 @@ unpkg/Babel/`text/babel` in `index.html`), `62-security-surface` (no third-party
 runtime egress), `66-compiled-fresh` (committed `.js` is a fresh build of `src/`).
 Its history is preserved in `rewrite/` and `audit/decisions/DR-006*` — those are
 records, not live guidance.
+
+The **`?status-api=<key>` activation gate** (query-parameter key → API subdomain, `demo`/`fixture`
+offline keys, `sessionStorage` persistence, `?status-api-off`) is **retired** (owner-authorized;
+DR-015). The endpoint is embedded and the integration is always on. Do not reintroduce a query
+parameter, hash or storage input into the API-base derivation: `verify/tests/30-static-security`
+and `74-endpoint-derivation` fail the build if one returns, and the frozen acceptance suite asserts
+the retired parameters are inert.

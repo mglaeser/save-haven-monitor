@@ -35,3 +35,12 @@ Each carries a compensating control, an executable tripwire, and a named owning 
 - **C-34** (MUST-FIX, NOT-APPLICABLE): comp-control = public repo (no confidential authoring input) + no runtime provider data path; tripwire = the day the product calls any model provider API with ANY data — a no-train contract term, account setting, and scheduled API assertion then become required; owner = ai-security / repo owner mglaeser.
 
 **R-LEDGER (C-37)**: no signed per-commit model/prompt provenance and no scheduled spot-reconstruction; git history + `provenance-manifest.json` + `61-provenance` (every build) are the attested substitute. Owner: engineering-leadership.
+
+**Amendment 2026-09-10 (DR-015)** — the C-09 compensating control's "gated behind `?status-api`" leg
+is retired: the gauge is always on with an embedded endpoint, so its labelling ("clearly framed as
+research": hard-baked disclaimers, the gauge micro-label, epistemic chips) is now exercised on every
+page view rather than only for keyed visitors. The C-07 compensating-control wording "only appears with
+`?status-api=<key>`" in `03-findings.json`, and the gate-based evidence in B-26, C-01, C-18 and C-19 there, are likewise superseded (append-only; the records stand as
+the Phase-2' baseline). New executable signal added alongside: `verify/tests/74-endpoint-derivation`
+(the three shipped derivation functions agree with the deploy-time generator) — the labelling gap
+itself (C-09 tripwire) is unchanged and still honest.

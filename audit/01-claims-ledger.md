@@ -64,3 +64,20 @@ Reconciled out of cycle every claim touching security, privacy or assurance agai
 - "attested provenance" — the constitution's Article XI/C-37 language is now backed by `governance/provenance-manifest.json` + `61-provenance` (was git-history-only). Residual R-LEDGER stated honestly (no signed per-commit model/prompt field).
 - "SBOM/AI-BOM" — `governance/sbom.json` added; AI-BOM asserted empty by test. No overclaim: verified at load (SRI) + build (gate), not at deploy (Pages has no admission hook).
 - No new misdescriptive claim convicted this volume; the `70-claims` guard remains green.
+
+---
+
+## Amendment 2026-09-10 — DR-015 (embedded endpoint; the `?status-api` gate is retired)
+
+- **D7** ("bubblegauge … no-ops entirely unless `?status-api=<key>`") — **SUPERSEDED**. The
+  integration is always on; the API endpoint is embedded (fixed `api` label + the page's parent
+  domain, `KEY_RE`-validated constant, no user input). The re-homed claim — "the static/default
+  content is used only when the API is not reachable" — is pinned by the re-frozen acceptance suite
+  (R3: connected state in `02-integration`, unreachable state in `03-negative`) and by
+  `verify/tests/30` + `74` (no query, hash or storage input reaches URL construction).
+- **D11** ("zero footprint … 5 tabs … byte-identical render" without the param) — historical:
+  true of the gated site at the frozen baseline; no longer a claim the site makes.
+- `CLAUDE.md`, `README.md` and `INTEGRATION_NOTES.md` re-extracted; `70-claims` remains green.
+- Process finding, logged as the ratchet note requires (a relaxed rule is itself a finding): `acceptance/SPEC.md`
+  rule 1 ("re-freeze BEFORE reshaping") was relaxed for R3 — re-freeze and reshaping landed in one gated PR,
+  because the retired contract cannot be formulated both-states. Recorded in DR-015 §Process note.

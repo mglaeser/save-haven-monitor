@@ -1,11 +1,15 @@
 # bubblegauge integration — discovery findings & adaptation decisions
 
 The `bubblegauge × Crisis Winners` spec was written for a conventional bundled SPA.
-This repo is the opposite — a zero-build, no-package.json, in-browser-Babel site — so
-the integration keeps the spec's *intent* and adapts its *mechanics*. This file is the
-Discovery Checklist output (spec §1.1) plus every deliberate deviation.
+This repo was the opposite when the integration was written — a zero-build, in-browser-Babel site
+(since replaced by the compiled-ahead `src/*.tsx` + esbuild architecture, DR-006/DR-007) — so the
+integration keeps the spec's *intent* and adapts its *mechanics*. This file is the Discovery
+Checklist output (spec §1.1) plus every deliberate deviation, kept current where the mechanics moved.
 
 ## Discovery findings
+
+> Historical (as found, pre-DR-006): the framework row describes the original Babel/unpkg site;
+> today the sources are `src/*.tsx` compiled ahead by esbuild and the vendors are self-hosted.
 
 | Question | Finding |
 |---|---|
@@ -19,15 +23,15 @@ Discovery Checklist output (spec §1.1) plus every deliberate deviation.
 
 ## Deviations from the spec (all forced by zero-build or the frozen crisis content)
 
-1. **No TypeScript.** The spec's `.ts` interfaces are documentation only; `bubblegauge.jsx`
-   is plain JSX with a boundary validator (`validScore`, `isNum`, `pair`) instead of zod/io-ts.
-2. **No `lazy()` / dynamic `import()` code-splitting.** There is no bundler to split. Instead
-   `bubblegauge.jsx` is a static second Babel script that **no-ops when the gate is absent**
-   (checks `?status-api`, sets `window.BubbleGauge = { enabled:false }`, returns before defining
-   anything). Verified: with no param there is **zero DOM footprint, zero network to `*.<prod-domain>`,
-   5 tabs, and byte-identical render**. The one relaxation vs the spec's "don't even load the code"
-   ideal: the ~30 KB file is still downloaded/parsed once (trivial next to Babel's ~3 MB), then
-   immediately skipped.
+1. **No typed API client.** The spec's `.ts` interfaces are documentation only; `src/bubblegauge.tsx`
+   (loosely typed TSX, compiled by esbuild) keeps a boundary validator (`validScore`, `isNum`, `pair`)
+   instead of zod/io-ts.
+2. **No `lazy()` / dynamic `import()` code-splitting.** The integration is a second compiled
+   bundle (`bubblegauge.js`, ~90 KB minified) loaded before `dashboard.js`. **Since DR-015 it is
+   always on**: it derives the API base at load and publishes `window.BubbleGauge = { enabled:true,
+   apiBase, … }`; `dashboard.js` keeps its defensive `{ enabled:false }` default only for the case
+   where the bundle is absent altogether. (The original no-op behind a `?status-api`
+   key is retired — see "Endpoint resolution" below.)
 3. **No SWR/react-query.** Replaced by `useEndpoint` (a `useState`+`useEffect` hook) with a 25-min
    cache, 6 s timeout, focus revalidation, and **HTTP 503 → "warming up"** handling (spec §4.3/§7).
 4. **Strip placement.** Mounted as a native element just **above the tab bar** (not literally above
@@ -38,27 +42,57 @@ Discovery Checklist output (spec §1.1) plus every deliberate deviation.
    edits are minimal and marked: one `const BG = window.BubbleGauge …`, a `tabs` list that appends
    `BG.tab` when enabled, the `<BG.Strip>` mount, and a `{tab === "bubblegauge" && …}` render. **No
    crisis data, string, number, or calculation was touched.**
-6. **Offline `demo` mode.** `?status-api=demo` (or `fixture`) renders the embedded Appendix-B golden
-   fixture with a "demo" badge — for previewing on the live site without a running API, and so the
-   integration is testable in a sandbox that can't reach `the bubblegauge API host`.
+6. **Offline fixtures live in the frozen acceptance suite, not in the bundle.** The Appendix-B
+   golden fixture (score, history, status) and the feed fixture used to ship inside
+   `bubblegauge.js` as a `?status-api=demo` mode. DR-015 removed that mode; the same four payloads
+   now live in `acceptance/golden/api-*.fixture.json` and the acceptance harness serves them at the
+   derived API base, so the suite exercises the real fetch + boundary-validation path (demo mode
+   bypassed it) without ever reaching `the bubblegauge API host`. `verify/shot.js` uses the same
+   fixtures for local screenshots.
 
-## Gating (spec §4.1) — as implemented
+## Endpoint resolution (spec §4.1, as amended by DR-015) — as implemented
 
-- Activate with `?status-api=<key>` where `<key>` matches `^[a-z0-9-]{1,32}$` (strict whitelist;
-  a dot fails it, so `?status-api=evil.com` is rejected — verified). The key is prefixed onto the
-  parent registrable domain: on `<prod-host>` it resolves the API base to `https://<key>.<prod-domain>`.
-- `demo`/`fixture` are special keys → embedded fixture, no network.
+- **The endpoint is embedded.** `src/bubblegauge.tsx` (`resolveApiBase`) and `widget.html`
+  (`resolveBase`) build the API base as `https://` + `SUB` + `.` + the registrable **apex** the page
+  is served from, where `SUB = "api"` is a fixed label validated by `KEY_RE = /^[a-z0-9-]{1,32}$/`
+  and the apex is `location.hostname` at load (lower-cased, a trailing dot and a leading `www.`
+  stripped): on `<prod-host>` (an apex) that is `https://api.<prod-domain>` — the same origin
+  `scripts/generate-fallback.js` derives from `CNAME` at deploy time. `verify/tests/74-endpoint-derivation`
+  executes the client, the widget, the acceptance harness and the generator against one host table
+  (behind a Proxy that throws on any read but `hostname`, and against hostile query/hash input) and
+  proves they agree wherever the client derives a base.
+- **No query parameter, no persisted key, no demo mode.** Nothing a visitor controls reaches URL
+  construction (`verify/tests/30-static-security`); `?status-api=…` and `?status-api-off` are
+  inert (frozen acceptance `02-integration`). `sessionStorage` holds only the splash-seen flag.
 - `localhost`/`127.0.0.1`/`*.local` → `http://localhost:8000` (never subdomain-derived).
-- State persists in `sessionStorage` across param-less SPA navigation; `?status-api-off` clears it.
-- **Public-suffix assumption:** the parent-domain derivation is a simple leftmost-label strip,
-  correct for `<prod-domain>`. A multi-label public suffix (e.g. `foo.github.io`, `bar.co.uk`) would
-  need a public-suffix-list check before this is used on such a host.
+- **Only an apex names the API.** Any other host — a deeper host such as a `*.github.io` preview, a
+  LAN or other IP literal, an IPv6 literal, a bare name, `file://`, or a host under a multi-label
+  public suffix such as `example.co.uk` — derives **no base**: nothing is requested and every surface
+  takes its unavailable/static branch, the same shape as an unreachable API. Red line 3 (no
+  third-party egress) therefore holds on every origin, not only in production. Moving the site to a
+  subdomain host would need a decision record and a change to this rule (the deploy-time generator
+  keeps a leftmost-strip over the owner-controlled `CNAME`; client and generator agree wherever the
+  client derives a base).
+- **Fallback rule.** Every visitor's browser tries the API. The static/default content is used
+  **only when the API is not reachable** — a network error, the 6 s timeout, a non-2xx status, or a
+  payload that fails the boundary validators: the strip shows "gauge unavailable" (non-interactive),
+  the detail tab says the gauge is unavailable, the hero/splash/live card/Fear & Greed line do not
+  mount, the AI-2026 lines revert to the hardcoded Jul-2026 anchors and the Aggregate/Analytics
+  badges read `static · Jul 2026 snapshot`. HTTP 503 is the distinct "warming up" state. The widget
+  keeps its badged **sample** state — also for a 2xx body that is not a score payload (no finite
+  median, no band, no `computed_at`); it never invents a freshness stamp. The crisis atlas is
+  unaffected in every case. The frozen acceptance suite exercises every one of these modes
+  (refused, HTTP 500, shape-invalid 200, hang past the timeout, 503).
+- **Timing under a hang.** Failed responses are never cached, so a consumer that mounts after the
+  first load (a tab's badge, the detail panel) re-tries and settles only after the client's 6 s
+  timeout when the API hangs; the strip and the first page settle within the first load. HTTP 503
+  from anything in front of the API also reads as "warming up" (accepted).
 
 ## Dashboard feed — live re-anchoring of the AI-2026 panel (bubblegauge ≥ 3.4.0)
 
 Per `DASHBOARD_FEED_SPEC.md` v1.0 (bubblegauge repo), `GET /api/v1/dashboard/feed` serves
 12 monthly series (61 points, t−60..t0) + 34 scalar metrics, refreshed twice daily. When the
-`?status-api` gate is active and the feed is reachable, the integration:
+feed is reachable, the integration:
 
 - **Re-anchors the AI-2026 panel** in the Crisis Explorer: each of the 8 charted lines is
   replaced by its feed series (`qqq`→mkt, `gold`→au, `tbill3m_tr`→cash, `ust10y_tr`→ust,
@@ -75,24 +109,28 @@ Per `DASHBOARD_FEED_SPEC.md` v1.0 (bubblegauge repo), `GET /api/v1/dashboard/fee
   reverts that line to the hardcoded Jul-2026 anchors with the original label; the card names
   which lines are static. The panel's *written* analysis is always the Jul-2026 editorial
   snapshot — the feed refreshes charts and numbers, not prose.
-- Integration seams in `dashboard.jsx` are marked "bubblegauge integration seam" (Explorer,
-  Aggregate, Analytics). All feed logic lives in `bubblegauge.jsx` (`useAiLive`, `AiLivePanel`).
-- Demo mode (`?status-api=demo`) uses an embedded feed fixture whose series are scaled to the
-  real 2026-07-15 capture endpoints and whose metrics are the real capture-#2 values.
+- Integration seams in `src/dashboard.tsx` are marked "bubblegauge integration seam" (Explorer,
+  Aggregate, Analytics). All feed logic lives in `src/bubblegauge.tsx` (`useAiLive`, `AiLivePanel`).
+- The acceptance feed fixture (`acceptance/golden/api-feed.fixture.json`, served by the harness at
+  the derived base) carries series scaled to the real 2026-07-15 capture endpoints and the real
+  capture-#2 metric values.
 
 ## Preconditions & caveats for going live
 
 - **CORS (spec §8) is a change to the *bubblegauge* FastAPI service (a different repo), not this
   one.** Per `DASHBOARD_FEED_SPEC.md` v1.0 the service now allows `https://<prod-host>`
   (GET-only, no credentials), so the browser integration is unblocked; if a future deployment moves
-  the API or tightens origins, browser calls fail the same-origin policy until it is re-added.
-  `demo` mode works regardless (no network).
+  the API or tightens origins, browser calls fail the same-origin policy until it is re-added — and
+  since DR-015 that failure is what every visitor sees as the static/unavailable state, so it is
+  visible on the first page view rather than hidden behind a key.
 - **Re-verify the payload contract.** This file was built to the documented `service_version 3.1.0`
-  contract + the golden fixture. Confirm live shapes against `https://the bubblegauge API host/openapi.json`
+  contract + the golden fixture. Confirm live shapes against `https://<api-host>/openapi.json`
   and `/docs` before trusting production data — the boundary validator will reject a mismatched
   `/score` payload and fall back to the "unavailable" chip rather than render garbage.
-- **Local preview:** `python3 -m http.server 8000` from the repo root, then
-  `http://localhost:8000/?status-api=demo`.
+- **Local preview:** `node build.js`, then `python3 -m http.server 8000` from the repo root and
+  open `http://localhost:8000/`. On loopback the embedded base is `http://localhost:8000`, so the
+  gauge shows its static/unavailable state unless a bubblegauge instance answers there;
+  `node verify/shot.js` renders the connected state from the acceptance fixtures.
 
 ## Feed delta v1.1 (service ≥ 3.7.0) — CNN Fear & Greed
 
@@ -118,13 +156,13 @@ only). The integration renders it inside the LIVE BACKFILL card (AI-2026 panel, 
 
 In addition to the detailed block inside the LIVE BACKFILL card, a compact **CNN Fear & Greed
 status** line renders in the top strip area (directly under the AI-regime strip, above the tab bar)
-whenever the gate is on and the feed carries a valid `fear_greed` metric. It shows the current
+whenever the feed is reachable and carries a valid `fear_greed` metric. It shows the current
 reading + `detail.rating` on the same 0–100 zone gauge, plus **the last three readings**
 (`previous_close` / `previous_1_week` / `previous_1_month` — the three most recent CNN reference
 values, null-safe: a null comparison is skipped, never shown as 0). It is `BG.FearGreedStrip`
 (own `aria-label="CNN Fear and Greed status"`, distinct from the regime strip), reads the feed
 through the shared 25-min `useEndpoint` cache (no extra request), and no-ops entirely when the
-metric is absent or invalid — so with no `?status-api` param there is zero footprint (the frozen
-acceptance negative contract still holds), and a feed failure drops only this line. Same axis
+metric is absent or invalid — so when the feed is unreachable there is zero footprint (the frozen
+acceptance unreachable-state contract pins this), and a feed failure drops only this line. Same axis
 discipline as the block: own 0–100 scale, never rebased, never in `AI_MAP`; value is the
 server-side snapshot (the browser still never calls CNN).

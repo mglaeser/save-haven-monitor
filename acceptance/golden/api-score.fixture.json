@@ -1,0 +1,239 @@
+{
+ "data": {
+  "headline_median": 40,
+  "iqr": [
+   34,
+   47
+  ],
+  "band_5_95": [
+   28,
+   55
+  ],
+  "point_score": 40.35,
+  "action_band": "hold",
+  "override_fired": false,
+  "red_flag_count": 0,
+  "red_flag_detail": {
+   "gsadf_explosive_noncontested": false,
+   "semi_runup_ge_150pp": false,
+   "hy_oas_widen_gt_100bps": false,
+   "breadth_lt_50_near_ath": false
+  },
+  "block_S": {
+   "value": 0.711,
+   "indicators": {
+    "s1": {
+     "value": 41.6,
+     "sub_score": 0.92,
+     "weight": 0.33,
+     "grounding": "literature-grounded",
+     "explanation": "How expensive are stocks versus their own history, once you account for interest rates?",
+     "references": [],
+     "data_source": "shiller",
+     "fallback_used": false,
+     "dropped": false,
+     "as_of": "2026-07-10",
+     "age_days": 1,
+     "stale": false,
+     "timestamp": "2026-07-11T06:00:03+00:00",
+     "id": "s1",
+     "src": "shiller"
+    },
+    "s2": {
+     "value": 41,
+     "sub_score": 0.78,
+     "weight": 0.27,
+     "grounding": "literature-adjacent",
+     "explanation": "How much does the whole index depend on a handful of AI names?",
+     "references": [],
+     "data_source": "slickcharts",
+     "fallback_used": false,
+     "dropped": false,
+     "as_of": "2026-07-10",
+     "age_days": 1,
+     "stale": false,
+     "timestamp": "2026-07-11T06:00:03+00:00",
+     "id": "s2",
+     "src": "slickcharts"
+    },
+    "s3": {
+     "value": 118,
+     "sub_score": 0.61,
+     "weight": 0.2,
+     "grounding": "literature-grounded",
+     "explanation": "History says that when one industry doubles relative to the market in two years, it crashes about half the time.",
+     "references": [],
+     "data_source": "stooq",
+     "fallback_used": false,
+     "dropped": false,
+     "as_of": "2026-07-10",
+     "age_days": 1,
+     "stale": false,
+     "timestamp": "2026-07-11T06:00:03+00:00",
+     "id": "s3",
+     "src": "stooq"
+    },
+    "s4": {
+     "value": 0.9,
+     "sub_score": 0.25,
+     "weight": 0.07,
+     "grounding": "contested",
+     "explanation": "A statistical test for prices growing faster than exponentially — deliberately down-weighted because it can be fooled by a genuine technological revolution.",
+     "references": [],
+     "data_source": "exuber",
+     "fallback_used": false,
+     "dropped": false,
+     "as_of": "2026-07-10",
+     "age_days": 1,
+     "stale": false,
+     "timestamp": "2026-07-11T06:00:03+00:00",
+     "id": "s4",
+     "src": "exuber",
+     "note": "contested/stale floor"
+    },
+    "s5": {
+     "value": 2.9,
+     "sub_score": 0.74,
+     "weight": 0.13,
+     "grounding": "literature-grounded",
+     "explanation": "When lenders are most relaxed, trouble tends to arrive about two years later. Today's spreads are near 25-year tights.",
+     "references": [],
+     "data_source": "fred_BAMLH0A0HYM2",
+     "fallback_used": false,
+     "dropped": false,
+     "as_of": "2026-07-10",
+     "age_days": 1,
+     "stale": false,
+     "timestamp": "2026-07-11T06:00:03+00:00",
+     "id": "s5",
+     "src": "fred_BAMLH0A0HYM2"
+    }
+   }
+  },
+  "block_D": {
+   "value": 0.229,
+   "value_raw": 0.229,
+   "indicators": {
+    "d1": {
+     "value": 56,
+     "sub_score": 0.543,
+     "weight": 0.35,
+     "grounding": "judgmental",
+     "explanation": "How many stocks are still participating, versus a shrinking few holding the index up?",
+     "references": [],
+     "data_source": "stooq",
+     "fallback_used": false,
+     "dropped": false,
+     "as_of": "2026-07-10",
+     "age_days": 1,
+     "stale": false,
+     "timestamp": "2026-07-11T06:00:03+00:00",
+     "id": "d1",
+     "src": "stooq",
+     "note": "path=B_constituent_compute"
+    },
+    "d2": {
+     "value": -3.1,
+     "sub_score": 0.2,
+     "weight": 0.13,
+     "grounding": "judgmental",
+     "explanation": "Leverage is at a record, but the signal only counts once it starts unwinding.",
+     "references": [],
+     "data_source": "finra",
+     "fallback_used": false,
+     "dropped": false,
+     "as_of": "2026-07-10",
+     "age_days": 1,
+     "stale": false,
+     "timestamp": "2026-07-11T06:00:03+00:00",
+     "id": "d2",
+     "src": "finra"
+    },
+    "d3": {
+     "value": 0.22,
+     "sub_score": 0.3,
+     "weight": 0.32,
+     "grounding": "literature-grounded",
+     "explanation": "Spending a fortune on data centers is only alarming if the revenue stops showing up.",
+     "references": [],
+     "data_source": "sec_edgar",
+     "fallback_used": false,
+     "dropped": false,
+     "as_of": "2026-07-10",
+     "age_days": 1,
+     "stale": false,
+     "timestamp": "2026-07-11T06:00:03+00:00",
+     "id": "d3",
+     "src": "sec_edgar"
+    },
+    "d4": {
+     "value": 0.41,
+     "sub_score": 0.35,
+     "weight": 0.2,
+     "grounding": "literature-grounded",
+     "explanation": "A physics-derived model of bubbles as 'critical points' — good at spotting them, prone to crying wolf early.",
+     "references": [],
+     "data_source": "lppls",
+     "fallback_used": false,
+     "dropped": false,
+     "as_of": "2026-07-10",
+     "age_days": 1,
+     "stale": false,
+     "timestamp": "2026-07-11T06:00:03+00:00",
+     "id": "d4",
+     "src": "lppls"
+    }
+   }
+  },
+  "V": {
+   "state": "contango",
+   "multiplier": 1,
+   "label": "lagging confirmation"
+  },
+  "trend_states": {
+   "SPY": {
+    "faber_10mo": "IN",
+    "sma200": "IN"
+   },
+   "QQQ": {
+    "faber_10mo": "IN",
+    "sma200": "IN"
+   }
+  },
+  "fast_alarm": {
+   "term_structure": "contango",
+   "vrp": 12.4,
+   "vrp_flag": false,
+   "skew": 128,
+   "skew_label": "coincident context only"
+  },
+  "judgment_call": {
+   "text": "Rich valuation (CAPE ~42) is the dominant driver; broad breadth near 56% above the 200-day is the biggest counter-signal.",
+   "stale": false,
+   "error_class": null
+  }
+ },
+ "meta": {
+  "computed_at": "2026-07-11T06:00:03+00:00",
+  "service_version": "3.1.0",
+  "coverage": {
+   "S": {
+    "coverage": 1,
+    "degraded": false
+   },
+   "D": {
+    "coverage": 1,
+    "degraded": false
+   },
+   "degraded": false
+  },
+  "disclaimer": "Research, not advice.",
+  "epistemic_caveats": [
+   "NOT-A-PROBABILITY: 0-100 regime heuristic = structured expert judgment; uncalibrated.",
+   "n≈4 CALIBRATION IMPOSSIBILITY: reference class {1929,2000,2007,2021}.",
+   "REFERENCE-CLASS CAVEAT: may be rational GPT repricing (Chen-Chen-Huang 2026).",
+   "NOMINAL≠EFFECTIVE WEIGHTS: see annual PSS sensitivity script.",
+   "Service never returns 500 on upstream failure: fallback or drop+renormalize."
+  ]
+ }
+}

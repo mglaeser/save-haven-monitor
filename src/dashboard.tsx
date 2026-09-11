@@ -3,8 +3,9 @@ const { useState, useMemo } = React;
 const { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
         ReferenceLine, ResponsiveContainer, Area, ComposedChart } = Recharts;
 
-// Optional bubblegauge integration (bubblegauge.jsx loads first and sets this).
-// When the ?status-api gate is absent it is { enabled: false } and nothing below changes.
+// bubblegauge integration (bubblegauge.js loads first and sets this; always on since DR-015 —
+// the API endpoint is embedded, and an unreachable API yields the labeled static states below).
+// Only if the module is absent altogether is it { enabled: false }, and nothing below changes.
 const BG = (typeof window !== "undefined" && window.BubbleGauge) || { enabled: false };
 
 /* ============================================================
@@ -118,7 +119,7 @@ function Explorer() {
     CRISES.forEach((c) => c.series.forEach((s) => { if (s.defaultOff) h[c.id + s.key] = true; }));
     return h;
   });
-  // bubblegauge integration seam: live re-anchored AI-2026 series (null when gate off / feed down).
+  // bubblegauge integration seam: live re-anchored AI-2026 series (null when the feed is down / unreachable).
   const aiLive = (BG.enabled && BG.useAiLive) ? BG.useAiLive() : null;
   const crisis = CRISES.find((c) => c.id === cid);
   const cat = CAT[crisis.cat];
@@ -1439,9 +1440,9 @@ function CrisisWinnersDashboard() {
           </Expl>
         </div>
 
-        {/* bubblegauge integration seam: mobile portrait opening splash (gated; small-portrait + API-connected + once/session) */}
+        {/* bubblegauge integration seam: mobile portrait opening splash (small-portrait + API-connected + once/session) */}
         {BG.enabled && BG.Splash && <BG.Splash />}
-        {/* bubblegauge integration seam: compact CNN Fear & Greed status + last 3 readings (feed-sourced, gated) */}
+        {/* bubblegauge integration seam: compact CNN Fear & Greed status + last 3 readings (feed-sourced; absent when the feed is unreachable) */}
         {BG.enabled && BG.FearGreedStrip && <BG.FearGreedStrip />}
 
         <div id="bg-tabs" className="tabbar-scroll" style={{ display: "flex", gap: 6, margin: "18px 0 16px", borderBottom: "1px solid rgba(255,255,255,0.1)", overflowX: "auto", WebkitOverflowScrolling: "touch" }}>

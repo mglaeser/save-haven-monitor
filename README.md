@@ -2,7 +2,7 @@
 
 [![AI Audit Mandate: Level 2, Governed](https://raw.githubusercontent.com/mglaeser/ai-audit-mandate/main/assets/badges/level-2-governed.svg)](https://github.com/mglaeser/ai-audit-mandate)
 
-An interactive five-tab atlas of assets that rose when markets collapsed — ten historical crises on a
+An interactive atlas — five crisis tabs plus an always-on AI Regime tab — of assets that rose when markets collapsed — ten historical crises on a
 common t−60 → t+60 month scale, plus the potential 2026 AI-bubble configuration, an algorithmic
 battery, and an ex-ante identification playbook.
 
@@ -21,8 +21,10 @@ unpkg, no third-party runtime fetch, no server, and no service worker.**
 
 - Sources of truth: `src/dashboard.tsx` (view), `src/lib/math.ts` (typed, tsc-strict, mutation-tested
   pure math), `src/data/atlas.json` (the frozen, golden-hashed crisis data, loaded via `src/data.ts`),
-  `src/bubblegauge.tsx` (the optional gated AI-regime integration).
-- All URLs are relative, so the site works at `https://<user>.github.io/<repo>/` or any custom domain.
+  `src/bubblegauge.tsx` (the always-on AI-regime integration with its embedded API endpoint).
+- All URLs are relative, so the atlas works at any base path. The AI-regime gauge derives its API only from a
+  registrable apex custom domain it is served from (or its `www` alias); on a `*.github.io` preview or a LAN
+  host it sends no API request and shows its static state (see `INTEGRATION_NOTES.md`, Endpoint resolution).
 
 ## Preview locally
 
@@ -31,8 +33,11 @@ node build.js            # compile src/ → dashboard.js + bubblegauge.js
 python3 -m http.server 8000
 ```
 
-then open <http://localhost:8000> (`file://` is blocked by CORS). Preview the optional gated
-integration offline with <http://localhost:8000/?status-api=demo>.
+then open <http://localhost:8000> (`file://` is blocked by CORS). On localhost the embedded API
+base is `http://localhost:8000`, so with nothing answering there the preview shows the
+**static/unavailable state** of the gauge (the atlas itself is complete). To see the connected
+state offline, `node verify/shot.js` renders the page with the API base answered from the frozen
+acceptance fixtures (`acceptance/golden/api-*.fixture.json`).
 
 ## Deploy (GitHub Pages, from GitHub Actions)
 
@@ -57,15 +62,21 @@ file **and** recompute its `sha384` (`openssl dgst -sha384 -binary <file> | open
 prefixed `sha384-`). For a React/Recharts major bump, first confirm the new UMD bundle still exposes
 the same globals/named exports (React 19 dropped UMD; Recharts 3.x changes exports).
 
-## Optional AI-regime gauge
+## AI-regime gauge (always on, embedded endpoint)
 
-A self-contained integration (`src/bubblegauge.tsx` → `bubblegauge.js`) can surface a forward-looking
-“AI bubble regime” gauge — a top strip, a compact CNN Fear & Greed status line, a mobile portrait
-opening splash, and a detail tab — fed by an external `bubblegauge` REST API. It is **dormant by
-default**: with no query parameter the site renders identically to the original atlas (no strip, no
-extra tab, no splash, **no network calls** — a genuinely zero-footprint no-op, verified by the frozen
-acceptance suite). Activate it with `?status-api=<subdomain-key>`, or preview it offline against the
-embedded fixture with `?status-api=demo`. See [`INTEGRATION_NOTES.md`](./INTEGRATION_NOTES.md).
+A self-contained integration (`src/bubblegauge.tsx` → `bubblegauge.js`) surfaces a forward-looking
+“AI bubble regime” gauge — a top strip, a desktop overview, a compact CNN Fear & Greed status line, a
+mobile portrait opening splash, and a detail tab — fed by the `bubblegauge` REST API. Since DR-015
+the **API endpoint is embedded**: the page derives it as the fixed `api` subdomain of its own parent
+domain (no query parameter, no activation key, no demo mode), and every visitor's browser tries it.
+**Only when the API is not reachable does the site fall back to its static/default content**: the
+strip reads “gauge unavailable” (HTTP 503 reads “warming up”), the 2026 lines revert to the hardcoded Jul-2026
+anchors and the Aggregate/Analytics badges read `static · Jul 2026 snapshot`, no live card or splash mounts, and
+the atlas is unaffected. Both
+states are pinned by the frozen acceptance suite (the harness answers the derived API base from
+frozen fixtures or refuses it). The same-origin iOS widget (`widget.html`) follows the same rule and
+keeps its badged sample state when the API is down. See
+[`INTEGRATION_NOTES.md`](./INTEGRATION_NOTES.md).
 
 ## ⚠️ Deprecated: the original zero-build / in-browser-Babel front end
 

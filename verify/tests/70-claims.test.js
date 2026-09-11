@@ -16,8 +16,17 @@ module.exports = function register(t) {
     ok(/Median max decline vs entry/.test(dash), "corrected label present");
   });
 
-  t("CLAUDE.md does not claim a 'byte-for-byte' identical site (bubblegauge.jsx is still shipped)", () => {
+  t("CLAUDE.md does not claim a 'byte-for-byte' identical site (bubblegauge.js is still shipped)", () => {
     ok(!/byte-for-byte the original atlas/.test(claude), "overclaim removed");
+  });
+
+  t("D7 superseded (DR-015): the docs never regain the retired query-parameter gate as live guidance", () => {
+    // The gate is retired (audit/01-claims-ledger.md, amendment 2026-09-10). Historical mentions
+    // stay; these phrases only ever appeared as CURRENT instructions or claims.
+    const readme = raw("README.md");
+    const live = /Preview the gated integration|dormant by default|no-ops entirely \(defines\/mounts\/fetches nothing\) unless|zero-footprint no-op|Activate it with `\?status-api|localhost:8000\/\?status-api=demo/;
+    for (const [name, src] of [["CLAUDE.md", claude], ["README.md", readme], ["INTEGRATION_NOTES.md", notes]])
+      ok(!live.test(src), `${name} presents the retired ?status-api gate / demo mode as live guidance again`);
   });
 
   t("INTEGRATION_NOTES CORS note is not stale (service now allows the origin)", () => {

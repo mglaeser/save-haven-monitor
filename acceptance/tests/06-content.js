@@ -8,6 +8,9 @@
 // disclaimer gate w/ DOM purge, last-known-good (rejection/outage never blanks the page),
 // bounded loading (no uncaught errors — global harness page-error ledger), response-shape
 // validation (a content payload without a disclaimer never commits).
+// Re-freeze R3 (DR-015): the status API is embedded and answered by the harness goldens on every
+// page here; the content plane is independent of it — a content outage is asserted not to
+// fabricate the labeled offline-content state (it no longer implies anything about the gauge tab).
 const fs = require("fs");
 const path = require("path");
 const { REPO } = require("../lib/harness.js");
@@ -78,7 +81,7 @@ module.exports = async function register(t, h) {
     const b = (await pg.evaluate(() => document.body.textContent)).replace(/\s+/g, " ");
     for (const l of TABS) assert(await pg.$(`button:has-text("${l}")`), "tab survives content outage: " + l);
     assert(b.includes(DISCLAIMER), "hard-baked disclaimer independent of any content fetch");
-    assert(!b.includes("AI Regime"), "outage never fabricates gated state");
+    assert(!/offline content/i.test(b), "a content outage never fabricates the labeled offline-content state (nothing was consumed)");
     assert(!b.includes(SENTINEL), "no stale poison bleed-through");
     await pg.close();
   });

@@ -7,6 +7,12 @@
 const { raw } = require("../lib/load.js");
 const { ok, eq } = require("../lib/assert.js");
 
+// Remove /* block */ and // line comments (a `//` inside a string literal such as "http://…" is
+// preceded by ':' — only whitespace- or line-start-anchored `//` is treated as a comment).
+function stripComments(src) {
+  return src.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "").replace(/(\s)\/\/(?![^\n]*["'`]).*$/gm, "$1");
+}
+
 module.exports = function register(t) {
   const html = raw("index.html");
   const bg = raw("src/bubblegauge.tsx");
@@ -41,15 +47,42 @@ module.exports = function register(t) {
         ok(!p.test(src), `no secret idiom (${p}) in ${name}`);
   });
 
-  t("activation-key whitelist KEY_RE is enforced at every use of the param before URL construction", () => {
+  t("DR-015: the API base is built ONLY from the embedded KEY_RE-validated label + the page's parent domain; no user input reaches URL construction", () => {
+    // Red line 1 (KEY_RE gating of the subdomain -> URL derivation) survives the retirement of the
+    // ?status-api parameter in its STRONGER form: the whitelist now guards a constant, and nothing a
+    // visitor controls (query string, sessionStorage, hash) is read by the integration at all.
     ok(/const\s+KEY_RE\s*=\s*\/\^\[a-z0-9-\]\{1,32\}\$\//.test(bg), "KEY_RE defined as strict whitelist");
-    // both branches that accept a key must re-test it; and base-URL construction must be gated.
-    const tests = (bg.match(/KEY_RE\.test\(/g) || []).length;
-    ok(tests >= 2, `KEY_RE.test used at >=2 sites, got ${tests}`);
-    // the subdomain construction must not run for an unvalidated key: the early return guards it.
-    ok(/if\s*\(!key\s*\|\|\s*!KEY_RE\.test\(key\)\)\s*return null/.test(bg), "unvalidated key returns null before base derivation");
-    // and the base is only ever built as key + '.' + parent (no full-URL acceptance).
-    ok(/"https:\/\/"\s*\+\s*key\s*\+\s*"\."\s*\+\s*parent/.test(bg), "base is subdomain-of-parent only");
+    const sub = bg.match(/const\s+SUB\s*=\s*"([a-z0-9-]+)"/);
+    ok(sub, "the embedded subdomain label SUB is a plain KEY_RE-shaped literal (a fragment, never a host — DR-005)");
+    // the label is re-validated before derivation, and an invalid label yields NO base (fail closed).
+    ok(/if\s*\(!KEY_RE\.test\(SUB\)\)\s*return null/.test(bg), "SUB is re-validated by KEY_RE and an invalid label returns null before base derivation");
+    ok(/if\s*\(!API_BASE\)\s*return Promise\.resolve\(\{\s*status:\s*0/.test(bg), "a null base short-circuits the fetch layer (status 0 = unavailable/static, never a request)");
+    // the base is only ever built as SUB + '.' + parent (no full-URL acceptance, no key variable).
+    ok(/"https:\/\/"\s*\+\s*SUB\s*\+\s*"\."\s*\+\s*parent/.test(bg), "base is subdomain-of-parent only");
+    ok(!/"https:\/\/"\s*\+\s*key\b/.test(bg), "no key-derived base construction remains");
+    // the retired gate must not creep back, by ANY spelling: the checks below run on the source with
+    // comments STRIPPED (a guard that only exists inside a comment must not satisfy them), and ban
+    // every visitor-controlled input channel from the whole module — query string, hash, href,
+    // referrer, window.name, document.URL, localStorage — while sessionStorage may touch exactly one
+    // key, the splash-seen flag. verify/tests/74 then EXECUTES the derivation behind a throwing Proxy.
+    const code = stripComments(bg);
+    ok(/if\s*\(!KEY_RE\.test\(SUB\)\)\s*return null/.test(code), "the KEY_RE guard is live code, not a comment");
+    ok(!/searchParams|URLSearchParams|location\.search|location\.hash|location\.href|\.href\b|window\.name|document\.referrer|document\.URL|localStorage|status-api/.test(code),
+      "the integration reads no query parameter, hash, href, referrer, window.name or storage (the gate is retired — DR-015)");
+    const ssKeys = [...code.matchAll(/sessionStorage\s*\.\s*(getItem|setItem|removeItem)\s*\(\s*"([^"]*)"/g)].map((m) => m[2]);
+    const ssUses = (code.match(/sessionStorage/g) || []).length;
+    ok(ssUses === ssKeys.length && ssKeys.every((k) => k === "bubblegauge:splash-seen"), `sessionStorage may hold ONLY the splash-seen flag (got ${ssUses} uses, keys ${JSON.stringify(ssKeys)})`);
+    // exactly one assignment, argument-less, so the derivation cannot be bypassed by a second source
+    ok(/const\s+API_BASE\s*=\s*resolveApiBase\(\s*\)\s*;/.test(code), "API_BASE is assigned exactly from resolveApiBase() with no argument");
+    ok((code.match(/\bAPI_BASE\s*=[^=]/g) || []).length === 1, "API_BASE is assigned exactly once");
+    // the three derivation sites — client, deploy-time generator, widget — embed the SAME label, so
+    // the browser, the fallback artifact and the widget can never disagree about which origin is the API.
+    const gen = raw("scripts/generate-fallback.js").match(/const\s+SUB\s*=\s*"([a-z0-9-]+)"/);
+    ok(gen && gen[1] === sub[1], `scripts/generate-fallback.js SUB (${gen && gen[1]}) must equal the client's (${sub[1]})`);
+    const wid = raw("widget.html").match(/var\s+SUB\s*=\s*"([a-z0-9-]+)"/);
+    ok(wid && wid[1] === sub[1], `widget.html SUB (${wid && wid[1]}) must equal the client's (${sub[1]})`);
+    const wcode = stripComments(raw("widget.html"));
+    ok(!/searchParams|URLSearchParams|location\.search|location\.hash|location\.href|window\.name|document\.referrer|document\.URL|localStorage|sessionStorage|status-api/.test(wcode), "widget.html reads no query parameter, hash, href, referrer, window.name or storage either");
   });
 
   t("no HTML-injection sinks fed by API/external data", () => {

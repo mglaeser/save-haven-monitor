@@ -14,6 +14,12 @@ implementation. Every assertion traces to `rewrite/01-feature-inventory.json` (1
 > §Re-freeze R2 below for exactly what changed and why every changed assertion holds in both
 > states. The R1 manifest (frozen 2026-07-16, 35/0) is superseded by decision record, not by drift.
 
+> **Re-freeze R3 (2026-09-10, DR-015).** The `?status-api` query-parameter gate is retired and the
+> status-API endpoint is EMBEDDED in the page (`audit/decisions/DR-015-embedded-endpoint.md`). The
+> suite now pins BOTH states of the always-on integration — API connected (answered by frozen
+> goldens) and API unreachable (the static/default atlas) — see §Re-freeze R3 below. The R2
+> manifest (39/0) is superseded by decision record, not by drift.
+
 ## Rules of the freeze
 
 1. **Frozen files** (hash-manifested): `SPEC.md`, `run.js`, `lib/harness.js`, `tests/*`, `golden/*`.
@@ -27,35 +33,46 @@ implementation. Every assertion traces to `rewrite/01-feature-inventory.json` (1
    `golden/computed-xcorr.json`) at full precision — the adapter may change, its answers may not.
 3. **Environment knobs only** (no code change): `ACCEPT_BASE_URL` (test a deployed URL instead of
    the local server), `ACCEPT_PORT`, `ACCEPT_MIRRORS` (offline CDN mirrors), `ACCEPT_CHROMIUM`.
-4. **The egress contract is part of the suite** (amended by R2, per DR-014 item 1): any request
-   that is not **same-origin**, an allowlisted pinned CDN asset, or `data:` fails the run. The
-   retired R1 framing — "the ungated site is byte-identical and makes ZERO network requests" — is
-   replaced by the program's negative contract: **the ungated page may request only same-origin
-   relative URLs** (which includes the `/content/fallback.json` artifact once the shallow wiring
-   lands) **plus the existing gated status-API fetch** (never exercised live by this suite — demo
-   keys only). A rewrite that self-hosts its vendor code simply never triggers the CDN rule — no
-   test change needed.
+4. **The egress contract is part of the suite** (amended by R2 per DR-014 item 1, and by R3 per
+   DR-015): any request that is not **same-origin**, an allowlisted pinned CDN asset, `data:`, or
+   **the ONE embedded status-API base the harness derives from the origin with the client's own
+   rule** fails the run. The retired R1 framing — "the ungated site is byte-identical and makes
+   ZERO network requests" — and the retired R2 framing — "the ungated page requests only
+   same-origin relative URLs" — are replaced by the R3 negative contract: **same-origin relative
+   URLs plus the derived status-API base, never a third party, never a host named by a query
+   parameter**. The harness ANSWERS that base itself (goldens, or a refused connection), so no
+   run ever reaches a live API — also under `ACCEPT_BASE_URL`. A rewrite that self-hosts its
+   vendor code simply never triggers the CDN rule — no test change needed.
 5. Deliberate NON-goals of the frozen suite (Phase-2 work may add non-frozen tests for them):
    pixel screenshots (kept advisory to avoid font-rendering flake), Recharts hover-tooltip
    micro-formats (pinned numerically via `computed-xcorr.json` instead), and network-race timing.
 
 ## What is covered
 
-- `tests/01-viewer.js` — the 5-tab atlas: chrome/tab bar, Explorer (11 crises, default GFC,
+- `tests/01-viewer.js` — the atlas (R3: the five base tabs in order, then `AI Regime` last): chrome/tab bar, Explorer (11 crises, default GFC,
   POTENTIAL banner, per-crisis header data, COVID defaultOff line, state-reset-on-tab-switch),
   Matrix (grid + note panel + blank-cell fallback), Aggregate (header, mode toggle, pair grid),
   Analytics (clock cards, deterministic fan stats as rendered, tail-test table, Markov/BSADF/
   Granger/scoreboard numbers), Playbook (M9 default, veto chips, verdict matrix, phase
   allocations, eToro link contract, expert list counts/scores).
-- `tests/02-integration.js` — the `?status-api=demo` contract: strip (content + keyboard
-  activation), 6th tab, AI Regime panels, LIVE BACKFILL card + Fear&Greed block, demo markers,
+- `tests/02-integration.js` — **(R3)** the CONNECTED contract with NO query parameter: strip
+  (role/tabindex attributes), 6th tab last, score/verdict/flags text, AI Regime panels (headline, history,
+  changelog, science audit), LIVE BACKFILL card + Fear&Greed block, honest proxy relabeling, LIVE
+  badges on the Aggregate overlays and the Analytics window, no demo marker, no activation state,
   "Open the atlas" navigation quirk (lands on default GFC — a faithful rewrite must NOT "fix"
-  this), sessionStorage persistence across param-less navigation, `?status-api-off` clearing.
-- `tests/03-negative.js` — the R2 negative contract without the param (5 tabs, no strip/AI Regime
-  text, requests never leave the origin), `?status-api=evil.com` rejected (KEY_RE), page errors
-  empty, egress violations empty.
-- `tests/04-responsive.js` — 375px: no page-level horizontal scroll; wide content scrolls in
-  its own container (matrix table).
+  this), and the retired parameters (`?status-api=demo`, `?status-api=evil.com`,
+  `?status-api-off`) asserted inert.
+- `tests/03-negative.js` — **(R3)** the UNREACHABLE contract in every mode the harness can
+  produce — refused connection, HTTP 500, shape-invalid 200 payloads, a hang past the client's
+  6 s timeout, and 503 (the distinct "warming up" state): the static/default atlas — 5 base tabs,
+  h1, baked disclaimer, default GFC, no live card, no fabricated reading, `static · Jul 2026
+  snapshot` badges, the strip present, non-interactive and reading "unavailable"/"warming up", the
+  `AI Regime` tab still offered with the detail panel's own unavailable/warming sentence, the page
+  having TRIED the API; plus: a parameter-bearing URL is the same connected page and steers no
+  request, page errors empty, egress violations empty.
+- `tests/04-responsive.js` — 375px: the small-portrait opening splash (DR-007) shows with the
+  API connected, closes through its own control and does not re-open on a same-session reload (the
+  re-open control takes its place); no page-level horizontal scroll in either API state; wide content scrolls in its own container (matrix table).
 - `tests/05-data-goldens.js` — adapter output vs frozen goldens: canonical dataset sha256,
   fan rows (seeds 7/11/13, sims 1500) full precision, aggregate 121 rows full precision,
   xcorr maxima (dot-com r(0)=0.788, 1929 r(−21)=0.759, Japan r(−12)=0.777).
@@ -104,9 +121,54 @@ last-known-good rendering (a rejected/absent payload never blanks the page), bou
 (no uncaught errors on outage), and response-shape validation (a content payload without a
 disclaimer never commits).
 
+## Re-freeze R3 — the embedded status-API endpoint (DR-015)
+
+**What was retired (DR-015).** R2's negative contract for the *ungated* page — no strip, five
+tabs, no `AI Regime`, no `LIVE BACKFILL`, requests never leave the origin — is retired together
+with the gate it described. There is no `?status-api` key any more: the API base is EMBEDDED in
+the page (the fixed subdomain label `api` of the page's own parent domain; the loopback dev base
+on localhost) and every visitor's browser tries it. The R2 assertions on demo mode, sessionStorage
+persistence and `?status-api-off` are retired with the parameter. The KEY_RE contract (red line 1)
+survives in its stronger form — the whitelist guards a constant, and `verify/tests/30` + `74`
+prove that no query, hash or storage input reaches URL construction — so this suite asserts it
+behaviourally instead: a parameter-bearing URL steers no request.
+
+**The API plane is pinned to frozen fixtures, exactly like the content plane.** The harness
+derives the base from the origin with the client's own rule (`apiBaseOf`, matched to the shipped
+copies by `verify/tests/74`) and answers `/api/v1/score`, `/api/v1/score/history`,
+`/api/v1/status` and `/api/v1/dashboard/feed` from `golden/api-*.fixture.json` — the four
+fixtures that used to ship inside the bundle as demo mode, lifted out verbatim (extracted by
+executing the pre-DR-015 module, not retyped). Unknown API paths answer 404; `opts.api = null`
+refuses the connection; `{ status: N }` answers non-2xx (500, or 503 for the warming state);
+`"invalid"` answers shape-valid JSON the boundary validators must reject; `"hang"` never answers,
+so the client's own 6 s timeout fires. The suite therefore drives the REAL fetch +
+boundary-validation path (demo mode bypassed it) in every failure shape DR-015 names, and never
+touches a live service, also under `ACCEPT_BASE_URL`. The harness derives the base with the same
+apex-only rule as the client (a non-apex origin derives nothing).
+
+**Two states, both frozen.**
+- CONNECTED (`01`, `02`, `04`, `06`): strip with role=button, six tabs with `AI Regime` last, the
+  score/verdict/flags text, `LIVE BACKFILL` + Fear & Greed from the feed, `LIVE` badges, the
+  small-portrait opening splash shown once per session and dismissable, no demo marker, no
+  activation state, and the retired parameters inert (the same connected page, the API requested).
+- UNREACHABLE (`03`, `04`; refused / 500 / invalid / hang / 503): the static/default atlas — five
+  base tabs and their frozen content, the hard-baked disclaimer, `static · Jul 2026 snapshot`
+  badges, no live card, no fabricated reading, no splash, the strip present, non-interactive and
+  reading "unavailable" ("warming up" on 503), the `AI Regime` tab still offered with the detail
+  panel's own unavailable/warming sentence, and the page having TRIED the API (the fallback is
+  exercised, not skipped).
+
+**Both-states style, honestly.** Unlike R2, the always-on assertions cannot hold against the
+pre-DR-015 (gated) site under any formulation, because the property they pin — the gate is gone —
+is the change itself. DR-015 therefore records that this re-freeze and the reshaping land in ONE
+gated change, proven green against the target site with both API states exercised; the retired R2
+baseline is superseded by decision record, not by drift.
+
 ## Re-freeze procedure (how `verify/golden/acceptance-freeze.json` is regenerated)
 
-Only under a ratified decision record, only BEFORE a reshaping phase. From the repo root:
+Only under a ratified decision record, only BEFORE a reshaping phase (or, as R3 did under DR-015,
+together with a reshaping whose retired contract cannot be formulated both-states). From the repo
+root:
 
 ```bash
 # 1. the amended suite must be green against the CURRENT site FIRST — never freeze red
@@ -120,10 +182,10 @@ if(res.fail>0)throw new Error("suite not green ("+res.fail+" fail) — fix befor
 const files=["acceptance/SPEC.md","acceptance/run.js","acceptance/lib/harness.js",
  ...fs.readdirSync("acceptance/tests").filter(f=>f.endsWith(".js")).sort().map(f=>"acceptance/tests/"+f),
  ...fs.readdirSync("acceptance/golden").sort().map(f=>"acceptance/golden/"+f)];
-const man={note:"FROZEN acceptance-suite manifest (re-freeze R2 under DR-014 item 1, Q2/Q13). These files are the implementation-agnostic parity contract for the shallow-frontend reshaping; verify/tests/64-acceptance-freeze fails the build if any hash drifts. Re-freezing requires a decision record and must happen BEFORE a reshaping phase, never to make a failing phase pass. acceptance/adapter.js is deliberately EXCLUDED — it is the one file re-pointed at the implementation, and its output is pinned by the golden files listed here.",
+const man={note:"FROZEN acceptance-suite manifest (re-freeze R3 under DR-015). These files are the implementation-agnostic parity contract for the always-on, embedded-endpoint site (both API states pinned); verify/tests/64-acceptance-freeze fails the build if any hash drifts. Re-freezing requires a decision record and must happen BEFORE a reshaping phase, never to make a failing phase pass. acceptance/adapter.js is deliberately EXCLUDED — it is the one file re-pointed at the implementation, and its output is pinned by the golden files listed here.",
  frozen_at:new Date().toISOString().slice(0,10),
- refrozen_under:"DR-014 item 1 (audit/decisions/DR-014-shallow-frontend-program.md)",
- baseline_result:res.pass+" pass · 0 fail against the current site",
+ refrozen_under:"DR-015 (audit/decisions/DR-015-embedded-endpoint.md)",
+ baseline_result:res.pass+" pass · 0 fail against the DR-015 site (API connected + unreachable states)",
  files:Object.fromEntries(files.map(f=>[f,crypto.createHash("sha256").update(fs.readFileSync(f)).digest("hex")]))};
 fs.writeFileSync("verify/golden/acceptance-freeze.json",JSON.stringify(man,null,1)+"\n");
 console.log("re-froze "+files.length+" files at "+man.frozen_at);'

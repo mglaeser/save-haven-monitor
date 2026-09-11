@@ -72,26 +72,30 @@
    Self-contained, no external assets (30MB widget budget), STATELESS (no cookies / no local store).
    Authored at the widget's 168pt box (viewport width=168) so it is NOT scaled down. Dense horizontal
    layout: a REGIME zone bar (cyan/violet/rose) + big score+band, an F&G zone bar, and a full metric grid.
-   Gated like the dashboard: ?status-api=<key> -> subdomain-of-host API base (KEY_RE-whitelisted). */
+   Endpoint like the dashboard (DR-015): the API base is EMBEDDED — a fixed, KEY_RE-whitelisted subdomain
+   label of the page's own parent domain, no query parameter. The SAMPLE state below is the static/default
+   content; it is replaced only when the live API answers, and stays (badged "sample") when it does not. */
 
 function __wweb2JsWidgetTitle(){ return "AI Bubble Monitor"; }
 function __wweb2Log(m){ /* Developer-mode log hook */ }
 
-/* ---- gating (mirrors src/bubblegauge.tsx resolveActivation) ---- */
+/* ---- endpoint (mirrors src/bubblegauge.tsx resolveApiBase) ---- */
 const KEY_RE = /^[a-z0-9-]{1,32}$/;               // strict whitelist — no dots, no full URLs
-var DEMO_KEYS = { demo: true, fixture: true };
-function resolveBase(){
-  var url; try { url = new URL(window.location.href); } catch (e) { return { live: false }; }
-  var key = url.searchParams.get("status-api");
-  if (!key || !KEY_RE.test(key)) return { live: false };        // no/invalid key -> sample
-  if (DEMO_KEYS[key]) return { live: false, demo: true };       // offline preview
-  var host = window.location.hostname, labels = host.split(".");
-  var parent = labels.length > 2 ? labels.slice(1).join(".") : host;
-  return { live: true, base: "https://" + key + "." + parent }; // subdomain-of-parent only
+var SUB = "api";                                   // fixed API subdomain label — a fragment, never a host (IDENTICAL to the dashboard's)
+function resolveBase(){ // reads nothing but the hostname (verify/tests/74 executes it)
+  if (!KEY_RE.test(SUB)) return { live: false };                 // fail closed -> sample
+  var host = String(window.location.hostname || "").toLowerCase();
+  if (host.length > 1 && host.charAt(host.length - 1) === ".") host = host.slice(0, -1); // FQDN trailing dot
+  if (host === "localhost" || host === "[::1]" || host === "0.0.0.0" || /^127\.\d+\.\d+\.\d+$/.test(host) || /\.local$/.test(host)) return { live: true, base: "http://localhost:8000" }; // dev
+  var labels = host.split(".");
+  if (labels[0] === "www" && labels.length === 3) labels.shift();
+  var bad = labels.length !== 2 || host.charAt(0) === "[";
+  for (var i = 0; i < labels.length && !bad; i++) if (!labels[i] || /^\d+$/.test(labels[i])) bad = true;
+  if (bad) return { live: false };                                // only an apex (or www.apex) names the API -> else sample
+  return { live: true, base: "https://" + SUB + "." + labels.join(".") }; // subdomain-of-apex only
 }
 var ACT = resolveBase();
 var API_BASE = ACT.base || null;
-var DEMO = !!ACT.demo;
 
 /* ---- tokens ---- */
 var BAND={hold:{label:"HOLD",color:"#29C7E8"},trim:{label:"TRIM",color:"#B79DFF"},"de-risk":{label:"DE-RISK",color:"#FF6B8A"},
@@ -203,7 +207,7 @@ function rel(iso){
   return date.toLocaleDateString(undefined,{day:"numeric",month:"short"})+" "+time;
 }
 
-/* ---- optional live fetch: the ONLY network call, to the gated API_BASE ---- */
+/* ---- live fetch: the ONLY network call, to the constructed API_BASE; any failure keeps the sample ---- */
 var LIVE_READY=!ACT.live;
 if(ACT.live){
   var ctrl=("AbortController" in window)?new AbortController():null;
@@ -215,7 +219,10 @@ if(ACT.live){
     fetch(API_BASE+"/api/v1/score/history?granularity=daily&limit=1000",opt).then(function(r){return r.ok?r.json():null;}).catch(function(){return null;})
   ]).then(function(res){
     try{
-      var sc=res[0]&&res[0].data, mx=(res[1]&&res[1].data&&res[1].data.metrics)||{}, fg=mx.fear_greed, ts=sc&&sc.trend_states;
+      // Boundary validation (mirrors the dashboard's validScore): a 2xx body that is not a score
+      // payload — no finite median, no band, no computed_at — keeps the SAMPLE, never a fabricated value.
+      var env=res[0], sc=env&&env.data, mx=(res[1]&&res[1].data&&res[1].data.metrics)||{}, fg=mx.fear_greed, ts=sc&&sc.trend_states;
+      var scOk=!!(sc&&num(sc.headline_median)&&typeof sc.action_band==="string"&&env.meta&&typeof env.meta.computed_at==="string");
       // last-3 regime medians from the history payload, re-anchored to end at the live score
       var hi=res[2]&&res[2].data, sT=null;
       if(Array.isArray(hi)&&hi.length>=3){ var mm=hi.slice(-3).map(function(r){return r&&num(r.median)?r.median:NaN;});
@@ -229,7 +236,7 @@ if(ACT.live){
         var vv=[]; for(var i=0;i<sfg.points.length;i++){var p=sfg.points[i]; if(p&&num(p.value)) vv.push(p.value);}
         if(vv.length>=3) fT=[vv[vv.length-3],vv[vv.length-2],fg.value];
       }
-      if(sc){
+      if(scOk){
         DATA={score:sc.headline_median,band:sc.action_band,iqr:sc.iqr||null,redFlags:sc.red_flag_count,
           spy:ts&&ts.SPY&&ts.SPY.faber_10mo, qqq:ts&&ts.QQQ&&ts.QQQ.faber_10mo,
           fg:(fg&&fg.available&&num(fg.value))?{value:fg.value,rating:fg.detail&&fg.detail.rating}:null,
@@ -237,7 +244,7 @@ if(ACT.live){
           goldTtm:(mx.gold_ttm_pct&&mx.gold_ttm_pct.available)?mx.gold_ttm_pct.value:NaN,
           btcDd:(mx.btc_drawdown_pct&&mx.btc_drawdown_pct.available)?mx.btc_drawdown_pct.value:NaN,
           scoreTrend:sT, fgTrend:fT,
-          asOf:(res[0].meta&&res[0].meta.computed_at)||new Date().toISOString()};
+          asOf:env.meta.computed_at}; // never invented: a payload without computed_at is not accepted above
         render();
       }
     }catch(e){__wweb2Log("map error "+e);}

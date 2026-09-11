@@ -1,72 +1,60 @@
 /* ============================================================
-   bubblegauge × Crisis Winners — conditional integration
-   Loaded BEFORE dashboard.jsx. Exposes window.BubbleGauge.
+   bubblegauge × Crisis Winners — always-on integration (DR-015)
+   Loaded BEFORE dashboard.js. Exposes window.BubbleGauge.
 
-   Zero-build gating: this whole module no-ops (defines nothing,
-   mounts nothing, makes no network calls) unless the activation
-   query param `?status-api=<key>` is present (or was persisted
-   in this tab). When disabled, window.BubbleGauge = {enabled:false}
-   and dashboard.jsx renders exactly as it always has.
+   The bubblegauge API endpoint is EMBEDDED: a fixed subdomain
+   label of the page's own parent domain, derived from
+   location.hostname at load (no query parameter, no persisted
+   activation key, no user input anywhere near URL construction).
+   Every visitor's browser tries the API; when it is unreachable
+   (network error, timeout, non-2xx, invalid payload) every surface
+   below falls back to its labeled static/default state — the
+   "gauge unavailable" chip, the hardcoded Jul-2026 anchors with a
+   "static" badge — and the crisis atlas is unaffected.
 
    Data contract: bubblegauge REST API v1 — score/legs endpoints
    per the integration spec (3.1.0) plus the dashboard feed
    (GET /api/v1/dashboard/feed, DASHBOARD_FEED_SPEC v1.0,
    service 3.4.0) used to re-anchor the atlas's AI-2026 panel.
-   Validated at the boundary; `?status-api=demo` renders embedded
-   fixtures (feed fixture scaled to the real 2026-07-15 capture).
+   Validated at the boundary. Offline fixtures for the frozen
+   acceptance suite live in acceptance/golden/api-*.fixture.json
+   (the harness answers the derived base itself; nothing here).
    ============================================================ */
 
 (function () {
   "use strict";
 
-  /* ---------- activation / base-URL derivation (spec §4.1) ---------- */
+  /* ---------- API endpoint (embedded; spec §4.1 as amended by DR-015) ---------- */
 
-  const PARAM = "status-api";
+  // The label is a FRAGMENT, never a host (DR-005 / red line 2): the parent domain is read from the
+  // page at runtime, exactly as scripts/generate-fallback.js derives the same origin from CNAME at
+  // deploy time. KEY_RE now guards a constant, so no user-controlled value can reach the base.
+  const SUB = "api"; // IDENTICAL to scripts/generate-fallback.js SUB and widget.html SUB
   const KEY_RE = /^[a-z0-9-]{1,32}$/; // strict whitelist — no dots, no full URLs
-  const SS_KEY = "bubblegauge:enabled";
-  const DEMO_KEYS = { demo: true, fixture: true }; // offline preview keys
 
-  function resolveActivation(loc) {
+  // Reads NOTHING but the hostname (verify/tests/74 executes it behind a throwing Proxy to prove
+  // that): no query string, hash, referrer, window.name or storage can influence the result.
+  function resolveApiBase(loc) {
     loc = loc || window.location;
-    let url;
-    try { url = new URL(loc.href); } catch (e) { return null; }
-    // explicit disable
-    if (url.searchParams.get(PARAM + "-off") !== null) {
-      try { sessionStorage.removeItem(SS_KEY); } catch (e) {}
-      return null;
+    if (!KEY_RE.test(SUB)) return null; // fail closed: no base means no fetch and the static state
+    let host = String((loc && loc.hostname) || "").toLowerCase();
+    if (host.length > 1 && host.charAt(host.length - 1) === ".") host = host.slice(0, -1); // FQDN trailing dot
+    // dev: loopback never derives a subdomain — a local bubblegauge on :8000, else the static state
+    if (host === "localhost" || host === "[::1]" || host === "0.0.0.0" || /^127\.\d+\.\d+\.\d+$/.test(host) || host.endsWith(".local")) {
+      return "http://localhost:8000";
     }
-    let key = url.searchParams.get(PARAM);
-    if (key && KEY_RE.test(key)) {
-      try { sessionStorage.setItem(SS_KEY, key); } catch (e) {}
-    } else if (!key) {
-      try { key = sessionStorage.getItem(SS_KEY); } catch (e) { key = null; }
-    }
-    if (!key || !KEY_RE.test(key)) return null;
-
-    if (DEMO_KEYS[key]) return { key: key, demo: true, base: null };
-
-    const host = loc.hostname;
-    // dev fallback: never subdomain-derive from localhost
-    if (host === "localhost" || host === "127.0.0.1" || host.endsWith(".local")) {
-      return { key: key, demo: false, base: "http://localhost:8000" };
-    }
+    // Only a registrable APEX the page is served from (or its www alias) may name the API host.
+    // A deeper host — a *.github.io mirror, a LAN or other IP literal, a host under a multi-label
+    // public suffix — derives NOTHING: the page sends no request to a host the owner does not
+    // control (red line 3) and simply shows its static state. See INTEGRATION_NOTES.
     const labels = host.split(".");
-    // NOTE: simple leftmost-strip. Correct for a single-label parent domain; a multi-label public
-    // suffix (e.g. co.uk) would need a public-suffix-list check. See INTEGRATION_NOTES.
-    const parent = labels.length > 2 ? labels.slice(1).join(".") : host;
-    return { key: key, demo: false, base: "https://" + key + "." + parent };
+    if (labels[0] === "www" && labels.length === 3) labels.shift();
+    if (labels.length !== 2 || host.charAt(0) === "[" || labels.some((l) => l.length === 0 || /^\d+$/.test(l))) return null;
+    const parent = labels.join(".");
+    return "https://" + SUB + "." + parent;
   }
 
-  const activation = resolveActivation();
-
-  if (!activation) {
-    // Zero footprint: nothing defined, nothing mounted, no fetches.
-    window.BubbleGauge = { enabled: false };
-    return;
-  }
-
-  const API_BASE = activation.base;
-  const DEMO = activation.demo;
+  const API_BASE = resolveApiBase();
 
   const { useState, useMemo, useEffect, useRef } = React;
   const {
@@ -236,74 +224,6 @@
     { v: "3.1.0", score: null, note: "price-layer restructure (provider chain + source hardening). Methodology unchanged." },
   ];
 
-  /* ---------- offline fixture (Appendix B, expanded) ---------- */
-
-  function mkS(value, sub, weight, ground, extra) {
-    return Object.assign({ value: value, sub_score: sub, weight: weight, grounding: ground,
-      explanation: regOf(extra && extra.id || "").plain, references: [], data_source: (extra && extra.src) || "fixture",
-      fallback_used: false, dropped: false, as_of: "2026-07-10", age_days: (extra && extra.age) || 1,
-      stale: false, timestamp: "2026-07-11T06:00:03+00:00" }, extra || {});
-  }
-  const SCORE_FIXTURE = {
-    data: {
-      headline_median: 40, iqr: [34, 47], band_5_95: [28, 55], point_score: 40.35,
-      action_band: "hold", override_fired: false, red_flag_count: 0,
-      red_flag_detail: { gsadf_explosive_noncontested: false, semi_runup_ge_150pp: false, hy_oas_widen_gt_100bps: false, breadth_lt_50_near_ath: false },
-      block_S: { value: 0.711, indicators: {
-        s1: mkS(41.6, 0.92, 0.33, "literature-grounded", { id: "s1", src: "shiller" }),
-        s2: mkS(41.0, 0.78, 0.27, "literature-adjacent", { id: "s2", src: "slickcharts" }),
-        s3: mkS(118, 0.61, 0.20, "literature-grounded", { id: "s3", src: "stooq" }),
-        s4: mkS(0.9, 0.25, 0.07, "contested", { id: "s4", src: "exuber", note: "contested/stale floor" }),
-        s5: mkS(2.9, 0.74, 0.13, "literature-grounded", { id: "s5", src: "fred_BAMLH0A0HYM2" }),
-      } },
-      block_D: { value: 0.229, value_raw: 0.229, indicators: {
-        d1: mkS(56.0, 0.543, 0.35, "judgmental", { id: "d1", src: "stooq", note: "path=B_constituent_compute" }),
-        d2: mkS(-3.1, 0.20, 0.13, "judgmental", { id: "d2", src: "finra" }),
-        d3: mkS(0.22, 0.30, 0.32, "literature-grounded", { id: "d3", src: "sec_edgar" }),
-        d4: mkS(0.41, 0.35, 0.20, "literature-grounded", { id: "d4", src: "lppls" }),
-      } },
-      V: { state: "contango", multiplier: 1.0, label: "lagging confirmation" },
-      trend_states: { SPY: { faber_10mo: "IN", sma200: "IN" }, QQQ: { faber_10mo: "IN", sma200: "IN" } },
-      fast_alarm: { term_structure: "contango", vrp: 12.4, vrp_flag: false, skew: 128, skew_label: "coincident context only" },
-      judgment_call: { text: "Rich valuation (CAPE ~42) is the dominant driver; broad breadth near 56% above the 200-day is the biggest counter-signal.", stale: false, error_class: null },
-    },
-    meta: {
-      computed_at: "2026-07-11T06:00:03+00:00", service_version: "3.1.0",
-      coverage: { S: { coverage: 1.0, degraded: false }, D: { coverage: 1.0, degraded: false }, degraded: false },
-      disclaimer: "Research, not advice.", epistemic_caveats: EPISTEMIC.slice(),
-    },
-  };
-  // A stylized history path (fixture) — median climbs v1→v3 mostly via the aggregation fix.
-  const HISTORY_FIXTURE = { data: (function () {
-    const out = [], base = new Date("2024-01-01T06:00:00Z").getTime();
-    const path = [30, 31, 29, 33, 34, 36, 35, 38, 37, 39, 41, 40, 42, 40, 41, 43, 42, 40];
-    for (let i = 0; i < path.length; i++) {
-      const m = path[i];
-      out.push({ computed_at: new Date(base + i * 30 * 864e5).toISOString(), median: m,
-        iqr: [m - 6, m + 7], band_5_95: [m - 12, m + 15], action_band: m >= 60 ? "de-risk" : m >= 45 ? "trim" : "hold",
-        override_fired: false, red_flag_count: 0 });
-    }
-    return out;
-  })(), meta: { computed_at: "2026-07-11T06:00:03+00:00", service_version: "3.1.0", disclaimer: "Research, not advice.", epistemic_caveats: EPISTEMIC.slice() } };
-
-  const STATUS_FIXTURE = {
-    service: { name: "bubblegauge", version: "3.1.0" },
-    science_audit: {
-      counts: { error: 0, warn: 2, info: 3 },
-      flags: [
-        { severity: "warn", category: "grounding", title: "S4 GSADF is contested", detail: "Fires 93–100% under genuine GPT fundamentals (Chen-Chen-Huang 2026); permanently down-weighted and floored at 0.25 when input missing.", ref: "arXiv:2604.25826" },
-        { severity: "warn", category: "grounding", title: "D1/D2 are judgmental", detail: "Breadth and margin-debt rollover are reasoned expert mappings, not fitted models; D2 is confirmation-only (CXO: 0.00 next-month correlation).", ref: "CXO Advisory" },
-        { severity: "info", category: "grounding", title: "S2 concentration is literature-adjacent", detail: "Single-point-of-failure risk motivated by the concentration literature; the weight/threshold mapping is a reasoned adaptation.", ref: "RBC WM" },
-        { severity: "info", category: "coverage", title: "All blocks fully live", detail: "Coverage S=100%, D=100%; no dropped or stale indicators this run.", ref: null },
-        { severity: "info", category: "override", title: "Override not fired", detail: "0 of 4 red flags fired; score reflects the geometric composite, no 70-floor applied.", ref: null },
-      ],
-    },
-    falsification_criteria: FALSIFY.slice(),
-    changelog: CHANGELOG.slice(),
-    epistemic_caveats: EPISTEMIC.slice(),
-    disclaimer: "Research, not advice.",
-  };
-
   /* ---------- fetch layer + boundary validation ---------- */
 
   function isNum(x) { return typeof x === "number" && isFinite(x); }
@@ -330,6 +250,9 @@
 
   function bgFetch(path, opts) {
     opts = opts || {};
+    // No derivable base (loopback-less bare host, file://): nothing is fetched and every surface
+    // takes its unavailable/static branch — the same shape as an unreachable API.
+    if (!API_BASE) return Promise.resolve({ status: 0, json: null, error: "no API base for this host" });
     const now = Date.now();
     if (!opts.noCache && cache[path] && now - cache[path].t < (opts.ttl || TTL)) {
       return Promise.resolve({ status: 200, json: cache[path].json, fromCache: true });
@@ -351,12 +274,12 @@
     return req;
   }
 
-  // Generic hook: {loading, notReady, error, json}
-  function useEndpoint(path, fixture, validate) {
-    const [st, setSt] = useState({ loading: true, notReady: false, error: null, json: DEMO ? fixture : null });
+  // Generic hook: {loading, notReady, error, json}. A failed or invalid response resolves to
+  // error/null json — the consumer renders its labeled unavailable/static branch, never a guess.
+  function useEndpoint(path, validate) {
+    const [st, setSt] = useState({ loading: true, notReady: false, error: null, json: null });
     useEffect(function () {
       let alive = true;
-      if (DEMO) { setSt({ loading: false, notReady: false, error: null, json: fixture }); return function () {}; }
       setSt(function (s) { return Object.assign({}, s, { loading: true }); });
       bgFetch(path).then(function (r) {
         if (!alive) return;
@@ -367,7 +290,7 @@
         setSt({ loading: false, notReady: false, error: null, json: r.json });
       });
       // light revalidation on focus
-      const onFocus = function () { if (alive && !DEMO) bgFetch(path, { noCache: true }).then(function (r) {
+      const onFocus = function () { if (alive) bgFetch(path, { noCache: true }).then(function (r) {
         if (alive && r.status === 200 && r.json && (!validate || validate(r.json))) setSt({ loading: false, notReady: false, error: null, json: r.json });
       }); };
       window.addEventListener("focus", onFocus);
@@ -376,9 +299,9 @@
     return st;
   }
 
-  const useScore = () => useEndpoint("/api/v1/score", SCORE_FIXTURE, validScore);
-  const useHistory = () => useEndpoint("/api/v1/score/history?granularity=daily&limit=1000", HISTORY_FIXTURE, function (j) { return j && Array.isArray(j.data); });
-  const useStatus = () => useEndpoint("/api/v1/status", STATUS_FIXTURE, function (j) { return j && j.science_audit; });
+  const useScore = () => useEndpoint("/api/v1/score", validScore);
+  const useHistory = () => useEndpoint("/api/v1/score/history?granularity=daily&limit=1000", function (j) { return j && Array.isArray(j.data); });
+  const useStatus = () => useEndpoint("/api/v1/status", function (j) { return j && j.science_audit; });
 
   /* ---------- fusion: stylized structural fingerprints (spec §6) ---------- */
   // Dimensions in [0,1]; hand-set from the literature. Explicitly an ANALOGY, not a fit.
@@ -456,7 +379,7 @@
       const h = (Date.now() - t) / 36e5;
       rel = h < 1 ? "updated <1h ago" : h < 48 ? "updated " + Math.round(h) + "h ago" : "updated " + Math.round(h / 24) + "d ago";
     }
-    return <span style={{ ...BS.eyebrow, color: C.faint }}>{rel}{DEMO ? " · demo" : ""}</span>;
+    return <span style={{ ...BS.eyebrow, color: C.faint }}>{rel}</span>;
   }
 
   function EpiChip() {
@@ -754,7 +677,7 @@
             <div style={{ marginTop: 3, color: C.muted }}><b style={{ color: C.dim }}>Weighted this way because:</b> {reg.why}</div>
             <div style={{ marginTop: 5, fontSize: 10, color: C.faint }}>
               value {isNum(r.value) ? r.value : "—"} · source {r.data_source || "?"}{r.as_of ? " · as of " + r.as_of : ""}{r.note ? " · " + r.note : ""}
-              {!DEMO && <> · <a href={API_BASE + "/api/v1/indicators/" + id} target="_blank" rel="noopener noreferrer" style={{ color: g.c }}>full methodology ↗</a></>}
+              {API_BASE && <> · <a href={API_BASE + "/api/v1/indicators/" + id} target="_blank" rel="noopener noreferrer" style={{ color: g.c }}>full methodology ↗</a></>}
             </div>
           </div>
         )}
@@ -1010,7 +933,7 @@
         <FusionPanel d={d} goToCrisis={goToCrisis} />
         <EpistemicPanel meta={meta} />
         <div style={{ fontSize: 10, color: C.faint, textAlign: "center", lineHeight: 1.6 }}>
-          bubblegauge {meta.service_version || "3.1.0"} · {meta.disclaimer || "Research, not advice."}{DEMO ? " · DEMO fixture (offline) — re-verify against the live service" : ""}
+          bubblegauge {meta.service_version || "3.1.0"} · {meta.disclaimer || "Research, not advice."}
         </div>
       </div>
     );
@@ -1034,66 +957,10 @@
      dashboard.jsx stay as the labeled static fallback.
      ============================================================ */
 
-  // Demo-fixture series: stylized paths scaled to the real capture-#2
-  // endpoints (2026-07-15). Month index 0 = "2021-07" ... 60 = "2026-07".
-  const FEED_FIX_SERIES = {
-    qqq: [362.61,372.58,382.55,392.53,402.5,388.6,374.7,360.8,346.9,333,319.1,309.77,300.45,291.12,281.8,272.48,263.15,253.83,272.56,291.3,310.03,328.77,347.5,366.24,374.29,382.35,390.41,398.47,406.53,414.58,422.64,430.7,438.76,455.08,471.39,487.71,504.03,507.05,510.07,513.09,516.11,519.14,522.16,500.4,451.45,402.5,430.78,459.06,487.35,515.63,543.91,557.21,570.51,583.8,577.46,571.11,564.77,558.42,650.88,743.35,711.8],
-    gold: [169,168.1,167.2,166.3,165.39,164.49,163.59,162.69,161.79,160.89,159.99,159.09,158.18,157.28,156.38,155.48,158.65,161.82,164.99,168.16,171.32,174.49,177.66,180.83,183.65,186.46,189.28,192.1,194.91,197.73,200.55,203.36,206.18,210.69,215.19,219.7,224.21,228.71,233.22,237.73,242.23,246.74,258.57,270.4,282.23,294.34,306.45,318.56,330.68,342.79,354.9,378.56,402.22,425.88,475.74,525.59,485.59,445.6,405.6,397.15,388.7],
-    tbill3m_tr: [91.55,91.58,91.61,91.64,91.67,91.7,91.73,91.76,91.79,91.82,91.86,91.89,91.92,92.12,92.32,92.52,92.72,92.92,93.25,93.58,93.9,94.23,94.56,94.89,95.21,95.76,96.31,96.86,97.41,97.96,98.34,98.72,99.1,99.48,99.87,100.25,100.63,101.01,101.39,101.77,102.15,102.54,102.92,103.3,103.68,104.06,104.44,104.82,105.21,105.59,105.97,106.35,106.73,107.11,107.44,107.77,108.09,108.42,108.75,109.08,109.4],
-    ust10y_tr: [118,117.53,117.06,116.58,116.11,115.64,115.17,114.7,114.22,113.75,113.28,111.43,109.57,107.72,105.86,104.01,102.15,100.3,99.95,99.59,99.24,98.88,98.53,98.18,97.82,97.47,97.11,96.76,99.12,101.48,101.68,101.87,102.07,102.27,102.46,102.66,102.86,103.05,103.25,103.45,103.64,103.84,104.33,104.82,105.31,105.81,106.3,106.79,107.28,107.77,108.27,108.76,109.25,109.74,110.08,110.41,110.75,111.09,111.43,111.76,112.1],
-    usdchf: [0.905,0.9099,0.9148,0.9197,0.9247,0.9298,0.9349,0.9401,0.9453,0.9506,0.956,0.9614,0.9669,0.9724,0.978,0.9837,0.9709,0.9584,0.9462,0.9344,0.9228,0.9115,0.9005,0.8897,0.8793,0.869,0.859,0.8492,0.8396,0.8303,0.8354,0.8406,0.8458,0.8511,0.8565,0.8619,0.8674,0.873,0.8786,0.8844,0.8902,0.896,0.8865,0.8771,0.8679,0.8589,0.8501,0.8415,0.8331,0.8248,0.8167,0.8087,0.8009,0.7847,0.7691,0.7542,0.7637,0.7735,0.7835,0.7939,0.8044],
-    usdjpy: [109.8,111.81,113.9,116.07,118.32,120.66,123.09,125.63,128.27,131.03,133.9,136.91,140.05,143.34,146.79,150.41,150.24,150.07,149.9,149.73,149.56,149.39,149.22,149.05,148.88,148.71,148.55,148.38,149.73,151.1,152.5,153.93,155.38,156.86,158.37,159.9,161.47,160.68,159.9,159.13,158.37,157.61,156.86,156.11,155.38,154.65,153.93,153.21,152.5,153.26,154.03,154.81,155.6,156.39,157.19,158,158.82,159.65,160.49,161.33,162.19],
-    usd_broad_index: [112.67,114.68,116.7,118.71,120.72,122.73,124.74,126.76,128.77,130.78,132.79,134.8,136.82,138.83,140.84,139.71,138.59,137.46,136.33,135.21,134.08,132.95,131.83,130.7,129.57,128.45,127.32,126.19,125.07,123.94,124.6,125.25,125.91,126.57,127.22,127.88,128.54,129.2,129.85,130.51,131.17,131.83,129.73,127.64,125.55,123.46,121.36,119.27,117.18,117.55,117.93,118.3,118.68,119.06,119.43,119.62,119.81,120,120.18,120.37,120.56],
-    btc: [35628,44802,53976,63151,72325,68049,63774,59499,55223,50948,46673,42397,38122,33847,29571,25296,21021,16745,18645,20545,22446,24346,26246,28146,32006,35866,39725,43585,47445,51304,55164,59024,62883,66743,70603,74463,78322,82182,86042,89901,93761,97621,101077,104533,107988,111444,114900,118356,121812,125268,128724,132180,121670,111159,102965,94770,86576,78382,73869,69356,64843],
-  };
-  function fixMonth(i) {
-    const y = 2021 + Math.floor((6 + i) / 12), m = ((6 + i) % 12) + 1;
-    return y + "-" + (m < 10 ? "0" : "") + m;
-  }
   // Feed delta v1.1: fear_greed is a sentiment_index on its own 0-100 axis. CNN's payload only
   // carries ~13 months of history, so the 61-month grid ships ~48 leading nulls — explicit,
-  // never interpolated, and null ≠ zero. Demo path is stylized; endpoints match the demo metric.
-  const FG_FIX_SERIES = [null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,31,36,44,52,58,49,41,34,27,24,29,31,46];
-  const FEED_FIX_META = { qqq: ["NASDAQ-100 (QQQ ETF proxy, dividend-adjusted)", "total_return", "tiingo:QQQ"],
-    gold: ["Gold (GLD ETF proxy)", "price", "tiingo:GLD"], tbill3m_tr: ["3M T-bills / cash TR (BIL ETF proxy)", "total_return", "tiingo:BIL"],
-    ust10y_tr: ["10Y US Treasuries TR (IEF ETF proxy)", "total_return", "tiingo:IEF"], usdchf: ["USD/CHF (Fed H.10)", "price", "fred:DEXSZUS"],
-    usdjpy: ["USD/JPY (Fed H.10)", "price", "fred:DEXJPUS"], usd_broad_index: ["US dollar (Fed Broad Dollar Index)", "index", "fred:DTWEXBGS"],
-    btc: ["Bitcoin (BTC/USD)", "price", "twelvedata:BTC/USD"] };
-  const FEED_FIXTURE = {
-    data: {
-      anchor_month: "2026-07", anchor_partial: true,
-      series: (function () {
-        const out = {};
-        Object.keys(FEED_FIX_SERIES).forEach(function (k) {
-          out[k] = { name: FEED_FIX_META[k][0], kind: FEED_FIX_META[k][1], unit: "USD",
-            points: FEED_FIX_SERIES[k].map(function (v, i) { return { month: fixMonth(i), value: v }; }),
-            as_of: "2026-07-15", source: FEED_FIX_META[k][2], available: true, stale: false };
-        });
-        // v1.1: first non-price kind — kept off the rebasing path (AI_MAP) by design.
-        out.fear_greed = { name: "CNN Fear & Greed Index", kind: "sentiment_index", unit: "index_0_100",
-          points: FG_FIX_SERIES.map(function (v, i) { return { month: fixMonth(i), value: v }; }),
-          as_of: "2026-07-15", source: "cnn:fear_greed", available: true, stale: false };
-        return out;
-      })(),
-      // Real capture-#2 scalar values (2026-07-15T23:29:51Z), abbreviated to the ones the card renders.
-      metrics: {
-        cape: { value: 42.18, unit: "ratio", as_of: "2026-07-15", source: "multpl", available: true, stale: false },
-        sp500_top10_weight_pct: { value: 37.54, unit: "pct", as_of: "2026-07-15", source: "ssga_spy_xlsx", available: true, stale: false },
-        hy_oas_bps: { value: 272.0, unit: "bps", as_of: "2026-07-14", source: "fred:BAMLH0A0HYM2", available: true, stale: false },
-        gold_spot: { value: 4058.69, unit: "USD", as_of: "2026-07-16", source: "twelvedata:XAU/USD", available: true, stale: false },
-        usdjpy: { value: 162.09, unit: "JPY-per-USD", as_of: "2026-07-16", source: "twelvedata:USD/JPY", available: true, stale: false },
-        usdchf: { value: 0.80483, unit: "CHF-per-USD", as_of: "2026-07-16", source: "twelvedata:USD/CHF", available: true, stale: false },
-        btc_spot: { value: 64843.57, unit: "USD", as_of: "2026-07-15", source: "twelvedata:BTC/USD", available: true, stale: false },
-        btc_drawdown_pct: { value: -43.99, unit: "pct", as_of: "2026-07-15", source: "twelvedata:BTC/USD", available: true, stale: false, note: "vs btc_ath (provider monthly closes since 2017-08 + spot - not a curated record)" },
-        gold_ttm_pct: { value: 22.9, unit: "pct", as_of: "2026-07-31", source: "tiingo:GLD", available: true, stale: false, note: "trailing 12 months, GLD basis" },
-        mmf_total_assets_usd: { value: 8289569.0, unit: "USD_mn", as_of: "2026-01-01", source: "fred:MMMFFAQ027S", available: true, stale: true, note: "quarterly Z.1 - publication lags ~1 quarter" },
-        fear_greed: { value: 46.0, unit: "index_0_100", as_of: "2026-07-15", source: "cnn:fear_greed", available: true, stale: false,
-          note: "unofficial CNN endpoint; non-scoring context (demo fixture)",
-          detail: { rating: "neutral", timestamp: "2026-07-15T23:19:21+00:00", previous_close: 46, previous_1_week: 44, previous_1_month: 31, previous_1_year: 31 } },
-      },
-    },
-    meta: { computed_at: "2026-07-15T23:29:51+00:00", service_version: "3.4.0", disclaimer: "Research, not advice." },
-  };
+  // never interpolated, and null ≠ zero. (The offline feed fixture the frozen acceptance suite
+  // serves at the derived base lives in acceptance/golden/api-feed.fixture.json.)
 
   function validFeed(j) {
     return !!(j && j.data && j.data.series && typeof j.data.series === "object" &&
@@ -1115,7 +982,7 @@
     const rating = m.detail && m.detail.rating;
     return rating == null || FG_RATINGS.indexOf(rating) !== -1;
   }
-  const useFeed = () => useEndpoint("/api/v1/dashboard/feed", FEED_FIXTURE, validFeed);
+  const useFeed = () => useEndpoint("/api/v1/dashboard/feed", validFeed);
 
   // Feed-key -> AI-2026 panel line. inv: chart shows the CURRENCY vs USD, so FX pairs invert.
   const AI_MAP = {
@@ -1255,7 +1122,7 @@
         <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 6 }}>
           <span style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: "0.1em", color: "#29C7E8" }}>LIVE BACKFILL</span>
           <span style={{ fontSize: 11, color: C.dim }}>
-            series re-anchored to <b>{live.anchorMonth}</b>{live.anchorPartial ? " (month in progress — t0 is month-to-date)" : ""} via the bubblegauge feed{live.serviceVersion ? " " + live.serviceVersion : ""}{DEMO ? " · demo fixture" : ""}
+            series re-anchored to <b>{live.anchorMonth}</b>{live.anchorPartial ? " (month in progress — t0 is month-to-date)" : ""} via the bubblegauge feed{live.serviceVersion ? " " + live.serviceVersion : ""}
           </span>
           <Freshness computedAt={live.computedAt} />
         </div>
@@ -1280,7 +1147,7 @@
   }
   function AiLivePanel() { return <Boundary fallback={null}><AiLiveInner /></Boundary>; }
 
-  // Compact CNN Fear & Greed STATUS line for the top strip area (feed-sourced, gated). Surfaces the
+  // Compact CNN Fear & Greed STATUS line for the top strip area (feed-sourced). Surfaces the
   // current reading + rating on its own 0-100 zone gauge, plus CNN's reference readings as text
   // (previous close / 1 week / 1 month, null-safe: null ≠ zero). The trend ARROW on the gauge is
   // sourced from the OBSERVED snapshot series (fgSeriesTrend), not from those reference fields.
@@ -1338,13 +1205,13 @@
   }
   function FearGreedStrip() { return <Boundary fallback={null}><FearGreedStripInner /></Boundary>; }
 
-  /* ---------- 5C · Mobile opening splash (portrait, gated, once per session) ---------- */
+  /* ---------- 5C · Mobile opening splash (portrait, API-connected, once per session) ---------- */
   // Full-viewport "opening" that showcases where we stand on the AI bubble: the regime score on a
   // 270-degree radial gauge (dim HOLD/TRIM/DE-RISK zones at the real 45/60 band edges), the CNN
-  // Fear & Greed status, and a few live stats, with a small top-right close. TRIPLE-GATED: only when
-  // the ?status-api gate is on AND the API is connected (score data present — not loading/warming/
-  // error), only on a SMALL PORTRAIT screen, and only until dismissed this session. With no gate it
-  // never mounts (zero footprint); on desktop / the acceptance viewport it never shows.
+  // Fear & Greed status, and a few live stats, with a small top-right close. TRIPLE-CONDITIONED:
+  // only when the API is connected (score data present — not loading/warming/error/unreachable),
+  // only on a SMALL PORTRAIT screen, and only until dismissed this session. With the API down it
+  // never mounts (the static atlas is what shows); on desktop / the acceptance viewport it never shows.
   const SPL = { cx: 195, cy: 150, r: 118, a0: 135, sweep: 270 };
   function splPol(r, deg) { const a = (deg * Math.PI) / 180; return [SPL.cx + r * Math.cos(a), SPL.cy + r * Math.sin(a)]; }
   function splArc(t0, t1, r) {
@@ -1472,7 +1339,6 @@
             <div style={{ fontSize: 11, color: C.faint, marginTop: 8, display: "flex", alignItems: "center", gap: 7, flexWrap: "wrap" }}>
               <span style={{ width: 5, height: 5, borderRadius: 999, background: "#29C7E8", display: "inline-block" }} />
               {(live && live.anchorPartial ? "Month-to-date · " : "") + (splRel(meta.computed_at) || "live")}
-              {DEMO ? <span style={{ border: "1px solid rgba(255,255,255,0.14)", borderRadius: 999, padding: "1px 6px", fontSize: 9, letterSpacing: "0.08em", color: C.muted, textTransform: "uppercase" }}>demo</span> : null}
             </div>
           </div>
           <div style={{ position: "relative", marginTop: 4, display: "flex", justifyContent: "center" }}>
@@ -1596,8 +1462,9 @@
 
   /* ============================================================
      5E · Desktop overview hero — derived from DR-010
-     A full-width inline hero above the atlas. Renders ONLY when the ?status-api gate is on AND the
-     viewport is >= 1024px AND the score API is connected; otherwise zero footprint. At desktop
+     A full-width inline hero above the atlas. Renders ONLY when the viewport is >= 1024px AND the
+     score API is connected; otherwise zero footprint (the compact Strip carries the loading /
+     warming-up / unavailable states instead). At desktop
      widths it SUPERSEDES the compact Strip, but the Strip stays MOUNTED and hidden: the frozen
      acceptance suite (acceptance/tests/02-integration) asserts its role/tabindex by attribute at a
      1280px viewport and performs no visibility check, so hiding it keeps that assertion true.
@@ -2139,9 +2006,10 @@
 
   /* ---------- expose ---------- */
 
+  // enabled is always true when this module loads (DR-015): dashboard.js keeps its defensive
+  // { enabled: false } default only for the case where the bundle is absent altogether.
   window.BubbleGauge = {
     enabled: true,
-    demo: DEMO,
     apiBase: API_BASE,
     tab: { id: "bubblegauge", label: "AI Regime" },
     Strip: StripBoundary,

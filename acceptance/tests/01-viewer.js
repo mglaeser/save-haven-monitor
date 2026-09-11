@@ -1,6 +1,8 @@
 "use strict";
-// The 5-tab atlas parity contract (no ?status-api). One page load; tabs switch WITHOUT reload
-// (that unmount/remount lifecycle is itself under test). Traceability: inventory IDs in comments.
+// The atlas parity contract. One page load; tabs switch WITHOUT reload (that unmount/remount
+// lifecycle is itself under test). Re-freeze R3 (DR-015): the status API is embedded and answered
+// by the harness goldens, so the page carries its 6th tab; the five base tabs and every frozen
+// atlas assertion below are unchanged. Traceability: inventory IDs in comments.
 const assert = (c, m) => { if (!c) throw new Error(m); };
 
 module.exports = async function register(t, h) {
@@ -17,10 +19,12 @@ module.exports = async function register(t, h) {
     assert(b.includes("Key sources:"), "footer sources block");
   });
 
-  t("chrome: exactly the 5 base tabs, in order, Explorer active, no AI Regime [explorer-01]", async () => {
-    const labels = ["Crisis Explorer", "Similarity Matrix", "Aggregate", "Analytics", "Playbook"];
+  t("chrome: the 5 base tabs in order, then 'AI Regime' as the 6th and last tab; Explorer active [explorer-01, DR-015]", async () => {
+    const labels = ["Crisis Explorer", "Similarity Matrix", "Aggregate", "Analytics", "Playbook", "AI Regime"];
     for (const l of labels) assert(await pg.$(`button:has-text("${l}")`), "tab present: " + l);
-    assert(!(await body()).includes("AI Regime"), "no 6th tab without the gate");
+    const order = await pg.$$eval("button", (bs, want) => bs.map((x) => x.textContent.trim()).filter((x) => want.includes(x)), labels);
+    assert(JSON.stringify(order) === JSON.stringify(labels), "tab order (base five, AI Regime last): " + JSON.stringify(order));
+    assert((await body()).includes("weight 1.0 · peak Oct 2007"), "Explorer is the active tab on load (default GFC visible)");
   });
 
   t("explorer: 11 crisis chips, exact labels, default GFC [explorer-02]", async () => {
