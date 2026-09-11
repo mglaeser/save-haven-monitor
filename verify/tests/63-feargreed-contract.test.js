@@ -35,21 +35,21 @@ module.exports = function register(t) {
     ok(!/fear_greed/.test(aiMap), "fear_greed must never enter AI_MAP (it is not rebased with price/TR series)");
   });
 
-  t("v1.1: demo fixture ships metrics.fear_greed (detail.rating enum, value 0..100) + a 61-point series with leading nulls", () => {
-    const src = raw("src/bubblegauge.tsx");
-    const m = src.match(/fear_greed:\s*\{[\s\S]{0,900}?detail:\s*\{([^}]+)\}/);
-    ok(m, "FEED_FIXTURE.metrics.fear_greed with detail{} missing");
-    const r = m[1].match(/rating:\s*"([^"]+)"/);
-    ok(r && ENUM.includes(r[1]), `fixture detail.rating must be a CNN enum value (got ${r && r[1]})`);
-    const v = src.match(/fear_greed:\s*\{[^}]*?value:\s*([\d.]+)/);
-    ok(v && Number(v[1]) >= 0 && Number(v[1]) <= 100, "fixture fear_greed value must be within 0..100");
-    ok(/FG_FIX_SERIES/.test(src), "fixture fear_greed series (FG_FIX_SERIES) missing");
-    const s = src.match(/FG_FIX_SERIES\s*=\s*\[([^\]]+)\]/);
-    ok(s, "FG_FIX_SERIES literal missing");
-    const vals = s[1].split(",").map((x) => x.trim());
-    ok(vals.length === 61, `fixture series must have 61 monthly points (got ${vals.length})`);
-    ok(vals[0] === "null" && vals.filter((x) => x === "null").length >= 40, "fixture series must carry the delta's ~48 leading nulls, explicit and uninterpolated");
-    for (const x of vals) if (x !== "null") ok(Number(x) >= 0 && Number(x) <= 100, `series value out of 0..100: ${x}`);
+  t("v1.1: the acceptance feed fixture ships metrics.fear_greed (detail.rating enum, value 0..100) + a 61-point series with leading nulls", () => {
+    // DR-015 moved the offline feed fixture out of the served bundle into the frozen acceptance
+    // goldens (the harness serves it at the derived API base). The v1.1 contract on it is unchanged.
+    const fx = JSON.parse(raw("acceptance/golden/api-feed.fixture.json"));
+    const m = fx && fx.data && fx.data.metrics && fx.data.metrics.fear_greed;
+    ok(m && m.detail, "api-feed.fixture.json metrics.fear_greed with detail{} missing");
+    ok(ENUM.includes(m.detail.rating), `fixture detail.rating must be a CNN enum value (got ${m.detail.rating})`);
+    ok(typeof m.value === "number" && m.value >= 0 && m.value <= 100, "fixture fear_greed value must be within 0..100");
+    const s = fx.data.series && fx.data.series.fear_greed;
+    ok(s && Array.isArray(s.points), "fixture fear_greed series missing");
+    ok(s.kind === "sentiment_index", "fixture fear_greed series must be kind sentiment_index (own axis)");
+    ok(s.points.length === 61, `fixture series must have 61 monthly points (got ${s.points.length})`);
+    const nulls = s.points.filter((p) => p.value === null).length;
+    ok(s.points[0].value === null && nulls >= 40, "fixture series must carry the delta's ~48 leading nulls, explicit and uninterpolated");
+    for (const p of s.points) if (p.value !== null) ok(typeof p.value === "number" && p.value >= 0 && p.value <= 100, `series value out of 0..100: ${p.value}`);
   });
 
   t("no served file calls CNN directly — server-side snapshot only (feed consumption)", () => {

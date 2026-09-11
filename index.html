@@ -52,7 +52,8 @@
   <script src="./vendor/react-dom.production.min.js" integrity="sha384-gTGxhz21lVGYNMcdJOyq01Edg0jhn/c22nsx0kyqP0TxaV5WVdsSH1fSDUf5YJj1"></script>
   <script src="./vendor/prop-types.min.js" integrity="sha384-/AfDwVDXNopzPvhxMPQ11y1OCpR6mVkWx47qzSwIiquvxkcMkZddEzDNtIOtfCpk"></script>
   <script src="./vendor/Recharts.js" integrity="sha384-d1XH4LhwLW8j0l6VXMP8yJabdGY9ZqtZk7k7PaPk5NoUCcZ/hDkL5aaKioKQbcZg"></script>
-  <!-- Optional bubblegauge integration. No-ops (defines/mounts/fetches nothing) unless ?status-api=<key> is present. Must load before dashboard.js. -->
+  <!-- bubblegauge integration (DR-015): the API endpoint is embedded (fixed subdomain of this page's parent domain);
+       when the API is unreachable every gauge surface falls back to its labeled static/default state. Must load before dashboard.js. -->
   <script src="./bubblegauge.js"></script>
   <script src="./dashboard.js"></script>
 </body>

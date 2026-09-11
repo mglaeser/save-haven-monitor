@@ -7,7 +7,7 @@
 //
 // What it does:
 //   1. Derives the content-API origin AT RUNTIME from the CNAME file: fixed subdomain SUB + the
-//      CNAME's parent domain, mirroring the client's KEY_RE-gated derivation (the whitelist regex
+//      CNAME's parent domain, mirroring the client's KEY_RE-validated derivation (the whitelist regex
 //      below is byte-identical to the client's — red line 1). No literal host string exists in
 //      this file (red line 2); both origins this script contacts are CNAME-derived, and
 //      redirect:"error" keeps CI egress pinned to exactly those two origins.
@@ -28,7 +28,7 @@
 //      remains" survives a full-site republish; its own as_of stamp is preserved, so content
 //      freshness = last good sync. If recovery also fails (first deploy, origin outage), WARN
 //      and exit 0 with no artifact written — the page's hard-baked disclaimers and the client's
-//      labeled offline state cover key-less visitors until the next successful sync (daily
+//      labeled offline state cover visitors whose browser cannot reach the API until the next successful sync (daily
 //      scheduled deploy, Q22; CDN staleness <= 600 s accepted, Q23).
 
 const fs = require("fs");
@@ -46,7 +46,7 @@ const HOST_RE = /^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)
 // acceptance contract (acceptance/tests/06-content.js checkShape): the client commits a payload
 // ONLY when blocks["site.disclaimer"] carries non-empty text, so the write barrier must demand
 // exactly that — an artifact that merely carries the word under another slug would publish fine
-// and then never commit client-side (dead content for key-less visitors). The token regex below
+// and then never commit client-side (dead content for visitors whose browser cannot reach the API). The token regex below
 // is kept as a SECONDARY sweep for logging extra disclaimer blocks, never as the barrier.
 const DISCLAIMER_SLUG = "site.disclaimer";
 const DISCLAIMER_TEXT_RE = /not investment advice/; // frozen phrase (06-content checkShape)
@@ -204,7 +204,7 @@ async function recover(origins) {
     warn(
       "fallback: no previously published artifact could be recovered either (" + e.message +
       ") — this deploy ships WITHOUT dist/content/fallback.json; hard-baked page disclaimers and " +
-      "the labeled offline state cover key-less visitors until the next successful sync"
+      "the labeled offline state cover visitors whose browser cannot reach the API until the next successful sync"
     );
     return;
   }

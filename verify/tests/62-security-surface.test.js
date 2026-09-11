@@ -15,7 +15,7 @@
 // permits SAME-ORIGIN RELATIVE content fetches — and, as the Article-IX-style strengthening
 // ruled alongside the widening, ENFORCES the response-shape validator's existence wherever such
 // a fetch exists (red line 5: a content payload without a disclaimer never commits). The host
-// allowlist, the gated API_BASE rule, and the flat-zero undeclared-egress ratchet are unchanged:
+// allowlist, the constructed-API_BASE rule, and the flat-zero undeclared-egress ratchet are unchanged:
 // a relative URL names no host, so the widening adds NO egress destination. The content loader
 // module (src/content.ts), when it ships, joins every served-source scan and gets its own
 // chokepoint contract below. Red line 4 gains its own tripwire: no service worker.
@@ -32,12 +32,13 @@ const servedAll = () => SERVED.concat(fs.existsSync(path.join(REPO, CONTENT_MODU
 
 // The complete declared egress + rendered-link allowlist for the served site.
 //  (unpkg.com removed — vendors are now self-hosted under ./vendor/, no third-party runtime egress)
-//  www.etoro.com    — a frozen outbound link in the crisis atlas content (dashboard.jsx)
+//  www.etoro.com    — a frozen outbound link in the crisis atlas content (src/dashboard.tsx)
 //  www.w3.org       — SVG namespace in the inline favicon (NOT a network call)
-//  localhost        — the dev-only status-API fallback (bubblegauge.jsx)
-// The live status-API host is CONSTRUCTED from a KEY_RE-whitelisted key (30-static-security),
-// never a literal, so it needs no allowlist entry here. Same-origin RELATIVE fetches (DR-014)
-// carry no host and therefore never touch this allowlist.
+//  localhost        — the dev-only status-API base on loopback (src/bubblegauge.tsx, widget.html)
+// The live status-API host is CONSTRUCTED from the KEY_RE-whitelisted embedded subdomain label +
+// the page's own parent domain (30-static-security; DR-015 retired the query-parameter key), never a
+// literal, so it needs no allowlist entry here. Same-origin RELATIVE fetches (DR-014) carry no host
+// and therefore never touch this allowlist.
 const EGRESS_ALLOW = new Set(["www.etoro.com", "www.w3.org", "localhost"]);
 
 module.exports = function register(t) {
@@ -49,7 +50,7 @@ module.exports = function register(t) {
     }
   });
 
-  t("C-08 (amended DR-014 §2): fetches are the gated API_BASE or same-origin relative literals; relative fetches require the shape validator", () => {
+  t("C-08 (amended DR-014 §2): fetches are the KEY_RE-validated embedded API_BASE or same-origin relative literals; relative fetches require the shape validator", () => {
     for (const f of SERVED) {
       const src = raw(f);
       // first-argument prefix of every fetch CALL site in the four page sources (paren must
@@ -58,13 +59,13 @@ module.exports = function register(t) {
       const args = [...src.matchAll(/(?<![A-Za-z0-9_$])fetch\(\s*([^),]*)/g)].map((m) => m[1].trim());
       let contentFetches = 0;
       for (const a of args) {
-        if (/^API_BASE\b/.test(a)) continue; // the gated, constructed, KEY_RE-whitelisted base (30-static-security)
+        if (/^API_BASE\b/.test(a)) continue; // the constructed, KEY_RE-whitelisted embedded base (30-static-security)
         if (/^["'`]\.?\/(?!\/)/.test(a)) {   // same-origin relative literal: "/x" or "./x", never "//host"
           ok(!a.includes("${"), `relative fetch in ${f} must be a plain literal, not an interpolated template: ${a.slice(0, 60)}`);
           contentFetches++;
           continue;
         }
-        ok(false, `fetch target in ${f} is neither the gated API_BASE nor a same-origin relative literal: ${a.slice(0, 60)} — an absolute or computed URL re-opens C-08/C-28 (route content loads through ${CONTENT_MODULE}'s chokepoint instead)`);
+        ok(false, `fetch target in ${f} is neither the constructed API_BASE nor a same-origin relative literal: ${a.slice(0, 60)} — an absolute or computed URL re-opens C-08/C-28 (route content loads through ${CONTENT_MODULE}'s chokepoint instead)`);
       }
       if (contentFetches > 0) {
         // Q14 strengthening: the widening is only NEUTRAL because shape validation exists at the consumer.
@@ -73,9 +74,9 @@ module.exports = function register(t) {
     }
     // the contracts that survive the amendment unchanged:
     const bg = raw("src/bubblegauge.tsx");
-    ok(/fetch\(\s*API_BASE\b/.test(bg), "bubblegauge.jsx's status fetch must target the constructed, gated API_BASE");
+    ok(/fetch\(\s*API_BASE\b/.test(bg), "bubblegauge.tsx's status fetch must target the constructed API_BASE");
     const widget = raw("widget.html");
-    ok(/const\s+KEY_RE\s*=\s*\/\^\[a-z0-9-\]\{1,32\}\$\//.test(widget), "widget.html gates its status-api key with the same KEY_RE whitelist");
+    ok(/const\s+KEY_RE\s*=\s*\/\^\[a-z0-9-\]\{1,32\}\$\//.test(widget), "widget.html validates its embedded API subdomain label with the same KEY_RE whitelist");
     for (const f of servedAll()) {
       const src = raw(f);
       ok(!/\bnew\s+WebSocket\b|\bEventSource\b|navigator\.sendBeacon/.test(src), `unexpected persistent/exfil channel in ${f}`);
@@ -96,7 +97,7 @@ module.exports = function register(t) {
     ok(/function\s+parseFallback[\s\S]{0,900}?hasDisclaimer\s*\(/.test(code), "parseFallback must gate commit on hasDisclaimer — a fallback artifact without the disclaimer never commits");
     ok(/function\s+parseLiveDashboard[\s\S]{0,600}?hasDisclaimer\s*\(/.test(code), "parseLiveDashboard must gate commit on hasDisclaimer — a live payload without the disclaimer never commits");
     // 3. no literal host in the content loader (the fallback URL is relative; live base comes from the gate)
-    ok(!/https?:\/\//.test(code), `no literal http(s) host may appear in ${CONTENT_MODULE} — the live base derives from the KEY_RE-gated BubbleGauge apiBase only`);
+    ok(!/https?:\/\//.test(code), `no literal http(s) host may appear in ${CONTENT_MODULE} — the live base derives from the KEY_RE-validated BubbleGauge apiBase only`);
   });
 
   t("DR-014 red line 4: no server, no service worker in the served artifact", () => {
@@ -123,7 +124,7 @@ module.exports = function register(t) {
       const src = raw(f);
       ok(!/type=["']password["']/i.test(src), `password input in ${f} — the site collects no credentials (C-04)`);
       ok(!/document\.cookie/.test(src), `cookie access in ${f} — the site sets no cookies (C-04)`);
-      ok(!/\blocalStorage\b/.test(src), `localStorage in ${f} — the only permitted client store is sessionStorage of the status-API key, not personal data (C-04)`);
+      ok(!/\blocalStorage\b/.test(src), `localStorage in ${f} — the only permitted client store is the sessionStorage splash-seen flag, not personal data (C-04)`);
     }
   });
 };

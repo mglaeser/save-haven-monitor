@@ -13,8 +13,8 @@
     {
       "id": "D2",
       "kind": "missing-guard-clone",
-      "inject": "weaken KEY_RE re-validation before base-URL construction",
-      "caught_by": "verify/tests/30 KEY_RE-enforced"
+      "inject": "weaken KEY_RE re-validation of the embedded subdomain label before base-URL construction, or re-introduce a query-parameter / sessionStorage input into the derivation (DR-015 retired the ?status-api key)",
+      "caught_by": "verify/tests/30 DR-015 embedded-endpoint contract + verify/tests/74-endpoint-derivation (executed against the shipped functions)"
     },
     {
       "id": "D3",

@@ -60,6 +60,13 @@ no analytics or trackers (by CLAUDE.md policy).
 
 No other egress exists in the codebase (verified by grep over all source at the frozen commit).
 
+> **Amendment 2026-09-10 (DR-015, append-only):** the `?status-api=<key>` trigger above is retired. `the
+> bubblegauge API host` is reached on every page view from the production apex (embedded label `api` +
+> the apex the page is served from; no derivation — and no request — on any other origin), GET-only,
+> boundary-validated, labeled static/unavailable states on failure. `sessionStorage['bubblegauge:enabled']`
+> no longer exists (only the splash-seen flag). The `?status-api*` routes in `audit/00-audit-surface.json`
+> are historical. Executable: `verify/tests/30`, `74`; frozen acceptance R3.
+
 ## The policy bundle that gates merges — **DOES NOT EXIST**
 
 Recorded per Phase-0 instruction, and it is the engagement's headline fact:
