@@ -208,7 +208,7 @@
     "NOT-A-PROBABILITY: 0-100 regime heuristic = structured expert judgment; uncalibrated.",
     "n≈4 CALIBRATION IMPOSSIBILITY: reference class {1929,2000,2007,2021}.",
     "REFERENCE-CLASS CAVEAT: may be rational GPT repricing (Chen-Chen-Huang 2026).",
-    "NOMINAL≠EFFECTIVE WEIGHTS: see annual PSS sensitivity script.",
+    "NOMINAL≠EFFECTIVE WEIGHTS: weights are design intent, not measured influence (PSS 2013).",
     "Service never returns 500 on upstream failure: fallback or drop+renormalize.",
   ];
   const FALSIFY = [
